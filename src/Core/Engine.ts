@@ -2,7 +2,7 @@ import { EngineConfig } from '../Application/EngineConfig';
 import { Scene } from './Scene';
 import { Camera } from './Camera';
 import { Vector3 } from './Math';
-import { Renderer } from '../Infrastructure/Rendering/Renderer';
+import { RaytracingRenderer } from '../Infrastructure/Rendering/RaytracingRenderer';
 
 export class Engine {
     private config: EngineConfig;
@@ -14,7 +14,7 @@ export class Engine {
 
     private scene: Scene;
     private camera: Camera;
-    private renderer: Renderer | null = null;
+    private renderer: RaytracingRenderer | null = null;
     private updateCallback: (() => void) | null = null;
 
     constructor(config: EngineConfig) {
@@ -55,10 +55,9 @@ export class Engine {
 
         console.log(`WebGL Context initialisiert: ${this.context instanceof WebGL2RenderingContext ? 'WebGL2' : 'WebGL1'}`);
 
-        this.context.clearColor(0.1, 0.1, 0.15, 1.0);
-        this.context.enable(this.context.DEPTH_TEST);
+        this.context.clearColor(0.0, 0.0, 0.0, 1.0);
 
-        this.renderer = new Renderer(this.context);
+        this.renderer = new RaytracingRenderer(this.context);
     }
 
     public start(): void {
@@ -104,10 +103,8 @@ export class Engine {
 
         this.renderer.clear();
 
-        const meshes = this.scene.getMeshes();
-        for (const mesh of meshes) {
-            this.renderer.render(mesh, this.camera);
-        }
+        const deltaTime = (performance.now() - this.lastFrameTime) / 1000;
+        this.renderer.render(this.camera, deltaTime);
     }
 
     public resize(width: number, height: number): void {

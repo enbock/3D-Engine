@@ -112,6 +112,20 @@ export class ShaderProgram {
         }
     }
 
+    setUniform2f(name: string, x: number, y: number): void {
+        const location = this.getUniformLocation(name);
+        if (location) {
+            this.gl.uniform2f(location, x, y);
+        }
+    }
+
+    setUniform1f(name: string, x: number): void {
+        const location = this.getUniformLocation(name);
+        if (location) {
+            this.gl.uniform1f(location, x);
+        }
+    }
+
     dispose(): void {
         this.gl.deleteProgram(this.program);
     }
