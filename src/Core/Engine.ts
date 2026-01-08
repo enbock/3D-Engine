@@ -1,0 +1,153 @@
+import { EngineConfig } from '../Application/EngineConfig';
+import { Scene } from './Scene';
+import { Camera } from './Camera';
+import { Vector3 } from './Math';
+import { Renderer } from '../Infrastructure/Rendering/Renderer';
+
+export class Engine {
+    private config: EngineConfig;
+    private canvas: HTMLCanvasElement;
+    private context: WebGLRenderingContext | WebGL2RenderingContext | null = null;
+    private running: boolean = false;
+    private lastFrameTime: number = 0;
+    private frameCount: number = 0;
+
+    private scene: Scene;
+    private camera: Camera;
+    private renderer: Renderer | null = null;
+    private updateCallback: (() => void) | null = null;
+
+    constructor(config: EngineConfig) {
+        this.config = config;
+        this.canvas = config.canvas;
+        this.scene = new Scene();
+        this.camera = new Camera(
+            new Vector3(0, 2, 12),
+            Vector3.zero(),
+            45 * Math.PI / 180,
+            config.width / config.height
+        );
+    }
+
+    public async initialize(): Promise<void> {
+        console.log('Initialisiere Engine Core...');
+
+        this.initializeContext();
+        this.resize(this.config.width, this.config.height);
+        this.start();
+    }
+
+    private initializeContext(): void {
+        const contextAttributes: WebGLContextAttributes = {
+            antialias: this.config.antialias,
+            powerPreference: this.config.powerPreference,
+            alpha: false,
+            depth: true,
+            stencil: false,
+        };
+
+        this.context = this.canvas.getContext('webgl2', contextAttributes)
+                    || this.canvas.getContext('webgl', contextAttributes);
+
+        if (!this.context) {
+            throw new Error('WebGL wird von diesem Browser nicht unterstützt');
+        }
+
+        console.log(`WebGL Context initialisiert: ${this.context instanceof WebGL2RenderingContext ? 'WebGL2' : 'WebGL1'}`);
+
+        this.context.clearColor(0.1, 0.1, 0.15, 1.0);
+        this.context.enable(this.context.DEPTH_TEST);
+
+        this.renderer = new Renderer(this.context);
+    }
+
+    public start(): void {
+        if (this.running) return;
+
+        this.running = true;
+        this.lastFrameTime = performance.now();
+        this.renderLoop(this.lastFrameTime);
+
+        console.log('Engine Render Loop gestartet');
+    }
+
+    public stop(): void {
+        this.running = false;
+        console.log('Engine Render Loop gestoppt');
+    }
+
+    public isRunning(): boolean {
+        return this.running;
+    }
+
+    private renderLoop(currentTime: number): void {
+        if (!this.running) return;
+
+        const deltaTime = (currentTime - this.lastFrameTime) / 1000;
+        this.lastFrameTime = currentTime;
+        this.frameCount++;
+
+        this.update(deltaTime);
+        this.render();
+
+        requestAnimationFrame((time) => this.renderLoop(time));
+    }
+
+    private update(deltaTime: number): void {
+        if (this.updateCallback) {
+            this.updateCallback();
+        }
+    }
+
+    private render(): void {
+        if (!this.context || !this.renderer) return;
+
+        this.renderer.clear();
+
+        const meshes = this.scene.getMeshes();
+        for (const mesh of meshes) {
+            this.renderer.render(mesh, this.camera);
+        }
+    }
+
+    public resize(width: number, height: number): void {
+        this.canvas.width = width;
+        this.canvas.height = height;
+
+        if (this.context) {
+            this.context.viewport(0, 0, width, height);
+        }
+
+        this.camera.setAspect(width / height);
+
+        console.log(`Viewport angepasst: ${width}x${height}`);
+    }
+
+    public getFPS(): number {
+        const currentTime = performance.now();
+        const deltaTime = (currentTime - this.lastFrameTime) / 1000;
+        return deltaTime > 0 ? 1 / deltaTime : 0;
+    }
+
+    public dispose(): void {
+        this.stop();
+        if (this.renderer) {
+            this.renderer.dispose();
+        }
+        this.context = null;
+        console.log('Engine Ressourcen freigegeben');
+    }
+
+    public getScene(): Scene {
+        return this.scene;
+    }
+
+    public getCamera(): Camera {
+        return this.camera;
+    }
+
+    public setUpdateCallback(callback: () => void): void {
+        this.updateCallback = callback;
+    }
+}
+
