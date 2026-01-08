@@ -43,8 +43,8 @@ export class KeyboardHandler {
             case 'Space':
                 this.keys.up = true;
                 break;
-            case 'ShiftLeft':
-            case 'ShiftRight':
+            case 'ControlLeft':
+            case 'ControlRight':
                 this.keys.down = true;
                 break;
         }
@@ -67,8 +67,8 @@ export class KeyboardHandler {
             case 'Space':
                 this.keys.up = false;
                 break;
-            case 'ShiftLeft':
-            case 'ShiftRight':
+            case 'ControlLeft':
+            case 'ControlRight':
                 this.keys.down = false;
                 break;
         }

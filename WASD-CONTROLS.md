@@ -92,14 +92,22 @@ npm run dev
 ```
 
 **Im Browser:**
-1. Verwenden Sie **WASD** um sich zu bewegen
-2. **Leertaste** um aufzusteigen
-3. **Shift** um abzusinken
-4. **Maus** um die Blickrichtung anzupassen
+1. **Klicken Sie auf das Canvas** um die Maus-Steuerung zu aktivieren
+2. **Maus bewegen** um sich umzusehen (360° frei!)
+3. **WASD** um sich zu bewegen
+4. **Leertaste** um aufzusteigen
+5. **Strg** um abzusinken
+6. **ESC** um die Maus-Steuerung zu deaktivieren
 
-Die Kamera bewegt sich relativ zur aktuellen Blickrichtung - wenn Sie nach links schauen und **W** drücken, bewegen Sie sich in die Richtung, in die Sie schauen!
+Die Kamera bewegt sich relativ zur aktuellen Blickrichtung - genau wie in einem FPS-Spiel! Sie können sich frei im Raum drehen und bewegen.
+
+### Tipps:
+
+- **Strafe-Movement**: A/D bewegt Sie seitwärts ohne zu drehen
+- **Free Look**: Schauen Sie nach oben/unten/links/rechts ohne Limits
+- **Fly Mode**: Space/Strg für vertikale Bewegung
 
 ## Status: ✅ Vollständig funktionsfähig!
 
-Freie Kamera-Bewegung mit WASD ist implementiert! 🎮
+Freie 360° FPS-Kamera-Steuerung ist implementiert! 🎮🚀
 
