@@ -29,9 +29,9 @@ export class EngineController {
             const camera = this.engine.getCamera();
             this.cameraController = new CameraController(this.canvas, camera);
 
-            this.engine.setUpdateCallback(() => {
+            this.engine.setUpdateCallback((deltaTime: number) => {
                 if (this.cameraController) {
-                    this.cameraController.update();
+                    this.cameraController.update(deltaTime);
                 }
             });
 

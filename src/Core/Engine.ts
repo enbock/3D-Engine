@@ -15,7 +15,7 @@ export class Engine {
     private scene: Scene;
     private camera: Camera;
     private renderer: RaytracingRenderer | null = null;
-    private updateCallback: (() => void) | null = null;
+    private updateCallback: ((deltaTime: number) => void) | null = null;
 
     constructor(config: EngineConfig) {
         this.config = config;
@@ -94,7 +94,7 @@ export class Engine {
 
     private update(deltaTime: number): void {
         if (this.updateCallback) {
-            this.updateCallback();
+            this.updateCallback(deltaTime);
         }
     }
 
@@ -143,7 +143,7 @@ export class Engine {
         return this.camera;
     }
 
-    public setUpdateCallback(callback: () => void): void {
+    public setUpdateCallback(callback: (deltaTime: number) => void): void {
         this.updateCallback = callback;
     }
 }
