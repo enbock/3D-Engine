@@ -224,13 +224,10 @@ export class RasterRenderer {
 
     private getModelMatrix(mesh: any): Float32Array {
         const matrix = new Float32Array(16);
-        matrix[0] = mesh.scale.x;
-        matrix[5] = mesh.scale.y;
-        matrix[10] = mesh.scale.z;
-        matrix[12] = mesh.position.x;
-        matrix[13] = mesh.position.y;
-        matrix[14] = mesh.position.z;
-        matrix[15] = 1;
+        matrix[0] = mesh.scale.x;  matrix[4] = 0;             matrix[8] = 0;             matrix[12] = mesh.position.x;
+        matrix[1] = 0;             matrix[5] = mesh.scale.y;  matrix[9] = 0;             matrix[13] = mesh.position.y;
+        matrix[2] = 0;             matrix[6] = 0;             matrix[10] = mesh.scale.z; matrix[14] = mesh.position.z;
+        matrix[3] = 0;             matrix[7] = 0;             matrix[11] = 0;            matrix[15] = 1;
         return matrix;
     }
 

@@ -29,31 +29,31 @@ export class Matrix4 {
     }
 
     lookAt(eye: Float32Array, center: Float32Array, up: Float32Array): Matrix4 {
-        const fx = center[0] - eye[0];
-        const fy = center[1] - eye[1];
-        const fz = center[2] - eye[2];
+        let fx = center[0] - eye[0];
+        let fy = center[1] - eye[1];
+        let fz = center[2] - eye[2];
         const rlf = 1 / Math.sqrt(fx * fx + fy * fy + fz * fz);
-        const fxn = fx * rlf;
-        const fyn = fy * rlf;
-        const fzn = fz * rlf;
+        fx *= rlf;
+        fy *= rlf;
+        fz *= rlf;
 
-        const sx = fyn * up[2] - fzn * up[1];
-        const sy = fzn * up[0] - fxn * up[2];
-        const sz = fxn * up[1] - fyn * up[0];
+        let sx = fy * up[2] - fz * up[1];
+        let sy = fz * up[0] - fx * up[2];
+        let sz = fx * up[1] - fy * up[0];
         const rls = 1 / Math.sqrt(sx * sx + sy * sy + sz * sz);
-        const sxn = sx * rls;
-        const syn = sy * rls;
-        const szn = sz * rls;
+        sx *= rls;
+        sy *= rls;
+        sz *= rls;
 
-        const ux = syn * fzn - szn * fyn;
-        const uy = szn * fxn - sxn * fzn;
-        const uz = sxn * fyn - syn * fxn;
+        const ux = sy * fz - sz * fy;
+        const uy = sz * fx - sx * fz;
+        const uz = sx * fy - sy * fx;
 
         const e = this.elements;
-        e[0] = sxn; e[4] = ux; e[8] = -fxn; e[12] = 0;
-        e[1] = syn; e[5] = uy; e[9] = -fyn; e[13] = 0;
-        e[2] = szn; e[6] = uz; e[10] = -fzn; e[14] = 0;
-        e[3] = 0; e[7] = 0; e[11] = 0; e[15] = 1;
+        e[0] = sx;  e[4] = ux;  e[8] = -fx;  e[12] = 0;
+        e[1] = sy;  e[5] = uy;  e[9] = -fy;  e[13] = 0;
+        e[2] = sz;  e[6] = uz;  e[10] = -fz;  e[14] = 0;
+        e[3] = 0;   e[7] = 0;   e[11] = 0;    e[15] = 1;
 
         return this.translate(-eye[0], -eye[1], -eye[2]);
     }

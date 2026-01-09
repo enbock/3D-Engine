@@ -82,11 +82,9 @@ export class CameraController {
     }
 
     private getRightVector(): Vector3 {
-        return new Vector3(
-            -Math.cos(this.yaw),
-            0,
-            Math.sin(this.yaw)
-        );
+        const forward = this.getForwardVector();
+        const worldUp = new Vector3(0, 1, 0);
+        return forward.cross(worldUp).normalize();
     }
 
     private updateCameraTarget(): void {
