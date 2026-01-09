@@ -34,7 +34,6 @@ export class Engine {
 
         this.initializeContext();
         this.resize(this.config.width, this.config.height);
-        this.start();
     }
 
     private initializeContext(): void {
@@ -104,7 +103,7 @@ export class Engine {
         this.renderer.clear();
 
         const deltaTime = (performance.now() - this.lastFrameTime) / 1000;
-        this.renderer.render(this.camera, deltaTime);
+        this.renderer.render(this.camera, this.scene, deltaTime);
     }
 
     public resize(width: number, height: number): void {

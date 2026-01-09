@@ -5,7 +5,6 @@ import {Mesh} from './Core/Geometry/Mesh';
 
 class Application {
     private engineController: EngineController | null = null;
-    private cameraAngle: number = 0;
 
     constructor() {
         this.initialize();
@@ -35,7 +34,10 @@ class Application {
             const scene = this.engineController.getScene();
             if (scene) {
                 demoScene.getMeshes().forEach((mesh: Mesh) => scene.addMesh(mesh));
+                demoScene.getLights().forEach(light => scene.addLight(light));
             }
+
+            this.engineController.start();
 
             window.addEventListener('resize', this.handleResize.bind(this));
 

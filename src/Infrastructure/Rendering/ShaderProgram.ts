@@ -84,7 +84,11 @@ export class ShaderProgram {
     }
 
     getUniformLocation(name: string): WebGLUniformLocation | null {
-        return this.uniforms.get(name) || null;
+        const cached = this.uniforms.get(name);
+        if (cached) {
+            return cached;
+        }
+        return this.gl.getUniformLocation(this.program, name);
     }
 
     getAttributeLocation(name: string): number {
@@ -123,6 +127,13 @@ export class ShaderProgram {
         const location = this.getUniformLocation(name);
         if (location) {
             this.gl.uniform1f(location, x);
+        }
+    }
+
+    setUniform1i(name: string, x: number): void {
+        const location = this.getUniformLocation(name);
+        if (location) {
+            this.gl.uniform1i(location, x);
         }
     }
 

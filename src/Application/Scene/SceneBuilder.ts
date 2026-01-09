@@ -2,6 +2,7 @@ import { Scene } from '../../Core/Scene';
 import { Mesh } from '../../Core/Geometry/Mesh';
 import { Color } from '../../Core/Math/Color';
 import { Vector3 } from '../../Core/Math/Vector3';
+import { Light } from '../../Core/Light';
 
 export class SceneBuilder {
     static createDemoScene(): Scene {
@@ -60,6 +61,10 @@ export class SceneBuilder {
         pillar2.color = new Color(0.6, 0.4, 0.2, 1);
         scene.addMesh(pillar2);
 
+        scene.addLight(Light.createAmbient(Color.white(), 0.15));
+        scene.addLight(Light.createDirectional(new Vector3(0.5, 0.7, 1.0).normalize(), Color.white(), 1.0));
+        scene.addLight(Light.createPoint(new Vector3(0, 2, 0), new Color(1.0, 0.9, 0.8, 1.0), 1.5));
+
         return scene;
     }
 
@@ -92,6 +97,9 @@ export class SceneBuilder {
 
             scene.addMesh(sphere);
         }
+
+        scene.addLight(Light.createAmbient(Color.white(), 0.2));
+        scene.addLight(Light.createDirectional(new Vector3(1, 1, 1).normalize(), Color.white(), 0.8));
 
         return scene;
     }
