@@ -3,6 +3,7 @@ import { EngineConfig } from '../EngineConfig';
 import { Scene } from '../../Core/Scene';
 import { Camera } from '../../Core/Camera';
 import { CameraController } from '../Camera/CameraController';
+import { RenderMode } from '../../Infrastructure/Rendering/RendererManager';
 
 export class EngineController {
     private engine: Engine | null = null;
@@ -103,6 +104,16 @@ export class EngineController {
 
     public getEngine(): Engine | null {
         return this.engine;
+    }
+
+    public setRenderMode(mode: RenderMode): void {
+        if (this.engine) {
+            this.engine.setRenderMode(mode);
+        }
+    }
+
+    public getRenderMode(): RenderMode | null {
+        return this.engine ? this.engine.getRenderMode() : null;
     }
 }
 

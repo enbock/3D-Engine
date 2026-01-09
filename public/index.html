@@ -46,13 +46,51 @@
             margin-bottom: 10px;
             font-size: 20px;
         }
+
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.raster {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
     </style>
 </head>
 <body>
     <div id="app">
         <div class="info-panel">
-            <h1>3D Engine - Raytracing</h1>
+            <h1>3D Engine - <span id="renderMode">Raytracing</span></h1>
             <p>Klicken zum Steuern | WASD: Bewegen | Leertaste/Strg: Hoch/Runter | Maus: 360° freie Sicht</p>
+        </div>
+        <div class="controls">
+            <button id="toggleRenderer" class="btn">Zu Raster wechseln</button>
         </div>
         <canvas id="canvas"></canvas>
     </div>

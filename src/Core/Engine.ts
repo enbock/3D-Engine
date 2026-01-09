@@ -2,7 +2,7 @@ import { EngineConfig } from '../Application/EngineConfig';
 import { Scene } from './Scene';
 import { Camera } from './Camera';
 import { Vector3 } from './Math';
-import { RaytracingRenderer } from '../Infrastructure/Rendering/RaytracingRenderer';
+import { RendererManager, RenderMode } from '../Infrastructure/Rendering/RendererManager';
 
 export class Engine {
     private config: EngineConfig;
@@ -14,7 +14,7 @@ export class Engine {
 
     private scene: Scene;
     private camera: Camera;
-    private renderer: RaytracingRenderer | null = null;
+    private rendererManager: RendererManager | null = null;
     private updateCallback: ((deltaTime: number) => void) | null = null;
 
     constructor(config: EngineConfig) {
@@ -56,7 +56,7 @@ export class Engine {
 
         this.context.clearColor(0.0, 0.0, 0.0, 1.0);
 
-        this.renderer = new RaytracingRenderer(this.context);
+        this.rendererManager = new RendererManager(this.context);
     }
 
     public start(): void {
@@ -98,12 +98,12 @@ export class Engine {
     }
 
     private render(): void {
-        if (!this.context || !this.renderer) return;
+        if (!this.context || !this.rendererManager) return;
 
-        this.renderer.clear();
+        this.rendererManager.clear();
 
         const deltaTime = (performance.now() - this.lastFrameTime) / 1000;
-        this.renderer.render(this.camera, this.scene, deltaTime);
+        this.rendererManager.render(this.camera, this.scene, deltaTime);
     }
 
     public resize(width: number, height: number): void {
@@ -127,8 +127,8 @@ export class Engine {
 
     public dispose(): void {
         this.stop();
-        if (this.renderer) {
-            this.renderer.dispose();
+        if (this.rendererManager) {
+            this.rendererManager.dispose();
         }
         this.context = null;
         console.log('Engine Ressourcen freigegeben');
@@ -144,6 +144,16 @@ export class Engine {
 
     public setUpdateCallback(callback: (deltaTime: number) => void): void {
         this.updateCallback = callback;
+    }
+
+    public setRenderMode(mode: RenderMode): void {
+        if (this.rendererManager) {
+            this.rendererManager.setRenderMode(mode);
+        }
+    }
+
+    public getRenderMode(): RenderMode | null {
+        return this.rendererManager ? this.rendererManager.getRenderMode() : null;
     }
 }
 
