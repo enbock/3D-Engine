@@ -108,7 +108,8 @@ Hit trace(Ray ray) {
 }
 
 vec3 shade(Hit hit, vec3 rayDir) {
-    vec3 ambient = vec3(0.3) * hit.color;
+    vec3 ambient = vec3(0.1) * hit.color;
+    
     Ray shadow; shadow.origin = hit.point + hit.normal * EPSILON * 10.0;
     shadow.direction = lightDir;
     Hit sh = trace(shadow);

@@ -28,8 +28,14 @@ export class MouseHandler {
         document.addEventListener('pointerlockchange', this.handlePointerLockChange.bind(this));
     }
 
-    private requestPointerLock(): void {
-        this.canvas.requestPointerLock();
+    private async requestPointerLock(): Promise<void> {
+        try {
+            await this.canvas.requestPointerLock();
+        } catch (error) {
+            if (error instanceof Error && error.name === 'SecurityError') {
+                console.debug('Pointer lock request was cancelled');
+            }
+        }
     }
 
     private handlePointerLockChange(): void {

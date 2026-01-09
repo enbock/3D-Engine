@@ -37,10 +37,7 @@ class Application {
                 demoScene.getMeshes().forEach((mesh: Mesh) => scene.addMesh(mesh));
             }
 
-            this.updateInfoPanel('Engine erfolgreich initialisiert!');
-
             window.addEventListener('resize', this.handleResize.bind(this));
-
 
             console.log('✅ 3D Engine erfolgreich gestartet');
         } catch (error) {

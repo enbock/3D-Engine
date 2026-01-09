@@ -27,7 +27,7 @@ export class EngineController {
             await this.engine.initialize();
 
             const camera = this.engine.getCamera();
-            this.cameraController = new CameraController(this.canvas, camera);
+            this.cameraController = new CameraController(this.canvas, camera, undefined, Math.PI);
 
             this.engine.setUpdateCallback((deltaTime: number) => {
                 if (this.cameraController) {
