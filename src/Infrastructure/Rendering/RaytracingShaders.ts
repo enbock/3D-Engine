@@ -21,110 +21,71 @@ struct Light { int type; vec3 position; vec3 direction; vec3 color; float intens
 const float EPSILON = 0.001;
 const float MAX_DIST = 100.0;
 const int MAX_LIGHTS = 8;
-const int MAX_SPHERES = 32;
-const int MAX_BOXES = 32;
-const int MAX_PLANES = 8;
 
 uniform int uNumLights;
 uniform Light uLights[MAX_LIGHTS];
 
-uniform int uNumSpheres;
-uniform vec4 uSpheres[MAX_SPHERES * 2];
+uniform int uNumTriangles;
+uniform sampler2D uTriangleData;
+uniform vec2 uTriangleTexSize;
 
-uniform int uNumBoxes;
-uniform vec4 uBoxes[MAX_BOXES * 3];
-
-uniform int uNumPlanes;
-uniform vec4 uPlanes[MAX_PLANES * 3];
-
-Hit intersectSphere(Ray ray, vec3 center, float radius, vec3 color) {
-    Hit h; h.hit = false;
-    vec3 oc = ray.origin - center;
-    float b = dot(oc, ray.direction);
-    float c = dot(oc, oc) - radius * radius;
-    float d = b * b - c;
-    if (d > 0.0) {
-        float t = -b - sqrt(d);
-        if (t > EPSILON) {
-            h.hit = true; h.dist = t;
-            h.point = ray.origin + ray.direction * t;
-            h.normal = normalize(h.point - center);
-            h.color = color;
-        }
-    }
-    return h;
+vec4 getTriangleData(int index) {
+    float x = mod(float(index), uTriangleTexSize.x);
+    float y = floor(float(index) / uTriangleTexSize.x);
+    vec2 uv = (vec2(x, y) + 0.5) / uTriangleTexSize;
+    return texture2D(uTriangleData, uv);
 }
 
-Hit intersectBox(Ray ray, vec3 bmin, vec3 bmax, vec3 color) {
+Hit intersectTriangle(Ray ray, vec3 v0, vec3 v1, vec3 v2, vec3 color) {
     Hit h; h.hit = false;
-    vec3 invD = 1.0 / ray.direction;
-    vec3 t0 = (bmin - ray.origin) * invD;
-    vec3 t1 = (bmax - ray.origin) * invD;
-    vec3 tmin = min(t0, t1);
-    vec3 tmax = max(t0, t1);
-    float tn = max(max(tmin.x, tmin.y), tmin.z);
-    float tf = min(min(tmax.x, tmax.y), tmax.z);
-    if (tn < tf && tf > EPSILON) {
-        float t = tn > EPSILON ? tn : tf;
-        h.hit = true; h.dist = t;
+    
+    vec3 e1 = v1 - v0;
+    vec3 e2 = v2 - v0;
+    vec3 pvec = cross(ray.direction, e2);
+    float det = dot(e1, pvec);
+    
+    if (abs(det) < EPSILON) return h;
+    
+    float invDet = 1.0 / det;
+    vec3 tvec = ray.origin - v0;
+    float u = dot(tvec, pvec) * invDet;
+    
+    if (u < 0.0 || u > 1.0) return h;
+    
+    vec3 qvec = cross(tvec, e1);
+    float v = dot(ray.direction, qvec) * invDet;
+    
+    if (v < 0.0 || u + v > 1.0) return h;
+    
+    float t = dot(e2, qvec) * invDet;
+    
+    if (t > EPSILON) {
+        h.hit = true;
+        h.dist = t;
         h.point = ray.origin + ray.direction * t;
-        vec3 c = (bmin + bmax) * 0.5;
-        vec3 p = h.point - c;
-        vec3 d = (bmin - bmax) * 0.5;
-        h.normal = normalize(sign(p) * step(abs(d.yzx), abs(p)) * step(abs(d.zxy), abs(p)));
+        h.normal = normalize(cross(e1, e2));
         h.color = color;
     }
-    return h;
-}
-
-Hit intersectPlane(Ray ray, vec3 p, vec3 n, vec3 color) {
-    Hit h; h.hit = false;
-    float d = dot(n, ray.direction);
-    if (abs(d) > EPSILON) {
-        float t = dot(p - ray.origin, n) / d;
-        if (t > EPSILON) {
-            h.hit = true; h.dist = t;
-            h.point = ray.origin + ray.direction * t;
-            h.normal = n;
-            h.color = color;
-        }
-    }
+    
     return h;
 }
 
 Hit trace(Ray ray) {
     Hit closest; closest.hit = false; closest.dist = MAX_DIST;
     
-    for (int i = 0; i < MAX_SPHERES; i++) {
-        if (i >= uNumSpheres) break;
+    for (int i = 0; i < 4096; i++) {
+        if (i >= uNumTriangles) break;
         
-        vec3 center = uSpheres[i * 2].xyz;
-        float radius = uSpheres[i * 2].w;
-        vec3 color = uSpheres[i * 2 + 1].rgb;
+        vec4 data0 = getTriangleData(i * 3);
+        vec4 data1 = getTriangleData(i * 3 + 1);
+        vec4 data2 = getTriangleData(i * 3 + 2);
         
-        Hit h = intersectSphere(ray, center, radius, color);
-        if (h.hit && h.dist < closest.dist) closest = h;
-    }
-    
-    for (int i = 0; i < MAX_BOXES; i++) {
-        if (i >= uNumBoxes) break;
+        vec3 v0 = data0.xyz;
+        vec3 v1 = data1.xyz;
+        vec3 v2 = data2.xyz;
+        vec3 color = vec3(data0.w, data1.w, data2.w);
         
-        vec3 bmin = uBoxes[i * 3].xyz;
-        vec3 bmax = uBoxes[i * 3 + 1].xyz;
-        vec3 color = uBoxes[i * 3 + 2].rgb;
-        
-        Hit h = intersectBox(ray, bmin, bmax, color);
-        if (h.hit && h.dist < closest.dist) closest = h;
-    }
-    
-    for (int i = 0; i < MAX_PLANES; i++) {
-        if (i >= uNumPlanes) break;
-        
-        vec3 pos = uPlanes[i * 3].xyz;
-        vec3 normal = uPlanes[i * 3 + 1].xyz;
-        vec3 color = uPlanes[i * 3 + 2].rgb;
-        
-        Hit h = intersectPlane(ray, pos, normal, color);
+        Hit h = intersectTriangle(ray, v0, v1, v2, color);
         if (h.hit && h.dist < closest.dist) closest = h;
     }
     

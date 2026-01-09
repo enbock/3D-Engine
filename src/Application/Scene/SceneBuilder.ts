@@ -28,20 +28,21 @@ export class SceneBuilder {
         cube3.color = Color.blue();
         scene.addMesh(cube3);
 
-        const sphere1 = Mesh.createSphere(0.7, 20, 20);
+        const sphere1 = Mesh.createSphere(0.7, 16, 16);
         sphere1.position = new Vector3(-2, 2, -2);
         sphere1.color = Color.yellow();
         scene.addMesh(sphere1);
 
-        const sphere2 = Mesh.createSphere(0.6, 20, 20);
+        const sphere2 = Mesh.createSphere(0.6, 16, 16);
         sphere2.position = new Vector3(2, 2, -2);
         sphere2.color = Color.cyan();
         scene.addMesh(sphere2);
 
-        const sphere3 = Mesh.createSphere(0.5, 20, 20);
+        const sphere3 = Mesh.createSphere(0.5, 16, 16);
         sphere3.position = new Vector3(0, 3, -1);
         sphere3.color = Color.magenta();
         scene.addMesh(sphere3);
+
 
         const backWall = Mesh.createCube(1);
         backWall.position = new Vector3(0, 0.5, -5);

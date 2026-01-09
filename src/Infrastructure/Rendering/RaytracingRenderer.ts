@@ -8,18 +8,73 @@ export class RaytracingRenderer {
     private shaderProgram: ShaderProgram;
     private quadVertexBuffer: WebGLBuffer | null = null;
     private time: number = 0;
+    private triangleTexture: WebGLTexture | null = null;
+    private triangleTexWidth: number = 512;
+    private triangleTexHeight: number = 512;
 
     constructor(gl: WebGLRenderingContext | WebGL2RenderingContext) {
         this.gl = gl;
         this.shaderProgram = new ShaderProgram(gl, raytracingVertexShader, raytracingFragmentShader);
         this.setupQuad();
         this.setupGL();
+        this.setupTriangleTexture();
     }
 
     private setupGL(): void {
         this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
         this.gl.disable(this.gl.DEPTH_TEST);
         this.gl.disable(this.gl.CULL_FACE);
+    }
+
+    private setupTriangleTexture(): void {
+        this.triangleTexture = this.gl.createTexture();
+        if (!this.triangleTexture) {
+            throw new Error('Failed to create triangle texture');
+        }
+
+        const isWebGL2 = this.gl instanceof WebGL2RenderingContext;
+
+        if (!isWebGL2) {
+            const floatTextureExt = this.gl.getExtension('OES_texture_float');
+            if (!floatTextureExt) {
+                throw new Error('Float textures not supported');
+            }
+        }
+
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.triangleTexture);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+
+        const emptyData = new Float32Array(this.triangleTexWidth * this.triangleTexHeight * 4);
+
+        if (isWebGL2) {
+            const gl2 = this.gl as WebGL2RenderingContext;
+            gl2.texImage2D(
+                gl2.TEXTURE_2D,
+                0,
+                gl2.RGBA32F,
+                this.triangleTexWidth,
+                this.triangleTexHeight,
+                0,
+                gl2.RGBA,
+                gl2.FLOAT,
+                emptyData
+            );
+        } else {
+            this.gl.texImage2D(
+                this.gl.TEXTURE_2D,
+                0,
+                this.gl.RGBA,
+                this.triangleTexWidth,
+                this.triangleTexHeight,
+                0,
+                this.gl.RGBA,
+                this.gl.FLOAT,
+                emptyData
+            );
+        }
     }
 
     private setupQuad(): void {
@@ -73,6 +128,19 @@ export class RaytracingRenderer {
             this.gl.uniform1f(timeLocation, this.time);
         }
 
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.triangleTexture);
+
+        const texLocation = this.shaderProgram.getUniformLocation('uTriangleData');
+        if (texLocation) {
+            this.gl.uniform1i(texLocation, 0);
+        }
+
+        const texSizeLocation = this.shaderProgram.getUniformLocation('uTriangleTexSize');
+        if (texSizeLocation) {
+            this.gl.uniform2f(texSizeLocation, this.triangleTexWidth, this.triangleTexHeight);
+        }
+
         this.uploadSceneData(scene);
 
         const positionLoc = this.shaderProgram.getAttributeLocation('aPosition');
@@ -90,7 +158,6 @@ export class RaytracingRenderer {
         const numLights = Math.min(lights.length, 8);
         this.shaderProgram.setUniform1i('uNumLights', numLights);
 
-
         for (let i = 0; i < numLights; i++) {
             const light = lights[i];
             this.shaderProgram.setUniform1i(`uLights[${i}].type`, light.type);
@@ -100,122 +167,89 @@ export class RaytracingRenderer {
             this.shaderProgram.setUniform1f(`uLights[${i}].intensity`, light.intensity);
         }
 
-        const spheres: number[] = [];
-        const boxes: number[] = [];
-        const planes: number[] = [];
+        const triangles: number[] = [];
+        const maxTriangles = Math.floor((this.triangleTexWidth * this.triangleTexHeight) / 3);
 
         for (const mesh of meshes) {
-            const bounds = this.calculateBounds(mesh.vertices);
-            const center = [
-                (bounds.min[0] + bounds.max[0]) * 0.5,
-                (bounds.min[1] + bounds.max[1]) * 0.5,
-                (bounds.min[2] + bounds.max[2]) * 0.5
-            ];
-            const size = [
-                (bounds.max[0] - bounds.min[0]) * 0.5,
-                (bounds.max[1] - bounds.min[1]) * 0.5,
-                (bounds.max[2] - bounds.min[2]) * 0.5
-            ];
+            const vertices = mesh.vertices;
+            const indices = mesh.indices;
+            const color = mesh.color;
 
-            const worldCenter = [
-                center[0] * mesh.scale.x + mesh.position.x,
-                center[1] * mesh.scale.y + mesh.position.y,
-                center[2] * mesh.scale.z + mesh.position.z
-            ];
+            for (let i = 0; i < indices.length; i += 3) {
+                const i0 = indices[i] * 3;
+                const i1 = indices[i + 1] * 3;
+                const i2 = indices[i + 2] * 3;
 
-            const worldSize = [
-                size[0] * mesh.scale.x,
-                size[1] * mesh.scale.y,
-                size[2] * mesh.scale.z
-            ];
+                const v0x = vertices[i0] * mesh.scale.x + mesh.position.x;
+                const v0y = vertices[i0 + 1] * mesh.scale.y + mesh.position.y;
+                const v0z = vertices[i0 + 2] * mesh.scale.z + mesh.position.z;
 
-            const isSphere = this.isSphereApproximation(mesh.vertices);
-            const isPlane = worldSize[1] < 0.1;
+                const v1x = vertices[i1] * mesh.scale.x + mesh.position.x;
+                const v1y = vertices[i1 + 1] * mesh.scale.y + mesh.position.y;
+                const v1z = vertices[i1 + 2] * mesh.scale.z + mesh.position.z;
 
-            if (isSphere) {
-                const radius = Math.max(worldSize[0], worldSize[1], worldSize[2]);
-                spheres.push(
-                    worldCenter[0], worldCenter[1], worldCenter[2], radius,
-                    mesh.color.r, mesh.color.g, mesh.color.b, 0
+                const v2x = vertices[i2] * mesh.scale.x + mesh.position.x;
+                const v2y = vertices[i2 + 1] * mesh.scale.y + mesh.position.y;
+                const v2z = vertices[i2 + 2] * mesh.scale.z + mesh.position.z;
+
+                triangles.push(
+                    v0x, v0y, v0z, color.r,
+                    v1x, v1y, v1z, color.g,
+                    v2x, v2y, v2z, color.b
                 );
-            } else if (isPlane) {
-                planes.push(
-                    worldCenter[0], worldCenter[1], worldCenter[2], 0,
-                    0, 1, 0, 0,
-                    mesh.color.r, mesh.color.g, mesh.color.b, 0
-                );
-            } else {
-                boxes.push(
-                    worldCenter[0] - worldSize[0], worldCenter[1] - worldSize[1], worldCenter[2] - worldSize[2], 0,
-                    worldCenter[0] + worldSize[0], worldCenter[1] + worldSize[1], worldCenter[2] + worldSize[2], 0,
-                    mesh.color.r, mesh.color.g, mesh.color.b, 0
-                );
+
+                if (triangles.length >= maxTriangles * 12) break;
             }
+
+            if (triangles.length >= maxTriangles * 12) break;
         }
 
-        const numSpheres = Math.min(Math.floor(spheres.length / 8), 32);
-        const numBoxes = Math.min(Math.floor(boxes.length / 12), 32);
-        const numPlanes = Math.min(Math.floor(planes.length / 12), 8);
+        const numTriangles = Math.min(Math.floor(triangles.length / 12), maxTriangles);
+        this.shaderProgram.setUniform1i('uNumTriangles', numTriangles);
 
-
-        this.shaderProgram.setUniform1i('uNumSpheres', numSpheres);
-        this.shaderProgram.setUniform1i('uNumBoxes', numBoxes);
-        this.shaderProgram.setUniform1i('uNumPlanes', numPlanes);
-
-
-        const sphereData = new Float32Array(spheres.slice(0, 32 * 8));
-        const boxData = new Float32Array(boxes.slice(0, 32 * 12));
-        const planeData = new Float32Array(planes.slice(0, 8 * 12));
-
-        const sphereLocation = this.shaderProgram.getUniformLocation('uSpheres');
-        if (sphereLocation && sphereData.length > 0) {
-            this.gl.uniform4fv(sphereLocation, sphereData);
+        const texData = new Float32Array(this.triangleTexWidth * this.triangleTexHeight * 4);
+        for (let i = 0; i < triangles.length; i++) {
+            texData[i] = triangles[i];
         }
 
-        const boxLocation = this.shaderProgram.getUniformLocation('uBoxes');
-        if (boxLocation && boxData.length > 0) {
-            this.gl.uniform4fv(boxLocation, boxData);
+        const isWebGL2 = this.gl instanceof WebGL2RenderingContext;
+
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.triangleTexture);
+
+        if (isWebGL2) {
+            const gl2 = this.gl as WebGL2RenderingContext;
+            gl2.texImage2D(
+                gl2.TEXTURE_2D,
+                0,
+                gl2.RGBA32F,
+                this.triangleTexWidth,
+                this.triangleTexHeight,
+                0,
+                gl2.RGBA,
+                gl2.FLOAT,
+                texData
+            );
+        } else {
+            this.gl.texImage2D(
+                this.gl.TEXTURE_2D,
+                0,
+                this.gl.RGBA,
+                this.triangleTexWidth,
+                this.triangleTexHeight,
+                0,
+                this.gl.RGBA,
+                this.gl.FLOAT,
+                texData
+            );
         }
-
-        const planeLocation = this.shaderProgram.getUniformLocation('uPlanes');
-        if (planeLocation && planeData.length > 0) {
-            this.gl.uniform4fv(planeLocation, planeData);
-        }
-    }
-
-    private calculateBounds(vertices: Float32Array): { min: number[], max: number[] } {
-        const min = [Infinity, Infinity, Infinity];
-        const max = [-Infinity, -Infinity, -Infinity];
-
-        for (let i = 0; i < vertices.length; i += 3) {
-            min[0] = Math.min(min[0], vertices[i]);
-            min[1] = Math.min(min[1], vertices[i + 1]);
-            min[2] = Math.min(min[2], vertices[i + 2]);
-            max[0] = Math.max(max[0], vertices[i]);
-            max[1] = Math.max(max[1], vertices[i + 1]);
-            max[2] = Math.max(max[2], vertices[i + 2]);
-        }
-
-        return { min, max };
-    }
-
-    private isSphereApproximation(vertices: Float32Array): boolean {
-        if (vertices.length < 100) return false;
-
-        const bounds = this.calculateBounds(vertices);
-        const sizeX = bounds.max[0] - bounds.min[0];
-        const sizeY = bounds.max[1] - bounds.min[1];
-        const sizeZ = bounds.max[2] - bounds.min[2];
-
-        const avgSize = (sizeX + sizeY + sizeZ) / 3;
-        const variance = Math.abs(sizeX - avgSize) + Math.abs(sizeY - avgSize) + Math.abs(sizeZ - avgSize);
-
-        return variance / avgSize < 0.2;
     }
 
     dispose(): void {
         if (this.quadVertexBuffer) {
             this.gl.deleteBuffer(this.quadVertexBuffer);
+        }
+        if (this.triangleTexture) {
+            this.gl.deleteTexture(this.triangleTexture);
         }
         this.shaderProgram.dispose();
     }
