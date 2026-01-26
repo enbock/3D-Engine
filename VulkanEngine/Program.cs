@@ -23,9 +23,10 @@ public static class Program
 
         try
         {
-            using var engine = new Engine(config);
+            var engine = new Engine(config);
             engine.Initialize();
             engine.Run();
+            engine.Dispose();
         }
         catch (Exception ex)
         {

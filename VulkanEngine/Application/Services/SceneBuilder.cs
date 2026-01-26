@@ -9,32 +9,34 @@ public class SceneBuilder
     {
         var scene = new Core.Scene();
 
-        scene.Camera.Position = new Vector3(0, 0, 3);
+        scene.Camera.Position = new Vector3(0, 0, 8);
         scene.Camera.Target = new Vector3(0, 0, 0);
 
-        scene.AddLight(Light.CreateDirectional(
-            new Vector3(0.5f, 0.7f, 1.0f),
-            Color.White,
-            1.5f
-        ));
-
-        scene.AddLight(Light.CreateAmbient(
-            Color.White,
-            0.3f
-        ));
+        scene.AddLight(Light.CreateAmbient(Color.White, 0.3f));
+        scene.AddLight(Light.CreateDirectional(new Vector3(0, 0, 1), Color.White, 0.7f));
 
         scene.AddTriangle(new Triangle(
-            new Vector3(-2, -2, 0),
-            new Vector3(2, -2, 0),
-            new Vector3(0, 2, 0),
+            new Vector3(-3, -1, 0),
+            new Vector3(-1, -1, 0),
+            new Vector3(-2, 2, 0),
             Color.Red
         ));
 
-        CreateCubeTriangles(new Vector3(-2, 0, 0), new Vector3(1, 1, 1), Color.Red, scene);
-        CreateCubeTriangles(new Vector3(0, 0, 0), new Vector3(0.8f, 1, 0.8f), Color.Green, scene);
-        CreateCubeTriangles(new Vector3(2, 0, 0), new Vector3(1.2f, 1.2f, 1.2f), Color.Blue, scene);
+        scene.AddTriangle(new Triangle(
+            new Vector3(-0.5f, -1, 0),
+            new Vector3(1.5f, -1, 0),
+            new Vector3(0.5f, 2, 0),
+            Color.Green
+        ));
 
-        CreateFloorPlane(new Vector3(0, -1, 0), 20, new Color(0.6f, 0.6f, 0.6f), scene);
+        scene.AddTriangle(new Triangle(
+            new Vector3(2, -1, 0),
+            new Vector3(4, -1, 0),
+            new Vector3(3, 2, 0),
+            Color.Blue
+        ));
+
+        CreateFloorPlane(new Vector3(0, -2, 0), 30, new Color(0.4f, 0.35f, 0.3f), scene);
 
         return scene;
     }

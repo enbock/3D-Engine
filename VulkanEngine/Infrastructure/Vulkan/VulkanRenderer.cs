@@ -58,7 +58,7 @@ public unsafe class VulkanRenderer : IRenderer
     private Silk.NET.Vulkan.Semaphore[] _imageAvailableSemaphores = Array.Empty<Silk.NET.Vulkan.Semaphore>();
     private Silk.NET.Vulkan.Semaphore[] _renderFinishedSemaphores = Array.Empty<Silk.NET.Vulkan.Semaphore>();
     private Fence[] _inFlightFences = Array.Empty<Fence>();
-    
+
     private bool _buffersCreated;
     
     private uint _currentFrame;
@@ -340,7 +340,7 @@ public unsafe class VulkanRenderer : IRenderer
         {
             SType = StructureType.ImageCreateInfo,
             ImageType = ImageType.Type2D,
-            Format = Format.B8G8R8A8Unorm,
+            Format = Format.R8G8B8A8Unorm,
             Extent = new Extent3D(_swapchainExtent.Width, _swapchainExtent.Height, 1),
             MipLevels = 1,
             ArrayLayers = 1,
@@ -378,7 +378,7 @@ public unsafe class VulkanRenderer : IRenderer
             SType = StructureType.ImageViewCreateInfo,
             Image = _storageImage,
             ViewType = ImageViewType.Type2D,
-            Format = Format.B8G8R8A8Unorm,
+            Format = Format.R8G8B8A8Unorm,
             SubresourceRange = new ImageSubresourceRange
             {
                 AspectMask = ImageAspectFlags.ColorBit,
@@ -523,11 +523,13 @@ public unsafe class VulkanRenderer : IRenderer
             Console.WriteLine("Buffers created successfully");
         }
         
+        // ...existing code...
         _time += deltaTime;
 
         fixed (Fence* fencesPtr = &_inFlightFences[_currentFrame])
         {
             _vk.WaitForFences(_device, 1, fencesPtr, true, ulong.MaxValue);
+            _vk.ResetFences(_device, 1, fencesPtr);
         }
 
         uint imageIndex;
@@ -543,11 +545,6 @@ public unsafe class VulkanRenderer : IRenderer
             throw new Exception("Failed to acquire swapchain image");
         }
 
-        fixed (Fence* fencesPtr = &_inFlightFences[_currentFrame])
-        {
-            _vk.ResetFences(_device, 1, fencesPtr);
-        }
-
         UpdateUniformBuffers(scene);
 
         var commandBuffer = _commandBuffers[_currentFrame];
@@ -555,8 +552,9 @@ public unsafe class VulkanRenderer : IRenderer
         RecordCommandBuffer(commandBuffer, imageIndex);
 
         var waitSemaphore = _imageAvailableSemaphores[_currentFrame];
-        var signalSemaphore = _renderFinishedSemaphores[_currentFrame];
+        var signalSemaphore = _renderFinishedSemaphores[imageIndex];
         var waitStages = PipelineStageFlags.ComputeShaderBit;
+        // ...existing code...
 
         var submitInfo = new SubmitInfo
         {
@@ -987,8 +985,10 @@ public unsafe class VulkanRenderer : IRenderer
 
     private void CreateSyncObjects()
     {
+        uint swapchainImageCount = (uint)_swapchainImages.Length;
+
         _imageAvailableSemaphores = new Silk.NET.Vulkan.Semaphore[_config.MaxFramesInFlight];
-        _renderFinishedSemaphores = new Silk.NET.Vulkan.Semaphore[_config.MaxFramesInFlight];
+        _renderFinishedSemaphores = new Silk.NET.Vulkan.Semaphore[swapchainImageCount];
         _inFlightFences = new Fence[_config.MaxFramesInFlight];
 
         var semaphoreInfo = new SemaphoreCreateInfo
@@ -1005,10 +1005,17 @@ public unsafe class VulkanRenderer : IRenderer
         for (int i = 0; i < _config.MaxFramesInFlight; i++)
         {
             if (_vk.CreateSemaphore(_device, &semaphoreInfo, null, out _imageAvailableSemaphores[i]) != Result.Success ||
-                _vk.CreateSemaphore(_device, &semaphoreInfo, null, out _renderFinishedSemaphores[i]) != Result.Success ||
                 _vk.CreateFence(_device, &fenceInfo, null, out _inFlightFences[i]) != Result.Success)
             {
                 throw new Exception("Failed to create synchronization objects");
+            }
+        }
+
+        for (int i = 0; i < swapchainImageCount; i++)
+        {
+            if (_vk.CreateSemaphore(_device, &semaphoreInfo, null, out _renderFinishedSemaphores[i]) != Result.Success)
+            {
+                throw new Exception("Failed to create render finished semaphore");
             }
         }
     }
@@ -1253,8 +1260,12 @@ public unsafe class VulkanRenderer : IRenderer
         for (int i = 0; i < _config.MaxFramesInFlight; i++)
         {
             _vk.DestroySemaphore(_device, _imageAvailableSemaphores[i], null);
-            _vk.DestroySemaphore(_device, _renderFinishedSemaphores[i], null);
             _vk.DestroyFence(_device, _inFlightFences[i], null);
+        }
+
+        for (int i = 0; i < _renderFinishedSemaphores.Length; i++)
+        {
+            _vk.DestroySemaphore(_device, _renderFinishedSemaphores[i], null);
         }
 
         _vk.DestroyCommandPool(_device, _commandPool, null);

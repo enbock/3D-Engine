@@ -90,7 +90,11 @@ Hit intersectTriangle(Ray ray, Triangle tri) {
         h.hit = true;
         h.dist = t;
         h.point = ray.origin + ray.direction * t;
-        h.normal = normalize(cross(e1, e2));
+        vec3 normal = normalize(cross(e1, e2));
+        if (dot(normal, ray.direction) > 0.0) {
+            normal = -normal;
+        }
+        h.normal = normal;
         h.color = tri.color;
     }
     
@@ -113,51 +117,29 @@ Hit trace(Ray ray, int numTriangles) {
 }
 
 vec3 shade(Hit hit, vec3 rayDir, int numTriangles) {
+    vec3 color = hit.color;
     vec3 ambient = vec3(0.0);
     vec3 diffuse = vec3(0.0);
-    vec3 specular = vec3(0.0);
-    
+
     for (int i = 0; i < lighting.numLights; i++) {
         if (lighting.lights[i].type == 2) {
-            ambient += lighting.lights[i].color * lighting.lights[i].intensity * hit.color;
+            ambient += lighting.lights[i].color * lighting.lights[i].intensity;
         }
         else if (lighting.lights[i].type == 0) {
             vec3 lightDir = normalize(-lighting.lights[i].direction);
-            
-            Ray shadow;
-            shadow.origin = hit.point + hit.normal * EPSILON * 10.0;
-            shadow.direction = lightDir;
-            Hit sh = trace(shadow, numTriangles);
-            float shad = sh.hit ? 0.3 : 1.0;
-            
             float diff = max(dot(hit.normal, lightDir), 0.0);
-            diffuse += diff * hit.color * lighting.lights[i].color * lighting.lights[i].intensity * shad;
-            
-            vec3 h = normalize(lightDir - rayDir);
-            float spec = pow(max(dot(hit.normal, h), 0.0), 32.0);
-            specular += spec * lighting.lights[i].color * lighting.lights[i].intensity * 0.5 * shad;
+            diffuse += diff * lighting.lights[i].color * lighting.lights[i].intensity;
         }
         else if (lighting.lights[i].type == 1) {
             vec3 lightDir = normalize(lighting.lights[i].position - hit.point);
             float distance = length(lighting.lights[i].position - hit.point);
             float attenuation = 1.0 / (1.0 + 0.1 * distance + 0.01 * distance * distance);
-            
-            Ray shadow;
-            shadow.origin = hit.point + hit.normal * EPSILON * 10.0;
-            shadow.direction = lightDir;
-            Hit sh = trace(shadow, numTriangles);
-            float shad = (sh.hit && sh.dist < distance) ? 0.3 : 1.0;
-            
             float diff = max(dot(hit.normal, lightDir), 0.0);
-            diffuse += diff * hit.color * lighting.lights[i].color * lighting.lights[i].intensity * attenuation * shad;
-            
-            vec3 h = normalize(lightDir - rayDir);
-            float spec = pow(max(dot(hit.normal, h), 0.0), 32.0);
-            specular += spec * lighting.lights[i].color * lighting.lights[i].intensity * 0.5 * attenuation * shad;
+            diffuse += diff * lighting.lights[i].color * lighting.lights[i].intensity * attenuation;
         }
     }
     
-    return ambient + diffuse + specular;
+    return color * (ambient + diffuse);
 }
 
 void main() {
@@ -187,19 +169,10 @@ void main() {
     vec3 color;
     
     if (hit.hit) {
-        color = shade(hit, rayDir, numTriangles);
-        
-        vec3 refl = reflect(rayDir, hit.normal);
-        ray.origin = hit.point + hit.normal * EPSILON * 10.0;
-        ray.direction = refl;
-        Hit hit2 = trace(ray, numTriangles);
-        
-        if (hit2.hit) {
-            color += shade(hit2, refl, numTriangles) * 0.3;
-        }
+        color = hit.color;
     } else {
-        color = mix(vec3(0.1, 0.1, 0.15), vec3(0.5, 0.7, 1.0), rayDir.y * 0.5 + 0.5);
+        color = vec3(0.2, 0.3, 0.5);
     }
     
-    imageStore(outputImage, pixelCoords, vec4(color.bgr, 1.0));
+    imageStore(outputImage, pixelCoords, vec4(color, 1.0));
 }

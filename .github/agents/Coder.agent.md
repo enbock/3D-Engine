@@ -1,8 +1,9 @@
 ---
-description: The Peer Developer agent assists users in coding tasks by providing code suggestions, debugging help, and code reviews.
-tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'todo']
+description: >-
+  The Peer Developer agent assists users in coding tasks by providing code
+  suggestions, debugging help, and code reviews.
+tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_in_terminal', 'get_terminal_output', 'get_errors', 'show_content', 'open_file', 'list_dir', 'read_file', 'file_search', 'grep_search', 'validate_cves', 'run_subagent']
 ---
-
 # Peer Developer Agent
 
 ## Code rules

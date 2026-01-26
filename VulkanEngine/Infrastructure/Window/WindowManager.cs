@@ -10,6 +10,7 @@ public unsafe class WindowManager : IDisposable
 {
     private IWindow? _window;
     private readonly EngineConfig _config;
+    private bool _isDisposed;
 
     public IWindow Window => _window ?? throw new InvalidOperationException("Window not initialized");
     public IInputContext? InputContext { get; private set; }
@@ -64,7 +65,6 @@ public unsafe class WindowManager : IDisposable
 
     private void OnClosing()
     {
-        Dispose();
     }
 
     public void Run()
@@ -101,7 +101,17 @@ public unsafe class WindowManager : IDisposable
 
     public void Dispose()
     {
-        InputContext?.Dispose();
-        _window?.Dispose();
+        if (_isDisposed) return;
+        _isDisposed = true;
+
+        InputContext = null;
+
+        try
+        {
+            _window?.Dispose();
+        }
+        catch { }
+
+        _window = null;
     }
 }
