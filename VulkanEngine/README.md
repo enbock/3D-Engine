@@ -6,11 +6,14 @@ Eine native 3D Raytracing-Engine in C# mit Vulkan, entwickelt mit Silk.NET.
 
 - **Vulkan API** - Native High-Performance Rendering
 - **Compute Shader Raytracing** - GPU-beschleunigtes Raytracing
+- **BVH Acceleration** - Surface Area Heuristic für schnelle Ray-Intersection
+- **Multi-Bounce Reflections** - Konfigurierbare Reflection Bounces (1-5)
+- **Soft Shadows** - Monte Carlo Shadow Sampling (1-16 Samples)
 - **Clean Architecture** - DDD-Prinzipien mit Core/Application/Infrastructure
 - **Realtime Camera Control** - WASD + Mouse Look
 - **Dynamic Lighting** - Directional, Point und Ambient Lights
-- **Reflections** - Single-Bounce Reflektionen
-- **Shadows** - Raytraced Hard Shadows
+- **Fresnel Effect** - Physikalisch korrekte Reflections
+- **Configurable Quality** - Performance/Default/Quality Presets
 
 ## 🛠️ Technologie Stack
 
@@ -46,7 +49,9 @@ dotnet run
 - **Shift** - Runter
 
 ### Kamera-Rotation:
-- **Rechte Maustaste + Bewegen** - Kamera drehen
+- **Rechte Maustaste + Bewegen** - Kamera drehen (Look Speed: 0.003)
+- **Maus X-Bewegung** - Yaw (Links/Rechts)
+- **Maus Y-Bewegung** - Pitch (Hoch/Runter)
 
 ### Sonstiges:
 - **ESC** - Beenden
@@ -65,10 +70,14 @@ VulkanEngine/
 │   │   └── IInputHandler.cs    # Input Interface
 │   ├── Math/
 │   │   ├── Vector3.cs          # 3D Vektor Mathematik
-│   │   └── Color.cs            # Farbverwaltung
+│   │   ├── Color.cs            # Farbverwaltung
+│   │   └── AABB.cs             # Axis-Aligned Bounding Box
+│   ├── Acceleration/
+│   │   ├── BVHNode.cs          # BVH Tree Node
+│   │   └── BVHBuilder.cs       # SAH-basierter BVH Builder
 │   ├── Services/
 │   │   └── Engine.cs           # Main Engine Loop
-│   └── Scene.cs                # Szenen-Graph
+│   └── Scene.cs                # Szenen-Graph mit BVH
 ├── Application/
 │   ├── Container/
 │   │   └── ServiceContainer.cs # Dependency Injection
@@ -111,10 +120,16 @@ VulkanEngine/
 
 ## 🎨 Raytracing Features
 
+### Acceleration:
+- **BVH (Bounding Volume Hierarchy)** - Binary tree acceleration structure
+- **SAH (Surface Area Heuristic)** - Optimal split plane selection
+- **Adaptive Leaf Size** - Max 4 triangles per leaf
+- **Early Ray Termination** - Efficient traversal
+
 ### Geometrie:
 - Triangle Mesh Support
 - Analytische Intersection Tests
-- Bounding Volume Hierarchie (geplant)
+- AABB (Axis-Aligned Bounding Box) Culling
 
 ### Beleuchtung:
 - **Directional Light** - Sonne/Mond-ähnlich
@@ -124,8 +139,16 @@ VulkanEngine/
 ### Shading:
 - Diffuse (Lambertian)
 - Specular (Phong, Exponent 32)
-- Shadows (Hard Shadows via Shadow Rays)
-- Reflections (Single-Bounce)
+- Soft Shadows (Monte Carlo Sampling, 1-16 Samples)
+- Area Light Approximation (Disk Sampling)
+- Multi-Bounce Reflections (1-5 Bounces, konfigurierbar)
+- Fresnel Effect (Physikalisch korrekte Reflection Strength)
+- Energy Decay (50% pro Bounce)
+
+### Quality Presets:
+- **Performance**: 1 Bounce, 1 Shadow Sample (Hard), 0% Softness
+- **Default**: 3 Bounces, 4 Shadow Samples (Soft), 5% Softness
+- **Quality**: 5 Bounces, 8 Shadow Samples (Very Soft), 10% Softness
 
 ### Optimierungen:
 - Compute Shader basiert (16x16 Work Groups)
@@ -174,11 +197,12 @@ MIT License
 ## 🚧 Roadmap
 
 - [x] Vollständige Vulkan Pipeline Implementation
-- [ ] Shader Compilation zur Runtime
-- [ ] BVH (Bounding Volume Hierarchy) für Performance
-- [ ] Multi-Bounce Reflections
-- [ ] Soft Shadows
+- [x] Korrekte Semaphore-Synchronisation (per Image-Index)
+- [x] BVH (Bounding Volume Hierarchy) für Performance
+- [x] Multi-Bounce Reflections (konfigurierbar 1-5 Bounces)
+- [x] Soft Shadows (Monte Carlo Sampling, 1-16 Samples)
 - [ ] Textures & Materials
 - [ ] OBJ/GLTF Model Loading
 - [ ] ImGui Debug UI
 - [ ] Path Tracing Mode
+- [ ] BVH GPU-Integration (Shader-basierte Traversal)

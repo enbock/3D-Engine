@@ -25,6 +25,14 @@ public struct Vector3
     public float Length => MathF.Sqrt(X * X + Y * Y + Z * Z);
     public float LengthSquared => X * X + Y * Y + Z * Z;
 
+    public float this[int index] => index switch
+    {
+        0 => X,
+        1 => Y,
+        2 => Z,
+        _ => throw new IndexOutOfRangeException()
+    };
+
     public Vector3 Normalized
     {
         get

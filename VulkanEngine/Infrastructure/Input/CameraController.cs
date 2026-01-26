@@ -9,7 +9,7 @@ public class CameraController
     private readonly Camera _camera;
     private readonly InputHandler _input;
     private float _moveSpeed = 5.0f;
-    private float _lookSpeed = 0.1f;
+    private float _lookSpeed = 0.003f;
     private float _yaw;
     private float _pitch;
 
@@ -44,8 +44,8 @@ public class CameraController
         {
             var delta = _input.GetMouseDelta();
 
-            _yaw += delta.X * _lookSpeed * deltaTime;
-            _pitch -= delta.Y * _lookSpeed * deltaTime;
+            _yaw += delta.X * _lookSpeed;
+            _pitch -= delta.Y * _lookSpeed;
 
             _pitch = Math.Clamp(_pitch, -MathF.PI / 2 + 0.01f, MathF.PI / 2 - 0.01f);
 

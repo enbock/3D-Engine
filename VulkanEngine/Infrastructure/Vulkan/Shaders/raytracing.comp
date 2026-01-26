@@ -46,6 +46,16 @@ layout(std140, binding = 3) uniform LightUBO {
     Light lights[8];
 } lighting;
 
+layout(binding = 4) uniform RenderSettings {
+    int maxBounces;
+    int enableShadows;
+    int enableReflections;
+    float reflectionStrength;
+    int shadowSamples;
+    float shadowSoftness;
+    vec2 _pad;
+} settings;
+
 struct Ray {
     vec3 origin;
     vec3 direction;
@@ -116,9 +126,56 @@ Hit trace(Ray ray, int numTriangles) {
     return closest;
 }
 
+float random(vec2 co) {
+    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+vec3 randomInUnitDisk(vec2 seed) {
+    float angle = random(seed) * 2.0 * 3.14159265;
+    float radius = sqrt(random(seed + vec2(1.0, 0.0)));
+    return vec3(cos(angle) * radius, sin(angle) * radius, 0.0);
+}
+
+float traceShadow(vec3 origin, vec3 lightDir, float maxDist, int numTriangles) {
+    if (settings.enableShadows == 0) {
+        return 1.0;
+    }
+
+    if (settings.shadowSamples <= 1) {
+        Ray shadowRay;
+        shadowRay.origin = origin;
+        shadowRay.direction = lightDir;
+        Hit shadowHit = trace(shadowRay, numTriangles);
+        return (shadowHit.hit && shadowHit.dist < maxDist) ? 0.3 : 1.0;
+    }
+
+    float shadowFactor = 0.0;
+    vec3 tangent = abs(lightDir.y) < 0.9 ? cross(lightDir, vec3(0, 1, 0)) : cross(lightDir, vec3(1, 0, 0));
+    tangent = normalize(tangent);
+    vec3 bitangent = cross(lightDir, tangent);
+
+    for (int i = 0; i < settings.shadowSamples; i++) {
+        vec2 seed = vec2(float(i) * 0.1, camera.time);
+        vec3 offset = randomInUnitDisk(seed + gl_GlobalInvocationID.xy * 0.01);
+        vec3 sampleDir = normalize(lightDir + (tangent * offset.x + bitangent * offset.y) * settings.shadowSoftness);
+
+        Ray shadowRay;
+        shadowRay.origin = origin;
+        shadowRay.direction = sampleDir;
+        Hit shadowHit = trace(shadowRay, numTriangles);
+
+        if (!shadowHit.hit || shadowHit.dist >= maxDist) {
+            shadowFactor += 1.0;
+        }
+    }
+
+    shadowFactor /= float(settings.shadowSamples);
+    return mix(0.3, 1.0, shadowFactor);
+}
+
 vec3 shade(Hit hit, vec3 rayDir, int numTriangles) {
     vec3 color = hit.color;
-    vec3 ambient = vec3(0.0);
+    vec3 ambient = vec3(0.5);
     vec3 diffuse = vec3(0.0);
 
     for (int i = 0; i < lighting.numLights; i++) {
@@ -127,19 +184,24 @@ vec3 shade(Hit hit, vec3 rayDir, int numTriangles) {
         }
         else if (lighting.lights[i].type == 0) {
             vec3 lightDir = normalize(-lighting.lights[i].direction);
+            float shadowFactor = traceShadow(hit.point + hit.normal * EPSILON * 10.0, lightDir, MAX_DIST, numTriangles);
             float diff = max(dot(hit.normal, lightDir), 0.0);
-            diffuse += diff * lighting.lights[i].color * lighting.lights[i].intensity;
+            diffuse += diff * lighting.lights[i].color * lighting.lights[i].intensity * shadowFactor;
         }
         else if (lighting.lights[i].type == 1) {
             vec3 lightDir = normalize(lighting.lights[i].position - hit.point);
             float distance = length(lighting.lights[i].position - hit.point);
+            float shadowFactor = traceShadow(hit.point + hit.normal * EPSILON * 10.0, lightDir, distance, numTriangles);
             float attenuation = 1.0 / (1.0 + 0.1 * distance + 0.01 * distance * distance);
             float diff = max(dot(hit.normal, lightDir), 0.0);
-            diffuse += diff * lighting.lights[i].color * lighting.lights[i].intensity * attenuation;
+            diffuse += diff * lighting.lights[i].color * lighting.lights[i].intensity * attenuation * shadowFactor;
         }
     }
     
-    return color * (ambient + diffuse);
+    vec3 totalLight = ambient + diffuse;
+    totalLight = clamp(totalLight, 0.5, 3.0);
+
+    return color * totalLight;
 }
 
 void main() {
@@ -166,12 +228,35 @@ void main() {
     int numTriangles = triangles.length();
     Hit hit = trace(ray, numTriangles);
     
-    vec3 color;
-    
+    vec3 color = vec3(0.2, 0.3, 0.5);
+
     if (hit.hit) {
-        color = hit.color;
+        color = shade(hit, rayDir, numTriangles);
+
+        if (settings.enableReflections > 0 && settings.maxBounces > 0) {
+            for (int bounce = 0; bounce < settings.maxBounces; bounce++) {
+                vec3 reflDir = reflect(rayDir, hit.normal);
+                ray.origin = hit.point + hit.normal * EPSILON * 10.0;
+                ray.direction = reflDir;
+
+                Hit reflHit = trace(ray, numTriangles);
+
+                if (reflHit.hit) {
+                    vec3 reflColor = shade(reflHit, reflDir, numTriangles);
+                    float fresnel = pow(1.0 - max(dot(-rayDir, hit.normal), 0.0), 5.0);
+                    float reflectionFactor = settings.reflectionStrength * (0.2 + 0.8 * fresnel);
+
+                    color += reflColor * reflectionFactor * pow(0.5, float(bounce + 1));
+
+                    rayDir = reflDir;
+                    hit = reflHit;
+                } else {
+                    break;
+                }
+            }
+        }
     } else {
-        color = vec3(0.2, 0.3, 0.5);
+        color = mix(vec3(0.1, 0.1, 0.15), vec3(0.5, 0.7, 1.0), rayDir.y * 0.5 + 0.5);
     }
     
     imageStore(outputImage, pixelCoords, vec4(color, 1.0));

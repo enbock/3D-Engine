@@ -48,7 +48,9 @@ public unsafe class VulkanRenderer : IRenderer
     private DeviceMemory _lightBufferMemory;
     private Silk.NET.Vulkan.Buffer _triangleBuffer;
     private DeviceMemory _triangleBufferMemory;
-    
+    private Silk.NET.Vulkan.Buffer _settingsBuffer;
+    private DeviceMemory _settingsBufferMemory;
+
     private DescriptorPool _descriptorPool;
     private DescriptorSet _descriptorSet;
     
@@ -647,6 +649,22 @@ public unsafe class VulkanRenderer : IRenderer
         _vk.MapMemory(_device, _lightBufferMemory, 0, (ulong)sizeof(LightUniformData), 0, &data);
         *(LightUniformData*)data = lightData;
         _vk.UnmapMemory(_device, _lightBufferMemory);
+
+        var settings = RenderSettings.Default;
+        var settingsData = new RenderSettingsData
+        {
+            MaxBounces = settings.MaxBounces,
+            EnableShadows = settings.EnableShadows ? 1 : 0,
+            EnableReflections = settings.EnableReflections ? 1 : 0,
+            ReflectionStrength = settings.ReflectionStrength,
+            ShadowSamples = settings.ShadowSamples,
+            ShadowSoftness = settings.ShadowSoftness,
+            Pad = new System.Numerics.Vector2(0, 0)
+        };
+
+        _vk.MapMemory(_device, _settingsBufferMemory, 0, (ulong)sizeof(RenderSettingsData), 0, &data);
+        *(RenderSettingsData*)data = settingsData;
+        _vk.UnmapMemory(_device, _settingsBufferMemory);
     }
 
     private void RecordCommandBuffer(CommandBuffer commandBuffer, uint imageIndex)
@@ -830,8 +848,8 @@ public unsafe class VulkanRenderer : IRenderer
 
     private void CreateDescriptorSetLayout()
     {
-        var bindings = stackalloc DescriptorSetLayoutBinding[4];
-        
+        var bindings = stackalloc DescriptorSetLayoutBinding[5];
+
         bindings[0] = new DescriptorSetLayoutBinding
         {
             Binding = 0,
@@ -864,10 +882,18 @@ public unsafe class VulkanRenderer : IRenderer
             StageFlags = ShaderStageFlags.ComputeBit
         };
 
+        bindings[4] = new DescriptorSetLayoutBinding
+        {
+            Binding = 4,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            StageFlags = ShaderStageFlags.ComputeBit
+        };
+
         var layoutInfo = new DescriptorSetLayoutCreateInfo
         {
             SType = StructureType.DescriptorSetLayoutCreateInfo,
-            BindingCount = 4,
+            BindingCount = 5,
             PBindings = bindings
         };
 
@@ -1025,6 +1051,7 @@ public unsafe class VulkanRenderer : IRenderer
         CreateCameraBuffer();
         CreateLightBuffer(scene);
         CreateTriangleBuffer(scene);
+        CreateSettingsBuffer();
         CreateDescriptorPool();
         CreateDescriptorSet();
         UpdateDescriptorSets();
@@ -1044,6 +1071,14 @@ public unsafe class VulkanRenderer : IRenderer
         CreateBuffer(bufferSize, BufferUsageFlags.UniformBufferBit,
             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
             out _lightBuffer, out _lightBufferMemory);
+    }
+
+    private void CreateSettingsBuffer()
+    {
+        ulong bufferSize = (ulong)sizeof(RenderSettingsData);
+        CreateBuffer(bufferSize, BufferUsageFlags.UniformBufferBit,
+            MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
+            out _settingsBuffer, out _settingsBufferMemory);
     }
 
     private void CreateTriangleBuffer(Scene scene)
@@ -1132,7 +1167,7 @@ public unsafe class VulkanRenderer : IRenderer
         poolSizes[1] = new DescriptorPoolSize
         {
             Type = DescriptorType.UniformBuffer,
-            DescriptorCount = 2
+            DescriptorCount = 3
         };
         poolSizes[2] = new DescriptorPoolSize
         {
@@ -1202,8 +1237,15 @@ public unsafe class VulkanRenderer : IRenderer
             Range = (ulong)sizeof(LightUniformData)
         };
 
-        var descriptorWrites = stackalloc WriteDescriptorSet[4];
-        
+        var settingsBufferInfo = new DescriptorBufferInfo
+        {
+            Buffer = _settingsBuffer,
+            Offset = 0,
+            Range = (ulong)sizeof(RenderSettingsData)
+        };
+
+        var descriptorWrites = stackalloc WriteDescriptorSet[5];
+
         descriptorWrites[0] = new WriteDescriptorSet
         {
             SType = StructureType.WriteDescriptorSet,
@@ -1248,7 +1290,18 @@ public unsafe class VulkanRenderer : IRenderer
             PBufferInfo = &lightBufferInfo
         };
 
-        _vk.UpdateDescriptorSets(_device, 4, descriptorWrites, 0, null);
+        descriptorWrites[4] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = _descriptorSet,
+            DstBinding = 4,
+            DstArrayElement = 0,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = &settingsBufferInfo
+        };
+
+        _vk.UpdateDescriptorSets(_device, 5, descriptorWrites, 0, null);
     }
 
     public void Dispose()
@@ -1278,6 +1331,8 @@ public unsafe class VulkanRenderer : IRenderer
         _vk.FreeMemory(_device, _lightBufferMemory, null);
         _vk.DestroyBuffer(_device, _triangleBuffer, null);
         _vk.FreeMemory(_device, _triangleBufferMemory, null);
+        _vk.DestroyBuffer(_device, _settingsBuffer, null);
+        _vk.FreeMemory(_device, _settingsBufferMemory, null);
 
         _vk.DestroyPipeline(_device, _computePipeline, null);
         _vk.DestroyPipelineLayout(_device, _pipelineLayout, null);
@@ -1355,3 +1410,16 @@ public unsafe struct LightUniformData
         }
     }
 }
+
+[StructLayout(LayoutKind.Sequential)]
+public struct RenderSettingsData
+{
+    public int MaxBounces;
+    public int EnableShadows;
+    public int EnableReflections;
+    public float ReflectionStrength;
+    public int ShadowSamples;
+    public float ShadowSoftness;
+    public System.Numerics.Vector2 Pad;
+}
+
