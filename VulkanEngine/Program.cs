@@ -15,8 +15,8 @@ public static class Program
         var config = new EngineConfig
         {
             Title = "Vulkan Raytracing Engine - C#",
-            Width = 1280,
-            Height = 720,
+            Width = 1920,
+            Height = 1080,
             VSync = true,
             EnableValidation = true
         };

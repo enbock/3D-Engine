@@ -1,6 +1,26 @@
 # Vulkan Engine - Implementierungsstatus
 
-**Stand: 2026-01-27**
+**Stand: 2026-01-27 (17:00 Uhr - PAUSE)**
+
+## 🎯 Aktueller Status: Beleuchtung/Schatten Debugging
+
+**Was wir heute erreicht haben:**
+- ✅ Mouse Look & Kamera-Steuerung vollständig funktionsfähig (WASD + Q/E + Maus)
+- ✅ Y-Achse & Koordinatensystem korrigiert (keine invertierte Welt mehr)
+- ✅ RGB/BGR Format-Problem gelöst (Rot ist rot, Blau ist blau)
+- ✅ Alle Vulkan Validation Warnings behoben
+
+**Aktuelles Problem:**
+- ❌ Keine Beleuchtung oder Schatten sichtbar (Phase 9 - IN ARBEIT)
+- Szene rendert nur flache Farben ohne Licht-Variation
+- Debug-Visualisierung (Normalen) läuft gerade
+
+**Nächste Schritte beim Fortsetzen:**
+1. Normal-Visualisierung auswerten (Shader hat Debug-Return aktiv!)
+2. Light Count & Diffuse-Wert debuggen
+3. Schatten wieder aktivieren sobald Beleuchtung funktioniert
+
+---
 
 ## ✅ Vollständig Implementiert
 
@@ -247,17 +267,94 @@ dotnet build
   - Keine Vulkan Validation Errors mehr
   - Clean Pipeline Initialization
 
-## ⚠️ Bekannte Probleme (Stand: 27.01.2026)
+### 🔧 Phase 9: Schatten & Beleuchtung Debugging (27.01.2026 - IN ARBEIT)
 
-**Keine bekannten kritischen Probleme!** ✅
+**PROBLEM**: Keine sichtbare Beleuchtung oder Schatten in der Szene
+- Szene zeigt nur flache Farben ohne Helligkeitsvariation
+- Keine Schatten unter Objekten sichtbar
+- Keine erkennbare Lichtquelle-Wirkung
 
-Alle Kernfeatures funktionieren:
+**Durchgeführte Debug-Schritte**:
+
+1. **Clamp-Wert für totalLight korrigiert** (raytracing.comp:202)
+   - Vorher: `clamp(totalLight, 0.5, 3.0)` - Verhinderte dunkle Schatten
+   - Nachher: `clamp(totalLight, 0.0, 3.0)` - Erlaubt volle Dunkelheit
+   - Resultat: Szene wurde komplett schwarz
+
+2. **Base Ambient angepasst** (raytracing.comp:178)
+   - Versuch 1: `vec3(0.0)` - Zu dunkel (alles schwarz)
+   - Versuch 2: `vec3(0.15)` - Balance (aktuell)
+   - Problem: Immer noch keine Beleuchtung sichtbar
+
+3. **Scene Lights optimiert** (SceneBuilder.cs:20-22)
+   - Ambient Light: 0.3f → 0.2f
+   - Directional Light: Direction (0.5, -1.0, 0.3), Intensity 1.5
+   - Point Light hinzugefügt: Position (-3, 4, 2), Intensity 2.0
+   - Resultat: Keine sichtbare Änderung
+
+4. **Schatten temporär deaktiviert** (raytracing.comp:185-200)
+   - Entfernt `traceShadow()` Aufrufe komplett
+   - Nur noch diffuse Beleuchtung ohne Shadow Factor
+   - Resultat: Immer noch keine Beleuchtung sichtbar
+
+5. **Debug-Visualisierung eingebaut** (raytracing.comp:178)
+   - `return hit.normal * 0.5 + 0.5;` - Zeigt Normalen als Farbe
+   - Ziel: Testen ob Normalen korrekt sind
+   - Status: Test läuft, Ergebnis ausstehend
+
+**Mögliche Ursachen**:
+1. ❓ Normalen sind falsch oder invertiert
+2. ❓ Light-Daten kommen nicht im Shader an (numLights = 0?)
+3. ❓ Dot-Product ergibt immer 0 (Geometrie-Problem)
+4. ❓ RenderSettings.enableShadows blockiert alles
+5. ❓ diffuse wird berechnet aber nicht angewendet
+
+**Nächste Schritte**:
+1. ✅ Normal-Visualisierung testen (aktuell)
+   - Erwartung: Boden = Grün (Y-up), Dreiecke = Farbmischung
+   - Falls schwarz → Normalen sind kaputt
+2. ⏳ Light Count debuggen
+   - `return vec3(float(lighting.numLights) / 8.0);` - Zeigt Anzahl Lights
+3. ⏳ Diffuse-Wert visualisieren
+   - `return vec3(diffuse);` - Zeigt nur diffuse ohne color
+4. ⏳ Light Direction visualisieren
+   - Zeigt ob Light-Daten ankommen
+
+**Temporäre Debug-Änderungen** (müssen rückgängig gemacht werden):
+- ⚠️ raytracing.comp:179 - `return hit.normal * 0.5 + 0.5;` (DEBUG LINE!)
+- ⚠️ raytracing.comp:185-200 - Schatten deaktiviert (kein traceShadow)
+
+**Code-Stand**:
+- Shader kompiliert ohne Fehler
+- Keine Vulkan Validation Warnings
+- Kamera und Input funktionieren perfekt
+- Farb-Format korrekt (RGB/BGR)
+
+## ⚠️ Bekannte Probleme (Stand: 27.01.2026 - PAUSE)
+
+### 🔴 AKTIV: Keine Beleuchtung/Schatten sichtbar
+
+**Symptom**:
+- Szene zeigt nur flache, uniforme Farben
+- Keine Helligkeitsvariation basierend auf Lichtquellen
+- Keine Schatten unter oder zwischen Objekten
+- Objekte sehen "flat-shaded" aus
+
+**Was funktioniert**:
 - ✅ Kamera-Steuerung (WASD + Q/E + Maus)
 - ✅ Korrekte Bildorientierung (Y-Achse, Links/Rechts)
 - ✅ Mouse Look (Rechte Maustaste + Bewegen)
-- ✅ Raytracing Pipeline
+- ✅ Raytracing Pipeline (Ray-Triangle Intersection)
 - ✅ Korrekte Farben (RGB/BGR Format)
 - ✅ Keine Vulkan Validation Warnings
+- ✅ Geometrie wird korrekt gerendert
+
+**Was NICHT funktioniert**:
+- ❌ Diffuse Beleuchtung (keine Helligkeitsvariation)
+- ❌ Schatten (keine Shadow Rays erkennbar)
+- ❌ Lichtquellen-Einfluss (Directional + Point Lights)
+
+**Status**: Debugging mit Normal-Visualisierung (siehe Phase 9 oben)
 
 ---
 

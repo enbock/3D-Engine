@@ -616,6 +616,7 @@ public unsafe class VulkanRenderer : IRenderer
         _vk.UnmapMemory(_device, _cameraBufferMemory);
 
         var lights = scene.Lights.Take(8).ToArray();
+        
         var lightData = new LightUniformData
         {
             NumLights = lights.Length
@@ -627,22 +628,17 @@ public unsafe class VulkanRenderer : IRenderer
             {
                 Type = (int)lights[i].Type,
                 Intensity = lights[i].Intensity,
-                Position = new System.Numerics.Vector3(
-                    lights[i].Position.X,
-                    lights[i].Position.Y,
-                    lights[i].Position.Z
-                ),
-                Direction = new System.Numerics.Vector3(
-                    lights[i].Direction.X,
-                    lights[i].Direction.Y,
-                    lights[i].Direction.Z
-                ),
-                Color = new System.Numerics.Vector3(
-                    lights[i].Color.R,
-                    lights[i].Color.G,
-                    lights[i].Color.B
-                )
+                PositionX = lights[i].Position.X,
+                PositionY = lights[i].Position.Y,
+                PositionZ = lights[i].Position.Z,
+                DirectionX = lights[i].Direction.X,
+                DirectionY = lights[i].Direction.Y,
+                DirectionZ = lights[i].Direction.Z,
+                ColorR = lights[i].Color.R,
+                ColorG = lights[i].Color.G,
+                ColorB = lights[i].Color.B
             };
+            
             lightData.SetLight(i, lightEntry);
         }
 
@@ -1382,13 +1378,23 @@ public struct LightData
 {
     public int Type;
     public float Intensity;
-    public System.Numerics.Vector2 Pad1;
-    public System.Numerics.Vector3 Position;
+    public float Pad1;
     public float Pad2;
-    public System.Numerics.Vector3 Direction;
+    
+    public float PositionX;
+    public float PositionY;
+    public float PositionZ;
     public float Pad3;
-    public System.Numerics.Vector3 Color;
+    
+    public float DirectionX;
+    public float DirectionY;
+    public float DirectionZ;
     public float Pad4;
+    
+    public float ColorR;
+    public float ColorG;
+    public float ColorB;
+    public float Pad5;
 }
 
 [StructLayout(LayoutKind.Sequential)]

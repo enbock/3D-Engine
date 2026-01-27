@@ -17,34 +17,31 @@ public class SceneBuilder
         scene.Camera.Position = new Vector3(0, 3, 10);
         scene.Camera.Target = new Vector3(0, 1, 0);
 
-        scene.AddLight(Light.CreateAmbient(Color.White, 0.3f));
-        scene.AddLight(Light.CreateDirectional(new Vector3(0.3f, -0.7f, -0.5f), Color.White, 1.0f));
+        scene.AddLight(Light.CreateAmbient(Color.White, 0.2f));
+        scene.AddLight(Light.CreateDirectional(new Vector3(0.5f, -1.0f, 0.3f), Color.White, 1.5f));
+        scene.AddLight(Light.CreatePoint(new Vector3(-3, 4, 2), new Color(1.0f, 0.9f, 0.8f), 2.0f));
 
+        // Rotes Dreieck - zeigt nach VORNE (Normale in +Z Richtung)
         scene.AddTriangle(new Triangle(
             new Vector3(-2, 0, -1),
+            new Vector3(-1, 2, -1),
             new Vector3(-1, 0, -1),
-            new Vector3(-1, 2, -1),
             Color.Red
         ));
 
+        // Grünes Dreieck - zeigt nach RECHTS (Normale in +X Richtung)
         scene.AddTriangle(new Triangle(
-            new Vector3(-2, 0, -1),
-            new Vector3(-1, 2, -1),
-            new Vector3(-2, 2, -1),
-            Color.Red
-        ));
-
-        scene.AddTriangle(new Triangle(
-            new Vector3(-0.3f, 0, 0),
-            new Vector3(0.7f, 0, 0),
-            new Vector3(0.2f, 2, 0),
+            new Vector3(0, 0, -0.5f),
+            new Vector3(0, 2, 0),
+            new Vector3(0, 0, 0.5f),
             Color.Green
         ));
 
+        // Blaues Dreieck - zeigt nach LINKS (Normale in -X Richtung)
         scene.AddTriangle(new Triangle(
-            new Vector3(1.2f, 0, 1),
-            new Vector3(2.2f, 0, 1),
-            new Vector3(1.7f, 2, 1),
+            new Vector3(2, 0, 0.5f),
+            new Vector3(2, 2, 0),
+            new Vector3(2, 0, -0.5f),
             Color.Blue
         ));
 
@@ -137,7 +134,7 @@ public class SceneBuilder
         var v2 = center + new Vector3(halfSize, 0, halfSize);
         var v3 = center + new Vector3(-halfSize, 0, halfSize);
 
-        scene.AddTriangle(new Triangle(v0, v2, v1, color));
-        scene.AddTriangle(new Triangle(v0, v3, v2, color));
+        scene.AddTriangle(new Triangle(v0, v1, v2, color));
+        scene.AddTriangle(new Triangle(v0, v2, v3, color));
     }
 }

@@ -2,6 +2,24 @@
 
 Eine native 3D Raytracing-Engine in C# mit Vulkan, entwickelt mit Silk.NET.
 
+## ⚠️ WICHTIG: Entwicklungsumgebung
+
+### Editor Auto-Save Konfiguration
+
+**KRITISCH für Shader-Entwicklung**: WebStorm/Rider muss sofort speichern!
+
+**Problem**: 
+- Standardmäßig verzögertes Speichern (mehrere Sekunden idle time)
+- Shader-Kompilierung verwendet alte Dateiversion
+- Debugging zeigt falsche/inkonsistente Ergebnisse
+
+**Lösung**:
+1. WebStorm: `Settings → Appearance & Behavior → System Settings → Synchronization`
+2. Setze "Save files automatically if application is idle for" auf **1 Sekunde**
+3. Oder: Aktiviere "Save files on frame deactivation"
+
+**Test**: Nach Shader-Änderung 1-2 Sekunden warten, dann kompilieren.
+
 ## 🎯 Features
 
 - **Vulkan API** - Native High-Performance Rendering

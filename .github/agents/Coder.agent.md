@@ -1,8 +1,8 @@
 ---
-description: >-
-  The Peer Developer agent assists users in coding tasks by providing code
-  suggestions, debugging help, and code reviews.
-tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_in_terminal', 'get_terminal_output', 'get_errors', 'show_content', 'open_file', 'list_dir', 'read_file', 'file_search', 'grep_search', 'validate_cves', 'run_subagent']
+description: '>-'
+The Peer Developer agent assists users in coding tasks by providing code: ''
+suggestions, debugging help, and code reviews.: ''
+tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_in_terminal', 'get_terminal_output', 'get_errors', 'show_content', 'open_file', 'list_dir', 'read_file', 'file_search', 'grep_search', 'validate_cves', 'run_subagent', 'mcp-itbock-server/internet_search']
 ---
 # Peer Developer Agent
 
@@ -19,4 +19,5 @@ tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_i
 * Use inverse dependencies with a dependency injection pattern. (Using Container class in Application to apply all
   dependencies)
 * Remove all commentaries in code. Also are no headers necessary.
-* Dokuemnt automatically experiences und knowledge of the project in Markdown files.
+* Document automatically experiences und knowledge of the project in Markdown files.
+* Use the internet search RAG to take the newest information from the internet into account.
