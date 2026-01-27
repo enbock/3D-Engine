@@ -20,4 +20,6 @@ tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_i
   dependencies)
 * Remove all commentaries in code. Also are no headers necessary.
 * Document automatically experiences und knowledge of the project in Markdown files.
-* Use the internet search RAG to take the newest information from the internet into account.
+* Use the internet search RAG calling to take the information from the internet. If behavior are unexpected,
+  search for solutions on the internet.
+* If you are not sure about something, search for it on the internet.
