@@ -61,7 +61,9 @@ public class Camera
 
     public void Move(Vector3 direction, float speed)
     {
-        Position += direction * speed;
+        var offset = direction * speed;
+        Position += offset;
+        Target += offset;
     }
 
     public void MoveForward(float speed) => Move(Forward, speed);

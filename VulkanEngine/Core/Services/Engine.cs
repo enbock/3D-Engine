@@ -77,8 +77,8 @@ public class Engine : IDisposable
     {
         _totalTime += deltaTime;
 
-        _inputHandler?.Update(deltaTime);
         _cameraController?.Update(deltaTime);
+        _inputHandler?.Update(deltaTime);
 
         if (_inputHandler?.IsKeyPressed(Silk.NET.Input.Key.Escape) == true)
         {
