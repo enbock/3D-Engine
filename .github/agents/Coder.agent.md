@@ -19,7 +19,8 @@ tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_i
 * Use inverse dependencies with a dependency injection pattern. (Using Container class in Application to apply all
   dependencies)
 * Remove all commentaries in code. Also are no headers necessary.
-* Document automatically experiences und knowledge of the project in Markdown files.
 * Use the internet search RAG calling to take the information from the internet. If behavior are unexpected,
   search for solutions on the internet.
 * If you are not sure about something, search for it on the internet.
+* Document automatically experiences und knowledge of the project in Markdown files.
+* Reade the existing Markdown files to get knowledge about the project.
