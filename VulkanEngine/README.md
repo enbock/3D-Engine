@@ -201,6 +201,8 @@ MIT License
 - [x] BVH (Bounding Volume Hierarchy) für Performance
 - [x] Multi-Bounce Reflections (konfigurierbar 1-5 Bounces)
 - [x] Soft Shadows (Monte Carlo Sampling, 1-16 Samples)
+- [x] FPS-Style Kamera-Steuerung (WASD + Q/E + Mouse Look)
+- [x] Korrekte Bildorientierung & Farb-Formate (keine Validation Warnings)
 - [ ] Textures & Materials
 - [ ] OBJ/GLTF Model Loading
 - [ ] ImGui Debug UI

@@ -342,7 +342,7 @@ public unsafe class VulkanRenderer : IRenderer
         {
             SType = StructureType.ImageCreateInfo,
             ImageType = ImageType.Type2D,
-            Format = Format.B8G8R8A8Unorm,
+            Format = Format.R8G8B8A8Unorm,
             Extent = new Extent3D(_swapchainExtent.Width, _swapchainExtent.Height, 1),
             MipLevels = 1,
             ArrayLayers = 1,
@@ -380,7 +380,7 @@ public unsafe class VulkanRenderer : IRenderer
             SType = StructureType.ImageViewCreateInfo,
             Image = _storageImage,
             ViewType = ImageViewType.Type2D,
-            Format = Format.B8G8R8A8Unorm,
+            Format = Format.R8G8B8A8Unorm,
             SubresourceRange = new ImageSubresourceRange
             {
                 AspectMask = ImageAspectFlags.ColorBit,

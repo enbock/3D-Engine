@@ -227,6 +227,26 @@ dotnet build
   - SceneBuilder.cs: Rotes Viereck (2 Dreiecke)
   - Zum Verifizieren der korrekten Orientierung
 
+### ✅ Phase 8: Farb-Format Fix (27.01.2026)
+- [x] **RGB/BGR PROBLEM GELÖST**: Rot und Blau waren vertauscht
+  - Ursache: Format-Mismatch zwischen Shader, Storage Image und Swapchain
+  - Swapchain: B8G8R8A8Srgb (BGRA)
+  - Storage Image: Sollte R8G8B8A8Unorm sein (RGBA)
+  - Shader: rgba8 = R8G8B8A8Unorm
+- [x] **VALIDATION WARNINGS BEHOBEN**: Format-Mismatch Fehler
+  - Vorher: "Undefined-Value-StorageImage-FormatMismatch-ImageView"
+  - Problem: Shader (RGBA) != ImageView (BGRA)
+  - Vulkan Regel: "Storage Images must exactly match"
+- [x] **LÖSUNG**: Storage Image auf RGBA + BGR Swizzle
+  - VulkanRenderer.cs:345 - Storage Image: R8G8B8A8Unorm
+  - VulkanRenderer.cs:383 - ImageView: R8G8B8A8Unorm
+  - raytracing.comp:263 - Swizzle: `vec4(color.bgr, 1.0)`
+  - Shader schreibt RGB, swizzled zu BGR für BGRA Swapchain
+- [x] **RESULTAT**: Korrekte Farben ohne Validation Warnings
+  - Rot ist rot, Blau ist blau
+  - Keine Vulkan Validation Errors mehr
+  - Clean Pipeline Initialization
+
 ## ⚠️ Bekannte Probleme (Stand: 27.01.2026)
 
 **Keine bekannten kritischen Probleme!** ✅
@@ -236,6 +256,8 @@ Alle Kernfeatures funktionieren:
 - ✅ Korrekte Bildorientierung (Y-Achse, Links/Rechts)
 - ✅ Mouse Look (Rechte Maustaste + Bewegen)
 - ✅ Raytracing Pipeline
+- ✅ Korrekte Farben (RGB/BGR Format)
+- ✅ Keine Vulkan Validation Warnings
 
 ---
 
@@ -298,6 +320,46 @@ vec3 right = normalize(cross(forward, up));
 
 **Nachher** (CameraController.cs:38-41):
 - Hoch: `Q`, Runter: `E`
+
+#### ✅ Farb-Format & Validation Warnings (27.01.2026)
+**Problem**: Rot und Blau waren vertauscht, Validation Warnings über Format-Mismatch
+
+**Validation Error**:
+```
+Undefined-Value-StorageImage-FormatMismatch-ImageView
+vkCmdDispatch(): storage image descriptor has Format Rgba8
+which doesn't match VkImageView format VK_FORMAT_B8G8R8A8_UNORM
+Storage Images must exactly match
+```
+
+**Ursache**:
+- Swapchain: `B8G8R8A8Srgb` (BGRA - Windows/Vulkan Standard)
+- Storage Image: War auf `B8G8R8A8Unorm` gesetzt
+- Shader: `rgba8` = `R8G8B8A8Unorm`
+- Mismatch: Shader (RGBA) != ImageView (BGRA)
+
+**Lösung - Storage Image auf RGBA + Swizzle**:
+
+VulkanRenderer.cs:345, 383:
+```csharp
+// Zurück auf RGBA (Match Shader)
+Format = Format.R8G8B8A8Unorm,
+```
+
+raytracing.comp:263:
+```glsl
+// Swizzle RGB→BGR für BGRA Swapchain
+imageStore(outputImage, pixelCoords, vec4(color.bgr, 1.0));
+```
+
+**Warum das funktioniert**:
+1. Shader deklariert `rgba8` → RGBA Format
+2. Storage Image ist RGBA → Match! ✓
+3. Shader swizzled `.bgr` beim Schreiben
+4. Vulkan kopiert RGBA→BGRA Swapchain (automatisch)
+5. Resultat: Korrekte Farben, keine Warnings
+
+**Alternativ**: Unknown Format im Shader (braucht Feature Flag)
 
 ---
 
@@ -549,6 +611,51 @@ public void Move(Vector3 direction, float speed) {
 
 **Warum**: Bei FPS-Style Movement bleibt die Blickrichtung konstant. Nur bei Orbit/LookAt ändert sich Target unabhängig.
 
+### 🎓 Vulkan Format-Matching ist strikt
+**Lektion**: Shader Format und ImageView Format müssen EXAKT übereinstimmen
+
+**Das Problem**:
+```
+Swapchain: B8G8R8A8Srgb (BGRA)
+Storage Image: R8G8B8A8Unorm (RGBA)
+Shader: layout(binding = 0, rgba8) → R8G8B8A8
+```
+
+**Validation Error**:
+```
+Undefined-Value-StorageImage-FormatMismatch-ImageView
+Storage Images must exactly match
+```
+
+**Warum**: Vulkan ist extrem penibel bei Storage Images (anders als Sampled Images)
+
+**Zwei Lösungen**:
+
+**Option 1 - Swizzle im Shader** (gewählt):
+```glsl
+// Storage Image: R8G8B8A8Unorm (RGBA)
+// Shader schreibt und swizzled:
+imageStore(outputImage, pixelCoords, vec4(color.bgr, 1.0));
+// → RGB wird zu BGR für BGRA Swapchain
+```
+
+**Option 2 - Unknown Format**:
+```glsl
+// Braucht shaderStorageImageWriteWithoutFormat Feature
+layout(binding = 0) uniform writeonly image2D outputImage;
+```
+
+**Wichtig**:
+- Swapchain Format ist meist BGRA (Windows/Vulkan Standard)
+- Storage Images für Compute Shader sind meist RGBA
+- Beim Copy RGBA→BGRA werden Kanäle automatisch gemappt wenn Formate kompatibel
+- ABER: Storage Images brauchen exaktes Format-Match zwischen Shader und ImageView
+- Lösung: Swizzle im Shader oder Unknown Format
+
+**Trade-off**:
+- Swizzle: Explizit, klar, minimaler Overhead (ein Vektor-Shuffle)
+- Unknown: Flexibler, aber weniger explizit
+
 ---
 
 ## 📊 Code Metriken
@@ -606,6 +713,8 @@ dotnet run
 # ✅ WASD + Q/E Bewegung funktioniert
 # ✅ Mouse Look (Rechte Maustaste) funktioniert
 # ✅ Korrekte Bildorientierung (Y-up, kein Flip)
+# ✅ Korrekte Farben (Rot = Rot, Blau = Blau)
+# ✅ Keine Vulkan Validation Warnings/Errors
 # ⚡ FPS: 60+ auf RTX 3070
 ```
 

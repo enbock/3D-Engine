@@ -260,5 +260,5 @@ void main() {
         color = mix(vec3(0.1, 0.1, 0.15), vec3(0.5, 0.7, 1.0), rayDir.y * 0.5 + 0.5);
     }
     
-    imageStore(outputImage, pixelCoords, vec4(color, 1.0));
+    imageStore(outputImage, pixelCoords, vec4(color.bgr, 1.0));
 }
