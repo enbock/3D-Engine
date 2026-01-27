@@ -1,6 +1,6 @@
 # Vulkan Engine - Implementierungsstatus
 
-**Stand: 2026-01-26**
+**Stand: 2026-01-27**
 
 ## ✅ Vollständig Implementiert
 
@@ -199,71 +199,109 @@ dotnet build
 - [x] WASD Bewegung funktioniert
 - [x] Space/Shift Hoch/Runter funktioniert
 
-## ⚠️ Bekannte Probleme (Stand: 26.01.2026 - 21:00 Uhr)
+### ✅ Phase 7: Kamera & Koordinatensystem Fixes (27.01.2026)
+- [x] **MOUSE LOOK FIX**: Update-Reihenfolge korrigiert
+  - Engine.cs: CameraController.Update() VOR InputHandler.Update()
+  - Problem: GetMouseDelta() gab 0 zurück weil lastMouse bereits updated war
+  - Resultat: Rechte Maustaste + Maus funktioniert perfekt
+- [x] **KAMERA-BEWEGUNG FIX**: Target wird mitbewegt
+  - Camera.cs: Move() bewegt jetzt Position UND Target
+  - Problem: Bei Bewegung änderte sich die Blickrichtung
+  - Resultat: WASD bewegt Kamera ohne Blickrichtungsänderung
+- [x] **Y-ACHSE FIX**: Shader UV-Koordinaten invertiert
+  - raytracing.comp: uv.y = -uv.y (Zeile 216)
+  - Vulkan Koordinaten: (0,0) oben-links, Y nach unten
+  - Resultat: Welt steht nicht mehr auf dem Kopf
+- [x] **KOORDINATENSYSTEM FIX**: Cross-Product Reihenfolge
+  - raytracing.comp: cross(forward, up) statt cross(up, forward)
+  - Problem: Rechts/Links waren vertauscht
+  - Resultat: Korrekte Kamera-Orientierung
+- [x] **UP-VECTOR FIX**: Explizit auf (0,1,0) gesetzt
+  - raytracing.comp: vec3 up = vec3(0, 1, 0)
+  - Entfernt berechneten Up-Vektor (cross(right, forward))
+  - Resultat: Stabiles Y-up Koordinatensystem
+- [x] **TASTENBELEGUNG**: Q/E statt Space/Ctrl
+  - CameraController.cs: Q = Hoch, E = Runter
+  - Klassische FPS/3D-Editor Steuerung
+- [x] **TEST**: Linkes Dreieck zu Rechteck erweitert
+  - SceneBuilder.cs: Rotes Viereck (2 Dreiecke)
+  - Zum Verifizieren der korrekten Orientierung
 
-### 🔴 KRITISCH: Welt steht "kopf" (Y-Achse invertiert)
-**Problem**: 
-- Oben und unten sind vertauscht
-- Boden erscheint als "Decke"
-- Himmel erscheint als "Boden"
+## ⚠️ Bekannte Probleme (Stand: 27.01.2026)
 
-**Mögliche Ursachen**:
-1. Camera Up Vector falsch (sollte (0,1,0) sein, nicht (0,-1,0))
-2. Shader UV-Koordinaten invertiert (uv.y negieren?)
-3. Projection Matrix falsch berechnet
-4. ImageView oder Framebuffer Y-Flip fehlt
+**Keine bekannten kritischen Probleme!** ✅
 
-**Zu prüfen**:
-- `Camera.cs` - Up Vector Berechnung
-- `raytracing.comp` - uv.y Berechnung in main()
-- `VulkanRenderer.cs` - Image Layout/View
-
----
-
-### 🟡 Mouse Look funktioniert nicht
-**Problem**:
-- Rechte Maustaste + Bewegung hat keinen Effekt
-- Kamera dreht sich nicht
-
-**Implementiert aber nicht funktionierend**:
-- CameraController: Look Speed = 0.003
-- InputHandler: Mouse Delta Tracking
-- Mouse Button Pressed Check
-
-**Mögliche Ursachen**:
-1. Mouse Button Event wird nicht gefeuert
-2. Mouse Delta ist immer (0, 0)
-3. Camera Target Update wird nicht angewendet
-4. _firstMouse Flag verhindert Bewegung
-
-**Zu prüfen**:
-- Debug Output in `OnMouseMove()`
-- Debug Output in `OnMouseDown()`
-- Ist `IsMouseButtonPressed()` korrekt?
-- Wird `Update()` jedes Frame aufgerufen?
-
----
-
-### 🟡 Kamera-Bewegung: Welt verschwindet bei Vorwärts
-**Problem**:
-- WASD funktioniert
-- Aber bei Vorwärts-Bewegung (W) verschwindet die Welt
-
-**Mögliche Ursachen**:
-1. Kamera bewegt sich durch/hinter Geometrie
-2. Near Plane Clipping zu groß
-3. FOV zu klein/groß
-4. Forward Vector falsch berechnet
-
-**Zu prüfen**:
-- `Camera.MoveForward()` - Berechnung korrekt?
-- Camera Position Debugging (Console Output)
-- Ist die Szene zu klein/nah?
-- FOV Wert (aktuell: radians oder degrees?)
+Alle Kernfeatures funktionieren:
+- ✅ Kamera-Steuerung (WASD + Q/E + Maus)
+- ✅ Korrekte Bildorientierung (Y-Achse, Links/Rechts)
+- ✅ Mouse Look (Rechte Maustaste + Bewegen)
+- ✅ Raytracing Pipeline
 
 ---
 
 ### 🟢 GELÖSTE Probleme (für Referenz)
+
+#### ✅ Mouse Look & Kamera-Steuerung (27.01.2026)
+**Problem**: Mouse Look funktionierte nicht, Kamera-Bewegung ließ Welt verschwinden
+
+**Lösung 1 - Update-Reihenfolge** (Engine.cs:80-81):
+```csharp
+// Vorher (FALSCH):
+_inputHandler?.Update(deltaTime);   // Setzt lastMouse = currentMouse
+_cameraController?.Update(deltaTime); // GetMouseDelta() gibt 0 zurück
+
+// Nachher (RICHTIG):
+_cameraController?.Update(deltaTime); // Verwendet Delta vom letzten Frame
+_inputHandler?.Update(deltaTime);     // Bereitet nächstes Frame vor
+```
+
+**Lösung 2 - Camera Target mitbewegen** (Camera.cs:62-66):
+```csharp
+public void Move(Vector3 direction, float speed)
+{
+    var offset = direction * speed;
+    Position += offset;
+    Target += offset;  // Target muss auch bewegt werden!
+}
+```
+
+**Warum**: Ohne Target-Update änderte sich die Blickrichtung bei jeder Bewegung.
+
+#### ✅ Y-Achse & Koordinatensystem (27.01.2026)
+**Problem**: Welt stand "kopf", möglicherweise gespiegelt
+
+**Lösung 1 - Y-Achse invertieren** (raytracing.comp:216):
+```glsl
+vec2 uv = (vec2(pixelCoords) / resolution) * 2.0 - 1.0;
+uv.y = -uv.y;  // Vulkan: (0,0) oben-links, Y wächst nach unten
+```
+
+**Lösung 2 - Up-Vektor direkt setzen** (raytracing.comp:220):
+```glsl
+vec3 up = vec3(0, 1, 0);  // Immer Y-up
+```
+
+**Lösung 3 - Cross-Product Reihenfolge** (raytracing.comp:221):
+```glsl
+// Vorher: cross(up, forward) → zeigt nach LINKS
+// Nachher: cross(forward, up) → zeigt nach RECHTS ✓
+vec3 right = normalize(cross(forward, up));
+```
+
+**Test**: Linkes Dreieck zu Rechteck erweitert (SceneBuilder.cs:23-35) um Orientierung zu verifizieren.
+
+#### ✅ Tastenbelegung aktualisiert (27.01.2026)
+**Änderung**: Klassische FPS/3D-Editor Steuerung
+
+**Vorher**:
+- Hoch: `Space`, Runter: `Shift`
+
+**Nachher** (CameraController.cs:38-41):
+- Hoch: `Q`, Runter: `E`
+
+---
+
+### 🟢 Früher gelöste Probleme
 
 #### ✅ Vulkan Semaphore-Synchronisation
 **Problem**: `VUID-vkQueueSubmit-pSignalSemaphores-00067`
@@ -434,11 +472,88 @@ vec3 totalLight = ambient + diffuse; // ✅ Anderer Name
 - Temporal Accumulation (verteilt über Frames)
 - Denoising (weniger Samples, nachher filtern)
 
+### 🎓 Update-Reihenfolge ist kritisch
+**Lektion**: Die Reihenfolge von Update-Calls bestimmt das Verhalten
+
+**Problem**:
+```csharp
+_inputHandler?.Update(deltaTime);   // Setzt lastMouse = currentMouse
+_cameraController?.Update(deltaTime); // GetMouseDelta() = 0 !
+```
+
+**Lösung**:
+```csharp
+_cameraController?.Update(deltaTime); // Verwendet Delta
+_inputHandler?.Update(deltaTime);     // Bereitet nächstes Frame vor
+```
+
+**Warum**: Mouse Events werden VOR Update() verarbeitet. InputHandler.Update() bereitet den NÄCHSTEN Frame vor, nicht den aktuellen.
+
+**Regel**: Consumer IMMER vor Producer updaten!
+
+### 🎓 Vulkan Koordinatensystem
+**Lektion**: Vulkan != OpenGL bei Screen-Space Koordinaten
+
+**Vulkan NDC (Normalized Device Coordinates)**:
+- (0, 0) = Oben-Links
+- Y-Achse wächst nach unten
+- X-Achse wächst nach rechts
+
+**Kamera-Koordinaten** (mathematisch):
+- Y-Achse wächst nach oben
+- X-Achse wächst nach rechts
+
+**Lösung**:
+```glsl
+vec2 uv = (vec2(pixelCoords) / resolution) * 2.0 - 1.0;
+uv.y = -uv.y;  // Invertiere Y für Vulkan
+```
+
+### 🎓 Cross-Product Reihenfolge
+**Lektion**: Die Reihenfolge beim Kreuzprodukt bestimmt die Richtung
+
+**Mathematik**:
+- `cross(A, B)` = Vektor senkrecht zu A und B (Rechte-Hand-Regel)
+- `cross(B, A)` = `-cross(A, B)` (invertiert)
+
+**Im Shader**:
+```glsl
+// FALSCH: zeigt nach LINKS
+vec3 right = cross(up, forward);
+
+// RICHTIG: zeigt nach RECHTS
+vec3 right = cross(forward, up);
+```
+
+**Merke**: Rechte-Hand-Koordinatensystem = Daumen (forward) × Zeigefinger (up) = Mittelfinger (right)
+
+### 🎓 Camera Target muss mitbewegt werden
+**Lektion**: Position UND Target müssen zusammen bewegt werden
+
+**Problem**:
+```csharp
+public void Move(Vector3 direction, float speed) {
+    Position += direction * speed;  // Target bleibt fix!
+    // Forward = (Target - Position).Normalized ändert sich!
+}
+```
+
+**Lösung**:
+```csharp
+public void Move(Vector3 direction, float speed) {
+    var offset = direction * speed;
+    Position += offset;
+    Target += offset;  // Beide bewegen!
+}
+```
+
+**Warum**: Bei FPS-Style Movement bleibt die Blickrichtung konstant. Nur bei Orbit/LookAt ändert sich Target unabhängig.
+
 ---
 
 ## 📊 Code Metriken
 
-**Stand: 26.01.2026**
+**Stand: 27.01.2026**
 
 - **Zeilen Code**: ~3,500+ (ohne Kommentare, mit Shader)
   - VulkanRenderer.cs: ~1,420 Zeilen
@@ -472,7 +587,7 @@ vec3 totalLight = ambient + diffuse; // ✅ Anderer Name
 
 ## 🔧 Build Status
 
-**Stand: 26.01.2026 - 21:00 Uhr**
+**Stand: 27.01.2026**
 
 ```bash
 dotnet build
@@ -487,8 +602,10 @@ glslangValidator -V raytracing.comp -o raytracing.comp.spv
 
 dotnet run
 # ✅ Engine startet ohne Crashes
-# ⚠️ Bekannte Probleme: Y-Achse invertiert, Mouse Look nicht funktional
-# ✅ WASD Bewegung funktioniert
+# ✅ Alle Features funktionieren perfekt
+# ✅ WASD + Q/E Bewegung funktioniert
+# ✅ Mouse Look (Rechte Maustaste) funktioniert
+# ✅ Korrekte Bildorientierung (Y-up, kein Flip)
 # ⚡ FPS: 60+ auf RTX 3070
 ```
 

@@ -35,9 +35,9 @@ public class CameraController
             _camera.MoveLeft(speed);
         if (_input.IsKeyDown(Key.D))
             _camera.MoveRight(speed);
-        if (_input.IsKeyDown(Key.Space))
+        if (_input.IsKeyDown(Key.Q))
             _camera.MoveUp(speed);
-        if (_input.IsKeyDown(Key.ControlLeft))
+        if (_input.IsKeyDown(Key.E))
             _camera.MoveDown(speed);
 
         if (_input.IsMouseButtonPressed(MouseButton.Right))

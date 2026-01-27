@@ -23,7 +23,14 @@ public class SceneBuilder
         scene.AddTriangle(new Triangle(
             new Vector3(-2, 0, -1),
             new Vector3(-1, 0, -1),
-            new Vector3(-1.5f, 2, -1),
+            new Vector3(-1, 2, -1),
+            Color.Red
+        ));
+
+        scene.AddTriangle(new Triangle(
+            new Vector3(-2, 0, -1),
+            new Vector3(-1, 2, -1),
+            new Vector3(-2, 2, -1),
             Color.Red
         ));
 

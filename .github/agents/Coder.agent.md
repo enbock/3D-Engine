@@ -19,3 +19,4 @@ tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_i
 * Use inverse dependencies with a dependency injection pattern. (Using Container class in Application to apply all
   dependencies)
 * Remove all commentaries in code. Also are no headers necessary.
+* Dokuemnt automatically experiences und knowledge of the project in Markdown files.

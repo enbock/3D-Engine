@@ -45,8 +45,8 @@ dotnet run
 - **S** - Rückwärts
 - **A** - Links
 - **D** - Rechts
-- **Space** - Hoch
-- **Shift** - Runter
+- **Q** - Hoch
+- **E** - Runter
 
 ### Kamera-Rotation:
 - **Rechte Maustaste + Bewegen** - Kamera drehen (Look Speed: 0.003)
