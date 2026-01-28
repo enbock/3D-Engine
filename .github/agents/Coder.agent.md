@@ -24,3 +24,4 @@ tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_i
 * If you are not sure about something, search for it on the internet.
 * Document automatically experiences und knowledge of the project in Markdown files.
 * Reade the existing Markdown files to get knowledge about the project.
+* An input of "." means "Continue"
