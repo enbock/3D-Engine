@@ -1,7 +1,6 @@
 using Application;
 using Application.Engine;
 
-
 public static class Program
 {
     public static void Main()
@@ -14,8 +13,8 @@ public static class Program
         var config = new EngineConfig
         {
             Title = "Vulkan Raytracing Engine - C#",
-            Width = 1920,
-            Height = 1080,
+            Width = 2560,
+            Height = 1440,
             VSync = true,
             EnableValidation = true
         };
@@ -24,7 +23,7 @@ public static class Program
         {
             var engine = new EngineController(config);
             var response = engine.Initialize();
-            
+
             if (response.Success)
             {
                 engine.Run();
@@ -34,7 +33,7 @@ public static class Program
                 var errorMsg = response.ErrorMessage ?? "Unknown error";
                 Console.WriteLine($"Engine initialization failed: {errorMsg}");
             }
-            
+
             engine.Dispose();
         }
         catch (Exception ex)

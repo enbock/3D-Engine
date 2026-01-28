@@ -19,9 +19,9 @@ public class SceneBuilderService
         scene.Camera.Position = new Vector3(0, 3, 10);
         scene.Camera.Target = new Vector3(0, 1, 0);
 
-        scene.AddLight(LightEntity.CreateAmbient(Color.White, 0.05f));
-        scene.AddLight(LightEntity.CreateDirectional(new Vector3(0.5f, -1.0f, 0.3f), Color.White, 0.8f));
-        scene.AddLight(LightEntity.CreatePoint(new Vector3(-3, 4, 2), new Color(1.0f, 0.9f, 0.8f), 0.5f));
+        scene.AddLight(LightEntity.CreateAmbient(Color.White, 0f));
+        scene.AddLight(LightEntity.CreateDirectional(new Vector3(0.5f, -1.0f, 0.3f), Color.White, 0.5f));
+        scene.AddLight(LightEntity.CreatePoint(new Vector3(-3, 4, 2), new Color(1.0f, 0.9f, 0.8f)));
 
         scene.AddTriangle(new TriangleEntity(
             new Vector3(-2, 0, -1),
