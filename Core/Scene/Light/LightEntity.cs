@@ -4,19 +4,13 @@ namespace Core.Scene.Light;
 
 public enum LightType
 {
-    Directional = 0,
-    Point = 1,
-    Ambient = 2
+    Ambient = 0,
+    Directional = 1,
+    Point = 2
 }
 
 public class LightEntity
 {
-    public LightType Type { get; set; }
-    public Vector3 Position { get; set; }
-    public Vector3 Direction { get; set; }
-    public Color Color { get; set; }
-    public float Intensity { get; set; }
-
     public LightEntity(LightType type, Color? color = null, float intensity = 1.0f)
     {
         Type = type;
@@ -25,6 +19,12 @@ public class LightEntity
         Position = Vector3.Zero;
         Direction = new Vector3(0, -1, 0);
     }
+
+    public LightType Type { get; set; }
+    public Vector3 Position { get; set; }
+    public Vector3 Direction { get; set; }
+    public Color Color { get; set; }
+    public float Intensity { get; set; }
 
     public static LightEntity CreateDirectional(Vector3 direction, Color? color = null, float intensity = 1.0f)
     {

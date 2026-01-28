@@ -1,69 +1,75 @@
-using Silk.NET.Vulkan;
-using Core.Scene;
-using Core.Scene.Geometry;
+using System.Numerics;
 using System.Runtime.InteropServices;
-using Core.Math;
-using Silk.NET.Core.Native;
 using Application;
 using Application.Window;
+using Core.Math;
+using Core.Scene;
+using Core.Scene.Geometry;
+using Silk.NET.Core;
+using Silk.NET.Core.Native;
+using Silk.NET.Vulkan;
+using Silk.NET.Vulkan.Extensions.KHR;
+using Buffer = Silk.NET.Vulkan.Buffer;
+using Semaphore = Silk.NET.Vulkan.Semaphore;
+using Vector3 = System.Numerics.Vector3;
 
 namespace Infrastructure.Vulkan;
 
 public unsafe class InternalVulkanRenderer : IDisposable
 {
-    private readonly WindowManagerService _windowManager;
     private readonly EngineConfig _config;
-    private Vk _vk = null!;
-    
-    private Instance _instance;
-    private PhysicalDevice _physicalDevice;
-    private Device _device;
-    private Queue _computeQueue;
-    private Queue _presentQueue;
-    private uint _queueFamilyIndex;
-    
-    private Silk.NET.Vulkan.Extensions.KHR.KhrSurface? _khrSurface;
-    private SurfaceKHR _surface;
-    private Silk.NET.Vulkan.Extensions.KHR.KhrSwapchain? _khrSwapchain;
-    private SwapchainKHR _swapchain;
-    private Image[] _swapchainImages = Array.Empty<Image>();
-    private ImageView[] _swapchainImageViews = Array.Empty<ImageView>();
-    private Format _swapchainFormat;
-    private Extent2D _swapchainExtent;
-    
-    private Image _storageImage;
-    private DeviceMemory _storageImageMemory;
-    private ImageView _storageImageView;
-    
-    private DescriptorSetLayout _descriptorSetLayout;
-    private PipelineLayout _pipelineLayout;
-    private Pipeline _computePipeline;
-    private ShaderModule _computeShaderModule;
-    
-    private Silk.NET.Vulkan.Buffer _cameraBuffer;
+    private readonly WindowManagerService _windowManager;
+
+    private bool _buffersCreated;
+
+    private Buffer _cameraBuffer;
     private DeviceMemory _cameraBufferMemory;
-    private Silk.NET.Vulkan.Buffer _lightBuffer;
-    private DeviceMemory _lightBufferMemory;
-    private Silk.NET.Vulkan.Buffer _triangleBuffer;
-    private DeviceMemory _triangleBufferMemory;
-    private Silk.NET.Vulkan.Buffer _settingsBuffer;
-    private DeviceMemory _settingsBufferMemory;
+    private CommandBuffer[] _commandBuffers = Array.Empty<CommandBuffer>();
+
+    private CommandPool _commandPool;
+    private Pipeline _computePipeline;
+    private Queue _computeQueue;
+    private ShaderModule _computeShaderModule;
+
+    private uint _currentFrame;
 
     private DescriptorPool _descriptorPool;
     private DescriptorSet _descriptorSet;
-    
-    private CommandPool _commandPool;
-    private CommandBuffer[] _commandBuffers = Array.Empty<CommandBuffer>();
-    
-    private Silk.NET.Vulkan.Semaphore[] _imageAvailableSemaphores = Array.Empty<Silk.NET.Vulkan.Semaphore>();
-    private Silk.NET.Vulkan.Semaphore[] _renderFinishedSemaphores = Array.Empty<Silk.NET.Vulkan.Semaphore>();
+
+    private DescriptorSetLayout _descriptorSetLayout;
+    private Device _device;
+
+    private Semaphore[] _imageAvailableSemaphores = Array.Empty<Semaphore>();
     private Fence[] _inFlightFences = Array.Empty<Fence>();
 
-    private bool _buffersCreated;
-    
-    private uint _currentFrame;
+    private Instance _instance;
     private bool _isInitialized;
+
+    private KhrSurface? _khrSurface;
+    private KhrSwapchain? _khrSwapchain;
+    private Buffer _lightBuffer;
+    private DeviceMemory _lightBufferMemory;
+    private PhysicalDevice _physicalDevice;
+    private PipelineLayout _pipelineLayout;
+    private Queue _presentQueue;
+    private uint _queueFamilyIndex;
+    private Semaphore[] _renderFinishedSemaphores = Array.Empty<Semaphore>();
+    private Buffer _settingsBuffer;
+    private DeviceMemory _settingsBufferMemory;
+
+    private Image _storageImage;
+    private DeviceMemory _storageImageMemory;
+    private ImageView _storageImageView;
+    private SurfaceKHR _surface;
+    private SwapchainKHR _swapchain;
+    private Extent2D _swapchainExtent;
+    private Format _swapchainFormat;
+    private Image[] _swapchainImages = Array.Empty<Image>();
+    private ImageView[] _swapchainImageViews = Array.Empty<ImageView>();
     private float _time;
+    private Buffer _triangleBuffer;
+    private DeviceMemory _triangleBufferMemory;
+    private Vk _vk = null!;
 
     public InternalVulkanRenderer(WindowManagerService windowManager, EngineConfig config)
     {
@@ -71,10 +77,55 @@ public unsafe class InternalVulkanRenderer : IDisposable
         _config = config;
     }
 
+    public void Dispose()
+    {
+        if (!_isInitialized) return;
+
+        _vk.DeviceWaitIdle(_device);
+
+        for (int i = 0; i < _config.MaxFramesInFlight; i++)
+        {
+            _vk.DestroySemaphore(_device, _imageAvailableSemaphores[i], null);
+            _vk.DestroyFence(_device, _inFlightFences[i], null);
+        }
+
+        for (int i = 0; i < _renderFinishedSemaphores.Length; i++)
+            _vk.DestroySemaphore(_device, _renderFinishedSemaphores[i], null);
+
+        _vk.DestroyCommandPool(_device, _commandPool, null);
+
+        _vk.DestroyDescriptorPool(_device, _descriptorPool, null);
+
+        _vk.DestroyBuffer(_device, _cameraBuffer, null);
+        _vk.FreeMemory(_device, _cameraBufferMemory, null);
+        _vk.DestroyBuffer(_device, _lightBuffer, null);
+        _vk.FreeMemory(_device, _lightBufferMemory, null);
+        _vk.DestroyBuffer(_device, _triangleBuffer, null);
+        _vk.FreeMemory(_device, _triangleBufferMemory, null);
+        _vk.DestroyBuffer(_device, _settingsBuffer, null);
+        _vk.FreeMemory(_device, _settingsBufferMemory, null);
+
+        _vk.DestroyPipeline(_device, _computePipeline, null);
+        _vk.DestroyPipelineLayout(_device, _pipelineLayout, null);
+        _vk.DestroyDescriptorSetLayout(_device, _descriptorSetLayout, null);
+        _vk.DestroyShaderModule(_device, _computeShaderModule, null);
+
+        _vk.DestroyImageView(_device, _storageImageView, null);
+        _vk.DestroyImage(_device, _storageImage, null);
+        _vk.FreeMemory(_device, _storageImageMemory, null);
+
+        CleanupSwapchain();
+
+        _vk.DestroyDevice(_device, null);
+        _khrSurface!.DestroySurface(_instance, _surface, null);
+        _vk.DestroyInstance(_instance, null);
+        _vk.Dispose();
+    }
+
     public void Initialize()
     {
         _vk = Vk.GetApi();
-        
+
         CreateInstance();
         CreateSurface();
         SelectPhysicalDevice();
@@ -85,7 +136,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
         CreateDescriptorSetLayout();
         CreateComputePipeline();
         CreateSyncObjects();
-        
+
         _isInitialized = true;
         Console.WriteLine("Vulkan Pipeline fully initialized");
     }
@@ -130,6 +181,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
         {
             SilkMarshal.Free((nint)createInfo.PpEnabledLayerNames);
         }
+
         SilkMarshal.Free((nint)extensionNames);
         Marshal.FreeHGlobal((nint)appInfo.PApplicationName);
         Marshal.FreeHGlobal((nint)appInfo.PEngineName);
@@ -138,7 +190,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
     private void CreateSurface()
     {
         _surface = _windowManager.CreateVulkanSurface(_instance, _vk);
-        
+
         if (!_vk.TryGetInstanceExtension(_instance, out _khrSurface))
         {
             throw new Exception("KHR_surface extension not available");
@@ -149,7 +201,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
     {
         uint deviceCount = 0;
         _vk.EnumeratePhysicalDevices(_instance, &deviceCount, null);
-        
+
         if (deviceCount == 0)
         {
             throw new Exception("No Vulkan-capable GPU found");
@@ -179,15 +231,15 @@ public unsafe class InternalVulkanRenderer : IDisposable
     {
         uint queueFamilyCount = 0;
         _vk.GetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, null);
-        
+
         var queueFamilies = stackalloc QueueFamilyProperties[(int)queueFamilyCount];
         _vk.GetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies);
 
         for (uint i = 0; i < queueFamilyCount; i++)
         {
             var hasCompute = (queueFamilies[i].QueueFlags & QueueFlags.ComputeBit) != 0;
-            
-            Silk.NET.Core.Bool32 presentSupport = false;
+
+            Bool32 presentSupport = false;
             _khrSurface!.GetPhysicalDeviceSurfaceSupport(device, i, _surface, &presentSupport);
 
             if (hasCompute && presentSupport)
@@ -235,7 +287,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
         _presentQueue = _computeQueue;
 
         SilkMarshal.Free((nint)extensionNames);
-        
+
         if (!_vk.TryGetDeviceExtension(_instance, _device, out _khrSwapchain))
         {
             throw new Exception("KHR_swapchain extension not available");
@@ -257,7 +309,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
 
         for (int i = 0; i < formatCount; i++)
         {
-            if (formats[i].Format == Format.B8G8R8A8Srgb && 
+            if (formats[i].Format == Format.B8G8R8A8Srgb &&
                 formats[i].ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
             {
                 _swapchainFormat = formats[i].Format;
@@ -404,7 +456,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
 
         for (uint i = 0; i < memProperties.MemoryTypeCount; i++)
         {
-            if ((typeFilter & (1 << (int)i)) != 0 && 
+            if ((typeFilter & (1 << (int)i)) != 0 &&
                 (memProperties.MemoryTypes[(int)i].PropertyFlags & properties) == properties)
             {
                 return i;
@@ -514,7 +566,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
     public void Render(SceneEntity scene, float deltaTime)
     {
         if (!_isInitialized) return;
-        
+
         if (!_buffersCreated)
         {
             Console.WriteLine($"Creating buffers for {scene.Triangles.Count} triangles, {scene.Lights.Count} lights");
@@ -522,7 +574,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
             _buffersCreated = true;
             Console.WriteLine("Buffers created successfully");
         }
-        
+
         _time += deltaTime;
 
         fixed (Fence* fencesPtr = &_inFlightFences[_currentFrame])
@@ -592,17 +644,17 @@ public unsafe class InternalVulkanRenderer : IDisposable
     {
         var cameraData = new CameraUniformData
         {
-            Position = new System.Numerics.Vector3(
+            Position = new Vector3(
                 scene.Camera.Position.X,
                 scene.Camera.Position.Y,
                 scene.Camera.Position.Z
             ),
-            Target = new System.Numerics.Vector3(
+            Target = new Vector3(
                 scene.Camera.Target.X,
                 scene.Camera.Target.Y,
                 scene.Camera.Target.Z
             ),
-            Resolution = new System.Numerics.Vector2(_swapchainExtent.Width, _swapchainExtent.Height),
+            Resolution = new Vector2(_swapchainExtent.Width, _swapchainExtent.Height),
             Time = _time,
             Fov = scene.Camera.Fov
         };
@@ -613,7 +665,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
         _vk.UnmapMemory(_device, _cameraBufferMemory);
 
         var lights = scene.Lights.Take(8).ToArray();
-        
+
         var lightData = new LightUniformData
         {
             NumLights = lights.Length
@@ -635,7 +687,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
                 ColorG = lights[i].Color.G,
                 ColorB = lights[i].Color.B
             };
-            
+
             lightData.SetLight(i, lightEntry);
         }
 
@@ -652,7 +704,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
             ReflectionStrength = settings.ReflectionStrength,
             ShadowSamples = settings.ShadowSamples,
             ShadowSoftness = settings.ShadowSoftness,
-            Pad = new System.Numerics.Vector2(0, 0)
+            Pad = new Vector2(0, 0)
         };
 
         _vk.MapMemory(_device, _settingsBufferMemory, 0, (ulong)sizeof(RenderSettingsData), 0, &data);
@@ -673,10 +725,10 @@ public unsafe class InternalVulkanRenderer : IDisposable
         }
 
         _vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, _computePipeline);
-        
+
         fixed (DescriptorSet* descriptorSetPtr = &_descriptorSet)
         {
-            _vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _pipelineLayout, 
+            _vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _pipelineLayout,
                 0, 1, descriptorSetPtr, 0, null);
         }
 
@@ -704,7 +756,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
             DstAccessMask = AccessFlags.TransferReadBit
         };
 
-        _vk.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.ComputeShaderBit, 
+        _vk.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.ComputeShaderBit,
             PipelineStageFlags.TransferBit, 0, 0, null, 0, null, 1, &barrier);
 
         var barrier2 = new ImageMemoryBarrier
@@ -727,7 +779,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
             DstAccessMask = AccessFlags.TransferWriteBit
         };
 
-        _vk.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TopOfPipeBit, 
+        _vk.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TopOfPipeBit,
             PipelineStageFlags.TransferBit, 0, 0, null, 0, null, 1, &barrier2);
 
         var copyRegion = new ImageCopy
@@ -774,7 +826,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
             DstAccessMask = 0
         };
 
-        _vk.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TransferBit, 
+        _vk.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TransferBit,
             PipelineStageFlags.BottomOfPipeBit, 0, 0, null, 0, null, 1, &barrier3);
 
         var barrier4 = new ImageMemoryBarrier
@@ -797,7 +849,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
             DstAccessMask = AccessFlags.ShaderWriteBit
         };
 
-        _vk.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TransferBit, 
+        _vk.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TransferBit,
             PipelineStageFlags.ComputeShaderBit, 0, 0, null, 0, null, 1, &barrier4);
 
         if (_vk.EndCommandBuffer(commandBuffer) != Result.Success)
@@ -809,23 +861,23 @@ public unsafe class InternalVulkanRenderer : IDisposable
     public void Resize(int width, int height)
     {
         if (!_isInitialized) return;
-        
+
         _vk.DeviceWaitIdle(_device);
-        
+
         CleanupSwapchain();
-        
+
         _config.Width = width;
         _config.Height = height;
-        
+
         CreateSwapchain();
-        
+
         _vk.DestroyImageView(_device, _storageImageView, null);
         _vk.DestroyImage(_device, _storageImage, null);
         _vk.FreeMemory(_device, _storageImageMemory, null);
-        
+
         CreateStorageImage();
         UpdateDescriptorSets();
-        
+
         Console.WriteLine($"Window resized to {width}x{height}");
     }
 
@@ -835,7 +887,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
         {
             _vk.DestroyImageView(_device, imageView, null);
         }
-        
+
         _khrSwapchain!.DestroySwapchain(_device, _swapchain, null);
     }
 
@@ -850,7 +902,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
             DescriptorCount = 1,
             StageFlags = ShaderStageFlags.ComputeBit
         };
-        
+
         bindings[1] = new DescriptorSetLayoutBinding
         {
             Binding = 1,
@@ -858,7 +910,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
             DescriptorCount = 1,
             StageFlags = ShaderStageFlags.ComputeBit
         };
-        
+
         bindings[2] = new DescriptorSetLayoutBinding
         {
             Binding = 2,
@@ -866,11 +918,11 @@ public unsafe class InternalVulkanRenderer : IDisposable
             DescriptorCount = 1,
             StageFlags = ShaderStageFlags.ComputeBit
         };
-        
+
         bindings[3] = new DescriptorSetLayoutBinding
         {
             Binding = 3,
-            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorType = DescriptorType.StorageBuffer,
             DescriptorCount = 1,
             StageFlags = ShaderStageFlags.ComputeBit
         };
@@ -931,7 +983,8 @@ public unsafe class InternalVulkanRenderer : IDisposable
             Layout = _pipelineLayout
         };
 
-        if (_vk.CreateComputePipelines(_device, default, 1, &pipelineInfo, null, out _computePipeline) != Result.Success)
+        if (_vk.CreateComputePipelines(_device, default, 1, &pipelineInfo, null, out _computePipeline) !=
+            Result.Success)
         {
             throw new Exception("Failed to create compute pipeline");
         }
@@ -945,6 +998,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
         {
             throw new FileNotFoundException($"Shader file not found: {path}");
         }
+
         var code = File.ReadAllBytes(path);
         Console.WriteLine($"Loaded shader: {path} ({code.Length} bytes)");
         return code;
@@ -1006,8 +1060,8 @@ public unsafe class InternalVulkanRenderer : IDisposable
     {
         uint swapchainImageCount = (uint)_swapchainImages.Length;
 
-        _imageAvailableSemaphores = new Silk.NET.Vulkan.Semaphore[_config.MaxFramesInFlight];
-        _renderFinishedSemaphores = new Silk.NET.Vulkan.Semaphore[swapchainImageCount];
+        _imageAvailableSemaphores = new Semaphore[_config.MaxFramesInFlight];
+        _renderFinishedSemaphores = new Semaphore[swapchainImageCount];
         _inFlightFences = new Fence[_config.MaxFramesInFlight];
 
         var semaphoreInfo = new SemaphoreCreateInfo
@@ -1023,7 +1077,8 @@ public unsafe class InternalVulkanRenderer : IDisposable
 
         for (int i = 0; i < _config.MaxFramesInFlight; i++)
         {
-            if (_vk.CreateSemaphore(_device, &semaphoreInfo, null, out _imageAvailableSemaphores[i]) != Result.Success ||
+            if (_vk.CreateSemaphore(_device, &semaphoreInfo, null, out _imageAvailableSemaphores[i]) !=
+                Result.Success ||
                 _vk.CreateFence(_device, &fenceInfo, null, out _inFlightFences[i]) != Result.Success)
             {
                 throw new Exception("Failed to create synchronization objects");
@@ -1053,7 +1108,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
     private void CreateCameraBuffer()
     {
         ulong bufferSize = (ulong)sizeof(CameraUniformData);
-        CreateBuffer(bufferSize, BufferUsageFlags.UniformBufferBit, 
+        CreateBuffer(bufferSize, BufferUsageFlags.UniformBufferBit,
             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
             out _cameraBuffer, out _cameraBufferMemory);
     }
@@ -1061,7 +1116,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
     private void CreateLightBuffer()
     {
         ulong bufferSize = (ulong)sizeof(LightUniformData);
-        CreateBuffer(bufferSize, BufferUsageFlags.UniformBufferBit,
+        CreateBuffer(bufferSize, BufferUsageFlags.StorageBufferBit,
             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
             out _lightBuffer, out _lightBufferMemory);
     }
@@ -1079,12 +1134,15 @@ public unsafe class InternalVulkanRenderer : IDisposable
         var triangles = scene.Triangles.ToArray();
         if (triangles.Length == 0)
         {
-            triangles = new[] { new TriangleEntity(
-                new Vector3(0, 0, 0),
-                new Vector3(1, 0, 0),
-                new Vector3(0, 1, 0),
-                new Color(1, 0, 0)
-            )};
+            triangles = new[]
+            {
+                new TriangleEntity(
+                    new Core.Math.Vector3(0, 0, 0),
+                    new Core.Math.Vector3(1, 0, 0),
+                    new Core.Math.Vector3(0, 1, 0),
+                    new Color(1, 0, 0)
+                )
+            };
         }
 
         ulong bufferSize = (ulong)(sizeof(TriangleData) * triangles.Length);
@@ -1094,29 +1152,29 @@ public unsafe class InternalVulkanRenderer : IDisposable
 
         void* data;
         _vk.MapMemory(_device, _triangleBufferMemory, 0, bufferSize, 0, &data);
-        
+
         var triangleData = new TriangleData[triangles.Length];
         for (int i = 0; i < triangles.Length; i++)
         {
             triangleData[i] = new TriangleData
             {
-                V0 = new System.Numerics.Vector3(triangles[i].V0.X, triangles[i].V0.Y, triangles[i].V0.Z),
-                V1 = new System.Numerics.Vector3(triangles[i].V1.X, triangles[i].V1.Y, triangles[i].V1.Z),
-                V2 = new System.Numerics.Vector3(triangles[i].V2.X, triangles[i].V2.Y, triangles[i].V2.Z),
-                Color = new System.Numerics.Vector3(triangles[i].Color.R, triangles[i].Color.G, triangles[i].Color.B)
+                V0 = new Vector3(triangles[i].V0.X, triangles[i].V0.Y, triangles[i].V0.Z),
+                V1 = new Vector3(triangles[i].V1.X, triangles[i].V1.Y, triangles[i].V1.Z),
+                V2 = new Vector3(triangles[i].V2.X, triangles[i].V2.Y, triangles[i].V2.Z),
+                Color = new Vector3(triangles[i].Color.R, triangles[i].Color.G, triangles[i].Color.B)
             };
         }
-        
+
         fixed (TriangleData* trianglePtr = triangleData)
         {
             System.Buffer.MemoryCopy(trianglePtr, data, bufferSize, bufferSize);
         }
-        
+
         _vk.UnmapMemory(_device, _triangleBufferMemory);
     }
 
     private void CreateBuffer(ulong size, BufferUsageFlags usage, MemoryPropertyFlags properties,
-        out Silk.NET.Vulkan.Buffer buffer, out DeviceMemory bufferMemory)
+        out Buffer buffer, out DeviceMemory bufferMemory)
     {
         var bufferInfo = new BufferCreateInfo
         {
@@ -1160,12 +1218,12 @@ public unsafe class InternalVulkanRenderer : IDisposable
         poolSizes[1] = new DescriptorPoolSize
         {
             Type = DescriptorType.UniformBuffer,
-            DescriptorCount = 3
+            DescriptorCount = 2
         };
         poolSizes[2] = new DescriptorPoolSize
         {
             Type = DescriptorType.StorageBuffer,
-            DescriptorCount = 1
+            DescriptorCount = 2
         };
 
         var poolInfo = new DescriptorPoolCreateInfo
@@ -1278,7 +1336,7 @@ public unsafe class InternalVulkanRenderer : IDisposable
             DstSet = _descriptorSet,
             DstBinding = 3,
             DstArrayElement = 0,
-            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorType = DescriptorType.StorageBuffer,
             DescriptorCount = 1,
             PBufferInfo = &lightBufferInfo
         };
@@ -1296,63 +1354,16 @@ public unsafe class InternalVulkanRenderer : IDisposable
 
         _vk.UpdateDescriptorSets(_device, 5, descriptorWrites, 0, null);
     }
-
-    public void Dispose()
-    {
-        if (!_isInitialized) return;
-
-        _vk.DeviceWaitIdle(_device);
-
-        for (int i = 0; i < _config.MaxFramesInFlight; i++)
-        {
-            _vk.DestroySemaphore(_device, _imageAvailableSemaphores[i], null);
-            _vk.DestroyFence(_device, _inFlightFences[i], null);
-        }
-
-        for (int i = 0; i < _renderFinishedSemaphores.Length; i++)
-        {
-            _vk.DestroySemaphore(_device, _renderFinishedSemaphores[i], null);
-        }
-
-        _vk.DestroyCommandPool(_device, _commandPool, null);
-
-        _vk.DestroyDescriptorPool(_device, _descriptorPool, null);
-        
-        _vk.DestroyBuffer(_device, _cameraBuffer, null);
-        _vk.FreeMemory(_device, _cameraBufferMemory, null);
-        _vk.DestroyBuffer(_device, _lightBuffer, null);
-        _vk.FreeMemory(_device, _lightBufferMemory, null);
-        _vk.DestroyBuffer(_device, _triangleBuffer, null);
-        _vk.FreeMemory(_device, _triangleBufferMemory, null);
-        _vk.DestroyBuffer(_device, _settingsBuffer, null);
-        _vk.FreeMemory(_device, _settingsBufferMemory, null);
-
-        _vk.DestroyPipeline(_device, _computePipeline, null);
-        _vk.DestroyPipelineLayout(_device, _pipelineLayout, null);
-        _vk.DestroyDescriptorSetLayout(_device, _descriptorSetLayout, null);
-        _vk.DestroyShaderModule(_device, _computeShaderModule, null);
-
-        _vk.DestroyImageView(_device, _storageImageView, null);
-        _vk.DestroyImage(_device, _storageImage, null);
-        _vk.FreeMemory(_device, _storageImageMemory, null);
-
-        CleanupSwapchain();
-
-        _vk.DestroyDevice(_device, null);
-        _khrSurface!.DestroySurface(_instance, _surface, null);
-        _vk.DestroyInstance(_instance, null);
-        _vk.Dispose();
-    }
 }
 
 [StructLayout(LayoutKind.Sequential)]
 public struct CameraUniformData
 {
-    public System.Numerics.Vector3 Position;
+    public Vector3 Position;
     public float Pad1;
-    public System.Numerics.Vector3 Target;
+    public Vector3 Target;
     public float Pad2;
-    public System.Numerics.Vector2 Resolution;
+    public Vector2 Resolution;
     public float Time;
     public float Fov;
 }
@@ -1360,13 +1371,13 @@ public struct CameraUniformData
 [StructLayout(LayoutKind.Sequential)]
 public struct TriangleData
 {
-    public System.Numerics.Vector3 V0;
+    public Vector3 V0;
     public float Pad0;
-    public System.Numerics.Vector3 V1;
+    public Vector3 V1;
     public float Pad1;
-    public System.Numerics.Vector3 V2;
+    public Vector3 V2;
     public float Pad2;
-    public System.Numerics.Vector3 Color;
+    public Vector3 Color;
     public float Pad3;
 }
 
@@ -1377,17 +1388,17 @@ public struct LightData
     public float Intensity;
     public float Pad1;
     public float Pad2;
-    
+
     public float PositionX;
     public float PositionY;
     public float PositionZ;
     public float Pad3;
-    
+
     public float DirectionX;
     public float DirectionY;
     public float DirectionZ;
     public float Pad4;
-    
+
     public float ColorR;
     public float ColorG;
     public float ColorB;
@@ -1395,21 +1406,33 @@ public struct LightData
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct LightUniformData
+public struct LightUniformData
 {
     public int NumLights;
     public int Pad1;
     public int Pad2;
     public int Pad3;
-    public fixed byte LightsData[8 * 64];
-    
+    public LightData Light0;
+    public LightData Light1;
+    public LightData Light2;
+    public LightData Light3;
+    public LightData Light4;
+    public LightData Light5;
+    public LightData Light6;
+    public LightData Light7;
+
     public void SetLight(int index, LightData light)
     {
-        if (index < 0 || index >= 8) return;
-        fixed (byte* ptr = LightsData)
+        switch (index)
         {
-            LightData* lights = (LightData*)ptr;
-            lights[index] = light;
+            case 0: Light0 = light; break;
+            case 1: Light1 = light; break;
+            case 2: Light2 = light; break;
+            case 3: Light3 = light; break;
+            case 4: Light4 = light; break;
+            case 5: Light5 = light; break;
+            case 6: Light6 = light; break;
+            case 7: Light7 = light; break;
         }
     }
 }
@@ -1423,6 +1446,5 @@ public struct RenderSettingsData
     public float ReflectionStrength;
     public int ShadowSamples;
     public float ShadowSoftness;
-    public System.Numerics.Vector2 Pad;
+    public Vector2 Pad;
 }
-

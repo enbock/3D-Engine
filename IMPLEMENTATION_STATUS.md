@@ -1,6 +1,6 @@
 # Vulkan Engine - Implementierungsstatus
 
-**Stand: 2026-01-28 (Nach Refactoring-Korrektur)**
+**Stand: 2026-01-28 (Dynamische Beleuchtung implementiert)**
 
 ## 🎯 Aktueller Status: Vollständig funktionsfähig ✅
 
@@ -9,16 +9,25 @@
 - ✅ Y-Achse & Koordinatensystem korrigiert (keine invertierte Welt mehr)
 - ✅ RGB/BGR Format-Problem gelöst (Rot ist rot, Blau ist blau)
 - ✅ Alle Vulkan Validation Warnings behoben
-- ✅ Beleuchtung mit unterschiedlichen Helligkeiten funktioniert
-- ✅ **Fehlende Dreiecke nach Refactoring wiederhergestellt**
+- ✅ **Dynamische Beleuchtung mit 3 Lichttypen** (Ambient, Directional, Point)
+- ✅ Schatten und Specular Highlights
+- ✅ Fehlende Dreiecke nach Refactoring wiederhergestellt
 
-**Letzte Korrektur (2026-01-28):**
-- ✅ Mittleres grünes Dreieck wiederhergestellt
-- ✅ Blaues Dreieck wiederhergestellt
-- ✅ Alle drei Dreiecke mit korrekten Orientierungen
-- ✅ Dokumentiert in `DREIECK_KORREKTUR_2026-01-28.md`
+**Letzte Änderung (2026-01-28):**
 
-**Szene enthält jetzt:**
+- ✅ Dynamische Beleuchtung implementiert
+- ✅ std430 Storage Buffer für Lichtdaten (statt std140 Uniform)
+- ✅ LightType Enum korrigiert (0=Ambient, 1=Directional, 2=Point)
+- ✅ Optimierte Lichtintensitäten (keine Überstrahlung)
+- ✅ Dokumentiert in `DYNAMISCHE_BELEUCHTUNG.md`
+
+**Aktuelle Lichtquellen:**
+
+1. Ambient Light (5% Intensität) - Grundhelligkeit
+2. Directional Light (80% Intensität) - Hauptlicht von oben-rechts
+3. Point Light (50% Intensität) - Warmes Akzentlicht
+
+**Szene enthält:**
 1. Rotes Dreieck (links) - Normale nach vorne
 2. Grünes Dreieck (mitte) - Normale nach rechts
 3. Blaues Dreieck (rechts) - Normale nach links

@@ -31,18 +31,27 @@ layout(std140, binding = 2) readonly buffer TriangleSSBO {
 struct Light {
     int type;
     float intensity;
-    vec2 _pad;
-    vec3 position;
-    float _pad2;
-    vec3 direction;
-    float _pad3;
-    vec3 color;
-    float _pad4;
+    float pad1;
+    float pad2;
+    float posX;
+    float posY;
+    float posZ;
+    float pad3;
+    float dirX;
+    float dirY;
+    float dirZ;
+    float pad4;
+    float colorR;
+    float colorG;
+    float colorB;
+    float pad5;
 };
 
-layout(std140, binding = 3) uniform LightUBO {
+layout (std430, binding = 3) buffer LightUBO {
     int numLights;
-    int _pad[3];
+    int _pad1;
+    int _pad2;
+    int _pad3;
     Light lights[8];
 } lighting;
 
@@ -171,22 +180,59 @@ float traceShadow(vec3 origin, vec3 lightDir, float maxDist, int numTriangles) {
 
 vec3 shade(Hit hit, vec3 rayDir, int numTriangles) {
     vec3 color = hit.color;
-    
-    // Hart codierte Beleuchtung - funktioniert perfekt!
-    vec3 lightDir = normalize(vec3(0.5, 1.0, 0.3));
-    
-    // Ambient für Grundhelligkeit
-    float ambient = 0.5;
-    
-    // Diffuse Beleuchtung
-    float diff = max(dot(hit.normal, lightDir), 0.0);
-    float diffuse = diff * 2.0;
-    
-    // Kombiniere
-    float totalLight = ambient + diffuse;
-    totalLight = clamp(totalLight, 0.0, 3.0);
-    
-    return color * totalLight;
+    vec3 result = vec3(0.0);
+
+    vec3 viewDir = -rayDir;
+    vec3 normal = hit.normal;
+    if (dot(normal, viewDir) < 0.0) {
+        normal = -normal;
+    }
+
+    int numLights = lighting.numLights;
+
+    // Beleuchtung aktiv
+
+    for (int i = 0; i < numLights; i++) {
+        Light light = lighting.lights[i];
+        vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
+        vec3 lightPos = vec3(light.posX, light.posY, light.posZ);
+        vec3 lightDir = vec3(light.dirX, light.dirY, light.dirZ);
+
+        if (light.type == 0) {
+            result += color * lightColor * light.intensity;
+        }
+        else if (light.type == 1) {
+            vec3 lDir = normalize(-lightDir);
+            float diff = max(dot(normal, lDir), 0.0);
+
+            float shadow = traceShadow(hit.point + normal * EPSILON * 10.0, lDir, MAX_DIST, numTriangles);
+
+            vec3 halfDir = normalize(lDir + viewDir);
+            float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
+
+            result += color * lightColor * diff * light.intensity * shadow;
+            result += lightColor * spec * 0.3 * light.intensity * shadow;
+        }
+        else if (light.type == 2) {
+            vec3 lightVec = lightPos - hit.point;
+            float dist = length(lightVec);
+            vec3 lDir = lightVec / dist;
+
+            float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+
+            float diff = max(dot(normal, lDir), 0.0);
+
+            float shadow = traceShadow(hit.point + normal * EPSILON * 10.0, lDir, dist, numTriangles);
+
+            vec3 halfDir = normalize(lDir + viewDir);
+            float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
+
+            result += color * lightColor * diff * light.intensity * attenuation * shadow;
+            result += lightColor * spec * 0.3 * light.intensity * attenuation * shadow;
+        }
+    }
+
+    return clamp(result, 0.0, 1.0);
 }
 
 
