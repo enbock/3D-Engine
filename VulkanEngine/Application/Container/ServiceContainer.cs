@@ -1,4 +1,3 @@
-using VulkanEngine.Core.Interfaces;
 
 namespace VulkanEngine.Application.Container;
 

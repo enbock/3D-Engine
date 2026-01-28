@@ -1,3 +1,4 @@
+
 namespace VulkanEngine.Core.Math;
 
 public struct AABB
@@ -64,20 +65,6 @@ public struct AABB
         );
     }
 
-    public static AABB FromTriangle(Entities.Triangle triangle)
-    {
-        var min = new Vector3(
-            System.Math.Min(triangle.V0.X, System.Math.Min(triangle.V1.X, triangle.V2.X)),
-            System.Math.Min(triangle.V0.Y, System.Math.Min(triangle.V1.Y, triangle.V2.Y)),
-            System.Math.Min(triangle.V0.Z, System.Math.Min(triangle.V1.Z, triangle.V2.Z))
-        );
-        var max = new Vector3(
-            System.Math.Max(triangle.V0.X, System.Math.Max(triangle.V1.X, triangle.V2.X)),
-            System.Math.Max(triangle.V0.Y, System.Math.Max(triangle.V1.Y, triangle.V2.Y)),
-            System.Math.Max(triangle.V0.Z, System.Math.Max(triangle.V1.Z, triangle.V2.Z))
-        );
-        return new AABB(min, max);
-    }
 
     public static AABB Empty => new(
         new Vector3(float.MaxValue, float.MaxValue, float.MaxValue),

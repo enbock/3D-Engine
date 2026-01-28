@@ -1,5 +1,5 @@
-﻿using VulkanEngine.Application;
-using VulkanEngine.Core.Services;
+﻿﻿using VulkanEngine.Application;
+using VulkanEngine.Application.Engine;
 
 namespace VulkanEngine;
 
@@ -23,9 +23,18 @@ public static class Program
 
         try
         {
-            var engine = new Engine(config);
-            engine.Initialize();
-            engine.Run();
+            var engine = new EngineController(config);
+            var response = engine.Initialize();
+            
+            if (response.Success)
+            {
+                engine.Run();
+            }
+            else
+            {
+                Console.WriteLine($"Engine initialization failed: {response.ErrorMessage}");
+            }
+            
             engine.Dispose();
         }
         catch (Exception ex)
