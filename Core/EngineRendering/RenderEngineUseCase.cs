@@ -1,6 +1,6 @@
 using Application.Container;
 using Core.Rendering;
-using CoreScene = VulkanEngine.Core.Scene;
+using Core.Scene;
 
 namespace Core.EngineRendering;
 
@@ -18,7 +18,7 @@ public class RenderEngineUseCase
     {
         totalTime += request.DeltaTime;
 
-        if (container.TryResolve<CoreScene.SceneEntity>(out var scene) && 
+        if (container.TryResolve<SceneEntity>(out var scene) && 
             container.TryResolve<Renderer>(out var renderer))
         {
             renderer?.Render(scene!, totalTime);

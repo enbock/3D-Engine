@@ -8,7 +8,7 @@ using Infrastructure.Rendering;
 using Application.Input;
 using Application.Window;
 using Application.Scene;
-using CoreScene = VulkanEngine.Core.Scene;
+using Core.Scene;
 
 namespace Application.Engine;
 
@@ -18,7 +18,7 @@ public class EngineController : IDisposable
     private readonly ServiceContainer container;
     private WindowManagerService? windowManager;
     private InputHandlerService? inputHandler;
-    private CoreScene.SceneEntity? scene;
+    private SceneEntity? scene;
     private bool isRunning;
 
     private InitializeEngineUseCase? initializeUseCase;
@@ -125,7 +125,7 @@ public class EngineController : IDisposable
     private void OnResize(int width, int height)
     {
         var renderer = container.Resolve<Renderer>();
-        renderer?.Resize(width, height);
+        renderer.Resize(width, height);
 
         if (scene?.Camera != null)
         {

@@ -1,7 +1,7 @@
 using Application.Container;
 using Core.Input;
 using Application.CameraControl;
-using CoreScene = VulkanEngine.Core.Scene;
+using Core.Scene;
 
 namespace Core.EngineUpdate;
 
@@ -20,7 +20,7 @@ public class UpdateEngineUseCase
     {
         totalTime += request.DeltaTime;
 
-        if (cameraControlUseCase == null && container.TryResolve<CoreScene.SceneEntity>(out var scene))
+        if (cameraControlUseCase == null && container.TryResolve<SceneEntity>(out var scene))
         {
             var inputHandler = container.Resolve<InputHandler>();
             cameraControlUseCase = new CameraControlUseCase(scene!.Camera, inputHandler);

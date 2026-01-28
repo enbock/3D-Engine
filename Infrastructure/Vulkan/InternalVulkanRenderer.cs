@@ -1079,11 +1079,11 @@ public unsafe class InternalVulkanRenderer : IDisposable
         var triangles = scene.Triangles.ToArray();
         if (triangles.Length == 0)
         {
-            triangles = new[] { new Geometry.TriangleEntity(
+            triangles = new[] { new TriangleEntity(
                 new Vector3(0, 0, 0),
                 new Vector3(1, 0, 0),
                 new Vector3(0, 1, 0),
-                new Core.Math.Color(1, 0, 0)
+                new Color(1, 0, 0)
             )};
         }
 

@@ -48,6 +48,11 @@ public struct Vector3
     public static Vector3 operator *(float s, Vector3 v) => new(v.X * s, v.Y * s, v.Z * s);
     public static Vector3 operator /(Vector3 v, float s) => new(v.X / s, v.Y / s, v.Z / s);
     public static Vector3 operator -(Vector3 v) => new(-v.X, -v.Y, -v.Z);
+    public static bool operator ==(Vector3 a, Vector3 b) => a.X == b.X && a.Y == b.Y && a.Z == b.Z;
+    public static bool operator !=(Vector3 a, Vector3 b) => !(a == b);
+
+    public override bool Equals(object? obj) => obj is Vector3 other && this == other;
+    public override int GetHashCode() => HashCode.Combine(X, Y, Z);
 
     public static float Dot(Vector3 a, Vector3 b) => a.X * b.X + a.Y * b.Y + a.Z * b.Z;
 
