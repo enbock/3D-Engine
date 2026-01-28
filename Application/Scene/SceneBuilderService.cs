@@ -32,10 +32,17 @@ public class SceneBuilderService
         ));
 
         scene.AddTriangle(new TriangleEntity(
-            new Vector3(1, 0, -1),
-            new Vector3(2, 2, -1),
-            new Vector3(2, 0, -1),
+            new Vector3(0, 0, -0.5f),
+            new Vector3(0, 2, 0),
+            new Vector3(0, 0, 0.5f),
             new Color(0.0f, 1.0f, 0.0f)
+        ));
+
+        scene.AddTriangle(new TriangleEntity(
+            new Vector3(2, 0, 0.5f),
+            new Vector3(2, 2, 0),
+            new Vector3(2, 0, -0.5f),
+            new Color(0.0f, 0.0f, 1.0f)
         ));
 
         scene.AddTriangle(new TriangleEntity(

@@ -1,24 +1,28 @@
 # Vulkan Engine - Implementierungsstatus
 
-**Stand: 2026-01-27 (17:00 Uhr - PAUSE)**
+**Stand: 2026-01-28 (Nach Refactoring-Korrektur)**
 
-## 🎯 Aktueller Status: Beleuchtung/Schatten Debugging
+## 🎯 Aktueller Status: Vollständig funktionsfähig ✅
 
-**Was wir heute erreicht haben:**
+**Was funktioniert:**
 - ✅ Mouse Look & Kamera-Steuerung vollständig funktionsfähig (WASD + Q/E + Maus)
 - ✅ Y-Achse & Koordinatensystem korrigiert (keine invertierte Welt mehr)
 - ✅ RGB/BGR Format-Problem gelöst (Rot ist rot, Blau ist blau)
 - ✅ Alle Vulkan Validation Warnings behoben
+- ✅ Beleuchtung mit unterschiedlichen Helligkeiten funktioniert
+- ✅ **Fehlende Dreiecke nach Refactoring wiederhergestellt**
 
-**Aktuelles Problem:**
-- ❌ Keine Beleuchtung oder Schatten sichtbar (Phase 9 - IN ARBEIT)
-- Szene rendert nur flache Farben ohne Licht-Variation
-- Debug-Visualisierung (Normalen) läuft gerade
+**Letzte Korrektur (2026-01-28):**
+- ✅ Mittleres grünes Dreieck wiederhergestellt
+- ✅ Blaues Dreieck wiederhergestellt
+- ✅ Alle drei Dreiecke mit korrekten Orientierungen
+- ✅ Dokumentiert in `DREIECK_KORREKTUR_2026-01-28.md`
 
-**Nächste Schritte beim Fortsetzen:**
-1. Normal-Visualisierung auswerten (Shader hat Debug-Return aktiv!)
-2. Light Count & Diffuse-Wert debuggen
-3. Schatten wieder aktivieren sobald Beleuchtung funktioniert
+**Szene enthält jetzt:**
+1. Rotes Dreieck (links) - Normale nach vorne
+2. Grünes Dreieck (mitte) - Normale nach rechts
+3. Blaues Dreieck (rechts) - Normale nach links
+4. Boden (2 Dreiecke) - Grau
 
 ---
 
