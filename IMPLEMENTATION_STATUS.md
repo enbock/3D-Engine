@@ -1,6 +1,6 @@
 # Vulkan Engine - Implementierungsstatus
 
-**Stand: 2026-01-28 (Dynamische Beleuchtung implementiert)**
+**Stand: 2026-01-29 (Backface Culling & Schatten-Optimierung)**
 
 ## 🎯 Aktueller Status: Vollständig funktionsfähig ✅
 
@@ -10,28 +10,32 @@
 - ✅ RGB/BGR Format-Problem gelöst (Rot ist rot, Blau ist blau)
 - ✅ Alle Vulkan Validation Warnings behoben
 - ✅ **Dynamische Beleuchtung mit 3 Lichttypen** (Ambient, Directional, Point)
-- ✅ Schatten und Specular Highlights
-- ✅ Fehlende Dreiecke nach Refactoring wiederhergestellt
+- ✅ **Backface Culling** - Rückseiten werden nicht gerendert
+- ✅ **Konsistente Schatten** - nur Vorderseiten werfen Schatten
+- ✅ Gamma-Korrektur für besseren Kontrast
+- ✅ Starke Licht-Attenuation für sichtbaren Lichtabfall
 
-**Letzte Änderung (2026-01-28):**
+**Letzte Änderung (2026-01-29):**
 
-- ✅ Dynamische Beleuchtung implementiert
-- ✅ std430 Storage Buffer für Lichtdaten (statt std140 Uniform)
-- ✅ LightType Enum korrigiert (0=Ambient, 1=Directional, 2=Point)
-- ✅ Optimierte Lichtintensitäten (keine Überstrahlung)
-- ✅ Dokumentiert in `DYNAMISCHE_BELEUCHTUNG.md`
+- ✅ Backface Culling implementiert
+- ✅ Separate Shadow-Intersect-Funktion mit invertiertem Culling
+- ✅ Gamma-Korrektur (1/2.2)
+- ✅ Verstärkte Attenuation für Point Lights
+- ✅ Korrekte Winding Order für alle Dreiecke
+- ✅ Dokumentiert in `BACKFACE_CULLING_SCHATTEN.md`
 
 **Aktuelle Lichtquellen:**
 
-1. Ambient Light (5% Intensität) - Grundhelligkeit
-2. Directional Light (80% Intensität) - Hauptlicht von oben-rechts
-3. Point Light (50% Intensität) - Warmes Akzentlicht
+1. Ambient Light (2% Intensität) - Minimale Grundhelligkeit
+2. Directional Light (50% Intensität) - Hauptlicht von oben-hinten-links
+3. Point Light (200% Intensität) - Warmes Akzentlicht mit starkem Abfall
 
 **Szene enthält:**
-1. Rotes Dreieck (links) - Normale nach vorne
-2. Grünes Dreieck (mitte) - Normale nach rechts
-3. Blaues Dreieck (rechts) - Normale nach links
-4. Boden (2 Dreiecke) - Grau
+
+1. Rotes Dreieck (links)
+2. Grünes Dreieck (mitte)
+3. Blaues Dreieck (rechts)
+4. Boden (2 Dreiecke) - Grau, von oben sichtbar
 
 ---
 
