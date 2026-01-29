@@ -17,12 +17,12 @@ if not exist "%VULKAN_SDK%\Bin\glslc.exe" (
 
 %GLSLC% %SHADER_DIR%\raytracing.comp -o %SHADER_DIR%\raytracing.comp.spv
 
-if %ERRORLEVEL% EQU 0 (
-    echo Shader compilation successful!
-) else (
-    echo ERROR: Shader compilation failed!
-    pause
-    exit /b 1
-)
-
+echo.
+echo All shaders compiled successfully!
 echo Done.
+exit /b 0
+
+:error
+echo.
+echo ERROR: Shader compilation failed!
+exit /b 1

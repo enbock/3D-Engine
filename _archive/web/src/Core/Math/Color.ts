@@ -4,7 +4,8 @@ export class Color {
         public g: number = 1,
         public b: number = 1,
         public a: number = 1
-    ) {}
+    ) {
+    }
 
     static white(): Color {
         return new Color(1, 1, 1, 1);

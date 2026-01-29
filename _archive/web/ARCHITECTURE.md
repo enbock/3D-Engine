@@ -62,6 +62,7 @@
 ## Datenfluss
 
 ### Initialisierung:
+
 ```
 main.ts
   → erstellt EngineConfig
@@ -74,6 +75,7 @@ main.ts
 ```
 
 ### Resize-Event:
+
 ```
 window.resize Event
   → main.ts handleResize()
@@ -83,6 +85,7 @@ window.resize Event
 ```
 
 ### Render Loop (läuft kontinuierlich):
+
 ```
 requestAnimationFrame
   → engine.renderLoop()
@@ -109,38 +112,46 @@ Der Core kennt keine äußeren Schichten!
 ## SOLID Principles
 
 ### Single Responsibility:
+
 - **Engine**: Nur WebGL und Rendering
 - **EngineController**: Nur Orchestrierung
 - **main.ts**: Nur UI-Initialisierung
 
 ### Open/Closed:
+
 - Erweiterbar durch neue Controller im Application Layer
 - Core bleibt unverändert
 
 ### Liskov Substitution:
+
 - Engine könnte durch andere Rendering-Engines ersetzt werden
 - Interface bleibt gleich
 
 ### Interface Segregation:
+
 - Kleine, fokussierte Interfaces
 - EngineConfig enthält nur notwendige Konfiguration
 
 ### Dependency Inversion:
+
 - High-level Module (UI) hängen von Abstraktionen ab (Controller)
 - Low-level Module (Engine) sind unabhängig
 
 ## DDD Concepts
 
 ### Aggregate Root:
+
 - **Engine** ist das Aggregate Root für das Rendering-System
 - Schützt seine internen Invarianten
 - Bietet klare öffentliche API
 
 ### Value Objects:
+
 - **EngineConfig** ist ein Value Object
 - Immutable Configuration
 
 ### Application Services:
+
 - **EngineController** ist ein Application Service
 - Koordiniert Domain-Objekte
 - Implementiert Use Cases

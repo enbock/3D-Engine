@@ -20,17 +20,20 @@ Die Kamera kann jetzt **frei bewegt** werden!
 ### Implementierte Features:
 
 #### 1. **KeyboardHandler** (`Infrastructure/Input/KeyboardHandler.ts`)
+
 - Erfasst alle WASD + Space/Shift Eingaben
 - Bietet `KeyboardState` Interface
 - Event-basiertes System (keydown/keyup)
 
 #### 2. **CameraController erweitert**
+
 - Berechnet Forward/Right/Up Vektoren
 - Bewegung relativ zur Blickrichtung
 - Kombiniert Maus-Neigung + Tastatur-Bewegung
 - Konfigurierbare Bewegungsgeschwindigkeit
 
 #### 3. **DeltaTime-Integration**
+
 - Frameunabhängige Bewegung
 - Konsistente Geschwindigkeit bei allen Framerates
 - Update-Callback mit deltaTime
@@ -38,6 +41,7 @@ Die Kamera kann jetzt **frei bewegt** werden!
 ### Technische Details:
 
 **Bewegungs-Berechnung:**
+
 ```typescript
 forward = target - position (normalisiert)
 right = forward × up (Cross Product)
@@ -51,6 +55,7 @@ position += up * speed * deltaTime        // Space/Shift
 **Standard-Geschwindigkeit:** 5.0 Einheiten/Sekunde
 
 **Target-Berechnung:**
+
 ```typescript
 adjustedTarget = position + offset(maus-neigung)
 ```
@@ -58,16 +63,19 @@ adjustedTarget = position + offset(maus-neigung)
 ### Anpassungen:
 
 **Geschwindigkeit ändern:**
+
 ```typescript
 cameraController.setMoveSpeed(10.0); // Doppelt so schnell
 ```
 
 **Start-Position ändern:**
+
 ```typescript
 cameraController.setPosition(new Vector3(0, 5, 0));
 ```
 
 **Maximale Neigung ändern:**
+
 ```typescript
 cameraController.setMaxTiltAngle(45); // 45° statt 30°
 ```
@@ -92,6 +100,7 @@ npm run dev
 ```
 
 **Im Browser:**
+
 1. **Klicken Sie auf das Canvas** um die Maus-Steuerung zu aktivieren
 2. **Maus bewegen** um sich umzusehen (360° frei!)
 3. **WASD** um sich zu bewegen
@@ -99,7 +108,8 @@ npm run dev
 5. **Strg** um abzusinken
 6. **ESC** um die Maus-Steuerung zu deaktivieren
 
-Die Kamera bewegt sich relativ zur aktuellen Blickrichtung - genau wie in einem FPS-Spiel! Sie können sich frei im Raum drehen und bewegen.
+Die Kamera bewegt sich relativ zur aktuellen Blickrichtung - genau wie in einem FPS-Spiel! Sie können sich frei im Raum
+drehen und bewegen.
 
 ### Tipps:
 

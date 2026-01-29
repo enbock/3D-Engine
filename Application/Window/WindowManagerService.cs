@@ -1,16 +1,21 @@
-using Silk.NET.Windowing;
-using Silk.NET.Input;
-using Application;
-using Silk.NET.Vulkan;
 using System.Runtime.InteropServices;
+using Silk.NET.Input;
+using Silk.NET.Maths;
+using Silk.NET.Vulkan;
+using Silk.NET.Windowing;
 
 namespace Application.Window;
 
 public unsafe class WindowManagerService : WindowManager
 {
-    private IWindow? window;
     private readonly EngineConfig config;
     private bool isDisposed;
+    private IWindow? window;
+
+    public WindowManagerService(EngineConfig config)
+    {
+        this.config = config;
+    }
 
     public IWindow Window => window ?? throw new InvalidOperationException("Window not initialized");
     public IInputContext? InputContext { get; private set; }
@@ -20,17 +25,12 @@ public unsafe class WindowManagerService : WindowManager
     public event Action<float>? OnRender;
     public event Action? OnLoad;
 
-    public WindowManagerService(EngineConfig config)
-    {
-        this.config = config;
-    }
-
     public void Initialize()
     {
-        var options = WindowOptions.DefaultVulkan with
+        WindowOptions options = WindowOptions.DefaultVulkan with
         {
             Title = config.Title,
-            Size = new Silk.NET.Maths.Vector2D<int>(config.Width, config.Height),
+            Size = new Vector2D<int>(config.Width, config.Height),
             VSync = config.VSync,
             API = new GraphicsAPI(ContextAPI.Vulkan, ContextProfile.Core, ContextFlags.Default, new APIVersion(1, 0))
         };
@@ -43,20 +43,11 @@ public unsafe class WindowManagerService : WindowManager
             OnLoad?.Invoke();
         };
 
-        window.Update += (deltaTime) =>
-        {
-            OnUpdate?.Invoke((float)deltaTime);
-        };
+        window.Update += deltaTime => { OnUpdate?.Invoke((float)deltaTime); };
 
-        window.Render += (deltaTime) =>
-        {
-            OnRender?.Invoke((float)deltaTime);
-        };
+        window.Render += deltaTime => { OnRender?.Invoke((float)deltaTime); };
 
-        window.Resize += (size) =>
-        {
-            OnResize?.Invoke(size.X, size.Y);
-        };
+        window.Resize += size => { OnResize?.Invoke(size.X, size.Y); };
     }
 
     public void Run()
@@ -71,35 +62,26 @@ public unsafe class WindowManagerService : WindowManager
 
     public string[] GetRequiredExtensions()
     {
-        if (window?.VkSurface == null)
-        {
-            return Array.Empty<string>();
-        }
+        if (window?.VkSurface == null) return Array.Empty<string>();
 
         uint count = 0;
-        var extensionsPtr = window.VkSurface.GetRequiredExtensions(out count);
-        
-        if (extensionsPtr == null || count == 0)
-        {
-            return Array.Empty<string>();
-        }
+        byte** extensionsPtr = window.VkSurface.GetRequiredExtensions(out count);
 
-        var extensions = new string[count];
-        for (var i = 0; i < count; i++)
+        if (extensionsPtr == null || count == 0) return Array.Empty<string>();
+
+        string[] extensions = new string[count];
+        for (int i = 0; i < count; i++)
         {
-            var ptr = Marshal.PtrToStringAnsi((IntPtr)extensionsPtr[i]);
+            string? ptr = Marshal.PtrToStringAnsi((IntPtr)extensionsPtr[i]);
             extensions[i] = ptr ?? string.Empty;
         }
-        
+
         return extensions;
     }
 
     public SurfaceKHR CreateVulkanSurface(Instance instance, Vk vk)
     {
-        if (window?.VkSurface == null)
-        {
-            throw new InvalidOperationException("Vulkan surface not available");
-        }
+        if (window?.VkSurface == null) throw new InvalidOperationException("Vulkan surface not available");
 
         return window.VkSurface.Create<AllocationCallbacks>(instance.ToHandle(), null).ToSurface();
     }

@@ -1,4 +1,3 @@
-
 namespace Application.Container;
 
 public class ServiceContainer
@@ -19,33 +18,28 @@ public class ServiceContainer
 
     public TInterface Resolve<TInterface>()
     {
-        if (_services.TryGetValue(typeof(TInterface), out var service))
-        {
-            return (TInterface)service;
-        }
+        if (_services.TryGetValue(typeof(TInterface), out object? service)) return (TInterface)service;
         throw new InvalidOperationException($"Service {typeof(TInterface).Name} not registered");
     }
 
     public bool TryResolve<TInterface>(out TInterface? service)
     {
-        if (_services.TryGetValue(typeof(TInterface), out var obj))
+        if (_services.TryGetValue(typeof(TInterface), out object? obj))
         {
             service = (TInterface)obj;
             return true;
         }
+
         service = default;
         return false;
     }
 
     public void Clear()
     {
-        foreach (var service in _services.Values)
-        {
+        foreach (object service in _services.Values)
             if (service is IDisposable disposable)
-            {
                 disposable.Dispose();
-            }
-        }
+
         _services.Clear();
     }
 }

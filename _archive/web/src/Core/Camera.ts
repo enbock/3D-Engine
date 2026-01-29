@@ -1,5 +1,5 @@
-import { Vector3 } from './Math';
-import { Matrix4 } from './Math';
+import {Vector3} from './Math';
+import {Matrix4} from './Math';
 
 export class Camera {
     public position: Vector3;

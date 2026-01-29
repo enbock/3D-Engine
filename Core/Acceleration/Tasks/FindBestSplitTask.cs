@@ -7,8 +7,8 @@ public class FindBestSplitTask
 {
     public (int axis, float splitPos) Execute(List<TriangleEntity> triangles, List<int> indices, AABB bounds)
     {
-        var size = bounds.Size;
-        
+        Vector3 size = bounds.Size;
+
         int bestAxis = 0;
         if (size.Y > size.X && size.Y > size.Z)
             bestAxis = 1;

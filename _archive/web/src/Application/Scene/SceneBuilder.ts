@@ -1,8 +1,8 @@
-import { Scene } from '../../Core/Scene';
-import { Mesh } from '../../Core/Geometry/Mesh';
-import { Color } from '../../Core/Math/Color';
-import { Vector3 } from '../../Core/Math/Vector3';
-import { Light } from '../../Core/Light';
+import {Scene} from '../../Core/Scene';
+import {Mesh} from '../../Core/Geometry/Mesh';
+import {Color} from '../../Core/Math/Color';
+import {Vector3} from '../../Core/Math/Vector3';
+import {Light} from '../../Core/Light';
 
 export class SceneBuilder {
     static createDemoScene(): Scene {
@@ -42,7 +42,6 @@ export class SceneBuilder {
         sphere3.position = new Vector3(0, 3, -1);
         sphere3.color = Color.magenta();
         scene.addMesh(sphere3);
-
 
         const backWall = Mesh.createCube(1);
         backWall.position = new Vector3(0, 0.5, -5);

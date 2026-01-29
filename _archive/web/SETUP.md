@@ -3,6 +3,7 @@
 ## Was wurde implementiert:
 
 ### 1. **Projektkonfiguration**
+
 - ✅ `package.json` - NPM-Konfiguration mit allen Dependencies
 - ✅ `tsconfig.json` - TypeScript-Konfiguration mit Pfad-Aliassen
 - ✅ `webpack.config.js` - Webpack mit Dev-Server-Konfiguration
@@ -10,10 +11,12 @@
 - ✅ `README.md` - Projektdokumentation
 
 ### 2. **Starter-Dateien**
+
 - ✅ `public/index.html` - HTML-Starter-Seite mit Canvas und Info-Panel
 - ✅ `src/main.ts` - Main Entry Point mit Application Bootstrap
 
 ### 3. **Clean Architecture Struktur**
+
 ```
 src/
 ├── Core/                    # Domain Layer
@@ -28,6 +31,7 @@ src/
 ```
 
 ### 4. **Installierte Pakete**
+
 - TypeScript (^5.3.3)
 - Webpack (^5.89.0)
 - Webpack CLI (^5.1.4)
@@ -36,7 +40,9 @@ src/
 - html-webpack-plugin (^5.6.0)
 
 ### 5. **Funktionalität**
+
 Die Engine-Klasse bietet bereits:
+
 - ✅ WebGL2/WebGL1 Context-Initialisierung
 - ✅ Render-Loop mit Delta-Time
 - ✅ Viewport-Resize-Handling
@@ -62,7 +68,7 @@ npm run watch
    ```bash
    npm run dev
    ```
-   
+
 2. **Entwicklung fortsetzen:**
    - Shader-System implementieren (Infrastructure Layer)
    - Mesh/Geometry-System (Core Layer)
@@ -73,6 +79,7 @@ npm run watch
 ## Architektur-Prinzipien:
 
 Das Projekt folgt:
+
 - ✅ **Clean Architecture** - Klare Trennung der Schichten
 - ✅ **Domain-Driven Design (DDD)** - Engine als Aggregate Root
 - ✅ **Separation of Concerns (SoC)** - Jede Komponente hat eine klare Verantwortung

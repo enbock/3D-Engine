@@ -7,22 +7,26 @@ Die Engine verwendet jetzt vollständig einen **Raytracing-Shader** statt der bi
 ### Was wurde implementiert:
 
 #### 1. **RaytracingRenderer** (`Infrastructure/Rendering/RaytracingRenderer.ts`)
+
 - Rendert die gesamte Szene per Fragment-Shader-basiertem Raytracing
 - Fullscreen-Quad-Rendering
 - Zeit-basierte Animation möglich
 
 #### 2. **Raytracing-Shader** (`Infrastructure/Rendering/RaytracingShaders.ts`)
+
 - **Vertex Shader:** Einfacher Fullscreen-Quad
 - **Fragment Shader:** Komplettes Raytracing-System
 
 ### Raytracing Features:
 
 #### Unterstützte Geometrie:
+
 - ✅ **Spheres (Kugeln)** - Analytische Intersection
 - ✅ **Boxes (Würfel)** - AABB Intersection
 - ✅ **Planes (Ebenen)** - Plane Intersection
 
 #### Beleuchtung:
+
 - ✅ **Directional Light** - Richtungslicht von (0.5, 0.7, 1.0)
 - ✅ **Ambient Light** - Umgebungslicht (0.3, 0.3, 0.3)
 - ✅ **Diffuse Shading** - Lambertian Shading
@@ -30,31 +34,37 @@ Die Engine verwendet jetzt vollständig einen **Raytracing-Shader** statt der bi
 - ✅ **Shadow Rays** - Harte Schatten
 
 #### Reflexionen:
+
 - ✅ **Single-Bounce Reflections** - Einfache Spiegelungen
 - ✅ **Reflectivity per Object** - Steuerbare Reflektivität
 
 #### Sky:
+
 - ✅ **Gradient Sky** - Blauer Himmel mit Horizont-Gradient
 
 ### Demo-Szene (im Shader hardcoded):
 
 **3 Kugeln:**
+
 - Gelb bei (-2, 2, -2), Radius 0.7
 - Cyan bei (2, 2, -2), Radius 0.6
 - Magenta bei (0, 3, -1), Radius 0.5
 
 **3 Würfel:**
+
 - Rot bei (-3.5 bis -2.5, -1 bis 0, -0.5 bis 0.5)
 - Grün bei (-0.4 bis 0.4, -1 bis 0, -0.4 bis 0.4)
 - Blau bei (2.4 bis 3.6, -1 bis 0.2, -0.6 bis 0.6)
 
 **2 Ebenen:**
+
 - Boden bei Y=-1 (grau)
 - Rückwand bei Z=-5 (dunkelgrau/blau)
 
 ### Technische Details:
 
 **Ray-Struktur:**
+
 ```glsl
 struct Ray {
     vec3 origin;
@@ -63,6 +73,7 @@ struct Ray {
 ```
 
 **Hit-Struktur:**
+
 ```glsl
 struct Hit {
     bool hit;
@@ -74,6 +85,7 @@ struct Hit {
 ```
 
 **Rendering-Pipeline:**
+
 1. Erstelle Kamera-Ray basierend auf UV-Koordinaten
 2. Trace Ray durch Szene
 3. Finde nächste Intersection
@@ -92,6 +104,7 @@ struct Hit {
 ### Unterschied zu vorher:
 
 **Vorher (Rasterisierung):**
+
 - Polygon-basiert
 - Vertex → Fragment Pipeline
 - Depth Buffer
@@ -99,6 +112,7 @@ struct Hit {
 - Perfekt für viele Polygone
 
 **Jetzt (Raytracing):**
+
 - Analytische Geometrie
 - Ray-basiert
 - Perfekte Schatten
@@ -108,6 +122,7 @@ struct Hit {
 ### Kamera-Steuerung:
 
 Bleibt **identisch**:
+
 - Feste Position bei (0, 2, 12)
 - Maus-basierte Neigung (max 30°)
 - Target wird an Shader übergeben

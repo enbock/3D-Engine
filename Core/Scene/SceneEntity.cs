@@ -1,16 +1,11 @@
 ﻿using Core.Scene.Camera;
-using Core.Scene.Light;
 using Core.Scene.Geometry;
+using Core.Scene.Light;
 
 namespace Core.Scene;
 
 public class SceneEntity
 {
-    public CameraEntity Camera { get; set; }
-    public List<LightEntity> Lights { get; }
-    public List<TriangleEntity> Triangles { get; }
-    public bool UseBVH { get; set; }
-
     public SceneEntity()
     {
         Camera = new CameraEntity();
@@ -18,6 +13,11 @@ public class SceneEntity
         Triangles = new List<TriangleEntity>();
         UseBVH = false;
     }
+
+    public CameraEntity Camera { get; set; }
+    public List<LightEntity> Lights { get; }
+    public List<TriangleEntity> Triangles { get; }
+    public bool UseBVH { get; set; }
 
     public void AddLight(LightEntity light)
     {

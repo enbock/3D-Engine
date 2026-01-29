@@ -21,6 +21,15 @@ export class KeyboardHandler {
         this.setupEventListeners();
     }
 
+    public getKeyboardState(): KeyboardState {
+        return this.keys;
+    }
+
+    public dispose(): void {
+        window.removeEventListener('keydown', this.handleKeyDown.bind(this));
+        window.removeEventListener('keyup', this.handleKeyUp.bind(this));
+    }
+
     private setupEventListeners(): void {
         window.addEventListener('keydown', this.handleKeyDown.bind(this));
         window.addEventListener('keyup', this.handleKeyUp.bind(this));
@@ -72,15 +81,6 @@ export class KeyboardHandler {
                 this.keys.down = false;
                 break;
         }
-    }
-
-    public getKeyboardState(): KeyboardState {
-        return this.keys;
-    }
-
-    public dispose(): void {
-        window.removeEventListener('keydown', this.handleKeyDown.bind(this));
-        window.removeEventListener('keyup', this.handleKeyUp.bind(this));
     }
 }
 

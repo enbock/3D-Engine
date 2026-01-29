@@ -1,5 +1,5 @@
-import { Vector3 } from './Math';
-import { Color } from './Math';
+import {Vector3} from './Math';
+import {Color} from './Math';
 
 export enum LightType {
     DIRECTIONAL = 0,

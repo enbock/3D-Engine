@@ -1,22 +1,22 @@
 using Application;
+using Application.Window;
 using Core.Rendering;
 using Core.Scene;
-using Application.Window;
 using Infrastructure.Vulkan;
 
 namespace Infrastructure.Rendering;
 
-public unsafe class VulkanRenderer : Renderer
+public class VulkanRenderer : Renderer
 {
-    private readonly WindowManagerService windowManager;
     private readonly EngineConfig config;
     private readonly InternalVulkanRenderer internalRenderer;
+    private readonly WindowManagerService windowManager;
 
     public VulkanRenderer(WindowManagerService windowManager, EngineConfig config)
     {
         this.windowManager = windowManager;
         this.config = config;
-        this.internalRenderer = new InternalVulkanRenderer(windowManager, config);
+        internalRenderer = new InternalVulkanRenderer(windowManager, config);
     }
 
     public void Initialize()

@@ -25,7 +25,7 @@ class Application {
                 width: window.innerWidth,
                 height: window.innerHeight,
                 antialias: true,
-                powerPreference: 'high-performance',
+                powerPreference: 'high-performance'
             };
 
             this.engineController = new EngineController(config);

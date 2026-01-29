@@ -1,8 +1,8 @@
-import { Mesh } from '../../Core/Geometry';
-import { Camera } from '../../Core/Camera';
-import { Matrix4 } from '../../Core/Math';
-import { ShaderProgram } from './ShaderProgram';
-import { vertexShaderSource, fragmentShaderSource } from './Shaders';
+import {Mesh} from '../../Core/Geometry';
+import {Camera} from '../../Core/Camera';
+import {Matrix4} from '../../Core/Math';
+import {ShaderProgram} from './ShaderProgram';
+import {fragmentShaderSource, vertexShaderSource} from './Shaders';
 
 export class Renderer {
     private gl: WebGLRenderingContext | WebGL2RenderingContext;
@@ -18,48 +18,6 @@ export class Renderer {
         this.gl = gl;
         this.shaderProgram = new ShaderProgram(gl, vertexShaderSource, fragmentShaderSource);
         this.setupGL();
-    }
-
-    private setupGL(): void {
-        this.gl.enable(this.gl.DEPTH_TEST);
-        this.gl.depthFunc(this.gl.LEQUAL);
-        this.gl.enable(this.gl.CULL_FACE);
-        this.gl.cullFace(this.gl.BACK);
-        this.gl.clearColor(0.1, 0.1, 0.15, 1.0);
-    }
-
-    private getOrCreateBuffers(mesh: Mesh) {
-        let buffers = this.meshBuffers.get(mesh);
-
-        if (!buffers) {
-            const vertexBuffer = this.gl.createBuffer();
-            const indexBuffer = this.gl.createBuffer();
-            const normalBuffer = this.gl.createBuffer();
-            const colorBuffer = mesh.colors ? this.gl.createBuffer() : undefined;
-
-            if (!vertexBuffer || !indexBuffer || !normalBuffer) {
-                throw new Error('Failed to create buffers');
-            }
-
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, mesh.vertices, this.gl.STATIC_DRAW);
-
-            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-            this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, mesh.indices, this.gl.STATIC_DRAW);
-
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, normalBuffer);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, mesh.normals, this.gl.STATIC_DRAW);
-
-            if (colorBuffer && mesh.colors) {
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colorBuffer);
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, mesh.colors, this.gl.STATIC_DRAW);
-            }
-
-            buffers = { vertexBuffer, indexBuffer, normalBuffer, colorBuffer };
-            this.meshBuffers.set(mesh, buffers);
-        }
-
-        return buffers;
     }
 
     clear(): void {
@@ -122,6 +80,48 @@ export class Renderer {
         });
         this.meshBuffers.clear();
         this.shaderProgram.dispose();
+    }
+
+    private setupGL(): void {
+        this.gl.enable(this.gl.DEPTH_TEST);
+        this.gl.depthFunc(this.gl.LEQUAL);
+        this.gl.enable(this.gl.CULL_FACE);
+        this.gl.cullFace(this.gl.BACK);
+        this.gl.clearColor(0.1, 0.1, 0.15, 1.0);
+    }
+
+    private getOrCreateBuffers(mesh: Mesh) {
+        let buffers = this.meshBuffers.get(mesh);
+
+        if (!buffers) {
+            const vertexBuffer = this.gl.createBuffer();
+            const indexBuffer = this.gl.createBuffer();
+            const normalBuffer = this.gl.createBuffer();
+            const colorBuffer = mesh.colors ? this.gl.createBuffer() : undefined;
+
+            if (!vertexBuffer || !indexBuffer || !normalBuffer) {
+                throw new Error('Failed to create buffers');
+            }
+
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, mesh.vertices, this.gl.STATIC_DRAW);
+
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+            this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, mesh.indices, this.gl.STATIC_DRAW);
+
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, normalBuffer);
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, mesh.normals, this.gl.STATIC_DRAW);
+
+            if (colorBuffer && mesh.colors) {
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colorBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, mesh.colors, this.gl.STATIC_DRAW);
+            }
+
+            buffers = {vertexBuffer, indexBuffer, normalBuffer, colorBuffer};
+            this.meshBuffers.set(mesh, buffers);
+        }
+
+        return buffers;
     }
 }
 

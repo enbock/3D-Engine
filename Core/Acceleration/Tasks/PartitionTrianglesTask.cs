@@ -1,28 +1,26 @@
-﻿using Core.Scene.Geometry;
+﻿using Core.Math;
+using Core.Scene.Geometry;
 
 namespace Core.Acceleration.Tasks;
 
 public class PartitionTrianglesTask
 {
-    public (List<int> left, List<int> right) Execute(List<TriangleEntity> triangles, List<int> indices, int axis, float splitPos)
+    public (List<int> left, List<int> right) Execute(List<TriangleEntity> triangles, List<int> indices, int axis,
+        float splitPos)
     {
-        var leftIndices = new List<int>();
-        var rightIndices = new List<int>();
+        List<int> leftIndices = new();
+        List<int> rightIndices = new();
 
-        foreach (var index in indices)
+        foreach (int index in indices)
         {
-            var triangle = triangles[index];
-            var center = triangle.Center;
-            var value = center[axis];
+            TriangleEntity triangle = triangles[index];
+            Vector3 center = triangle.Center;
+            float value = center[axis];
 
             if (value < splitPos)
-            {
                 leftIndices.Add(index);
-            }
             else
-            {
                 rightIndices.Add(index);
-            }
         }
 
         return (leftIndices, rightIndices);

@@ -1,4 +1,3 @@
-
 export interface EngineConfig {
     canvas: HTMLCanvasElement;
     width: number;

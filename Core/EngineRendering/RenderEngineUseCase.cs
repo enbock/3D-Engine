@@ -18,10 +18,8 @@ public class RenderEngineUseCase
     {
         totalTime += request.DeltaTime;
 
-        if (container.TryResolve<SceneEntity>(out var scene) && 
-            container.TryResolve<Renderer>(out var renderer))
-        {
+        if (container.TryResolve(out SceneEntity? scene) &&
+            container.TryResolve(out Renderer? renderer))
             renderer?.Render(scene!, totalTime);
-        }
     }
 }

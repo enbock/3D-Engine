@@ -73,26 +73,6 @@ export class CameraController {
         this.updateCameraTarget();
     }
 
-    private getForwardVector(): Vector3 {
-        return new Vector3(
-            Math.cos(this.pitch) * Math.sin(this.yaw),
-            Math.sin(this.pitch),
-            Math.cos(this.pitch) * Math.cos(this.yaw)
-        );
-    }
-
-    private getRightVector(): Vector3 {
-        const forward = this.getForwardVector();
-        const worldUp = new Vector3(0, 1, 0);
-        return forward.cross(worldUp).normalize();
-    }
-
-    private updateCameraTarget(): void {
-        const forward = this.getForwardVector();
-        const target = this.cameraPosition.add(forward);
-        this.camera.lookAt(target);
-    }
-
     public setPosition(position: Vector3): void {
         this.cameraPosition = position;
         this.camera.setPosition(position);
@@ -116,6 +96,26 @@ export class CameraController {
     public dispose(): void {
         this.mouseHandler.dispose();
         this.keyboardHandler.dispose();
+    }
+
+    private getForwardVector(): Vector3 {
+        return new Vector3(
+            Math.cos(this.pitch) * Math.sin(this.yaw),
+            Math.sin(this.pitch),
+            Math.cos(this.pitch) * Math.cos(this.yaw)
+        );
+    }
+
+    private getRightVector(): Vector3 {
+        const forward = this.getForwardVector();
+        const worldUp = new Vector3(0, 1, 0);
+        return forward.cross(worldUp).normalize();
+    }
+
+    private updateCameraTarget(): void {
+        const forward = this.getForwardVector();
+        const target = this.cameraPosition.add(forward);
+        this.camera.lookAt(target);
     }
 }
 

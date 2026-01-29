@@ -25,11 +25,28 @@ public struct Color
     public static Color Magenta => new(1, 0, 1);
     public static Color Gray => new(0.5f, 0.5f, 0.5f);
 
-    public static Color operator *(Color c, float s) => new(c.R * s, c.G * s, c.B * s, c.A);
-    public static Color operator *(Color a, Color b) => new(a.R * b.R, a.G * b.G, a.B * b.B, a.A * b.A);
-    public static Color operator +(Color a, Color b) => new(a.R + b.R, a.G + b.G, a.B + b.B, a.A);
+    public static Color operator *(Color c, float s)
+    {
+        return new Color(c.R * s, c.G * s, c.B * s, c.A);
+    }
 
-    public Vector3 ToVector3() => new(R, G, B);
+    public static Color operator *(Color a, Color b)
+    {
+        return new Color(a.R * b.R, a.G * b.G, a.B * b.B, a.A * b.A);
+    }
 
-    public override string ToString() => $"({R:F2}, {G:F2}, {B:F2}, {A:F2})";
+    public static Color operator +(Color a, Color b)
+    {
+        return new Color(a.R + b.R, a.G + b.G, a.B + b.B, a.A);
+    }
+
+    public Vector3 ToVector3()
+    {
+        return new Vector3(R, G, B);
+    }
+
+    public override string ToString()
+    {
+        return $"({R:F2}, {G:F2}, {B:F2}, {A:F2})";
+    }
 }

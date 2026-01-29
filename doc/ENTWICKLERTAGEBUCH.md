@@ -1,4 +1,4 @@
-﻿# Vulkan 3D-Engine - Entwicklertagebuch
+﻿﻿# Vulkan 3D-Engine - Entwicklertagebuch
 
 ## Inhaltsverzeichnis
 
@@ -901,3 +901,21 @@ aller Fehler, Debugging-Sessions und gelernten Lektionen.
 **Letzte Aktualisierung**: 2026-01-29  
 **Status**: Production Ready ✅  
 **Version**: 1.0.0
+
+### Zusätzliche Dokumentation
+
+- **[BILDAUSGABE_PIPELINE.md](./BILDAUSGABE_PIPELINE.md)** - Vollständige Erklärung der Vulkan Render-Pipeline:
+    - Detaillierte Schritt-für-Schritt Beschreibung der Bildausgabe
+    - Phase 1: Initialisierung (Swapchain, Buffers, Pipeline, Synchronisation)
+    - Phase 2: Render-Loop (CPU-GPU Synchronisation, Command Buffer, Present)
+    - Phase 3: Compute Shader Execution auf der GPU
+    - Synchronisations-Diagramme und Performance-Charakteristiken
+    - Fehlerbehandlung und spezielle Fälle (Resize, VSync)
+
+- **[MULTI_SHADER_IMPLEMENTATION.md](./MULTI_SHADER_IMPLEMENTATION.md)** - Multi-Pass Rendering System (Geplant):
+    - Analyse und Planung für Multi-Shader Architektur
+    - G-Buffer basiertes Deferred Shading
+    - **ENTSCHEIDUNG**: Zu komplex für sofortige Implementierung
+    - **ALTERNATIVE**: Funktions-Refactoring im monolithischen Shader
+    - Lesson Learned: Shader-Organisation ≠ Multi-Pass Rendering
+

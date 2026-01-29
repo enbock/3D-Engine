@@ -1,6 +1,6 @@
+using Application.CameraControl;
 using Application.Container;
 using Core.Input;
-using Application.CameraControl;
 using Core.Scene;
 
 namespace Core.EngineUpdate;
@@ -20,17 +20,14 @@ public class UpdateEngineUseCase
     {
         totalTime += request.DeltaTime;
 
-        if (cameraControlUseCase == null && container.TryResolve<SceneEntity>(out var scene))
+        if (cameraControlUseCase == null && container.TryResolve(out SceneEntity? scene))
         {
-            var inputHandler = container.Resolve<InputHandler>();
+            InputHandler inputHandler = container.Resolve<InputHandler>();
             cameraControlUseCase = new CameraControlUseCase(scene!.Camera, inputHandler);
         }
 
         cameraControlUseCase?.Run(request.DeltaTime);
 
-        if (container.TryResolve<InputHandler>(out var input))
-        {
-            input?.Update(request.DeltaTime);
-        }
+        if (container.TryResolve(out InputHandler? input)) input?.Update(request.DeltaTime);
     }
 }

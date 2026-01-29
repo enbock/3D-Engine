@@ -14,6 +14,68 @@ export class ShaderProgram {
         this.cacheLocations();
     }
 
+    use(): void {
+        this.gl.useProgram(this.program);
+    }
+
+    getUniformLocation(name: string): WebGLUniformLocation | null {
+        const cached = this.uniforms.get(name);
+        if (cached) {
+            return cached;
+        }
+        return this.gl.getUniformLocation(this.program, name);
+    }
+
+    getAttributeLocation(name: string): number {
+        return this.attributes.get(name) ?? -1;
+    }
+
+    setUniformMatrix4(name: string, matrix: Float32Array): void {
+        const location = this.getUniformLocation(name);
+        if (location) {
+            this.gl.uniformMatrix4fv(location, false, matrix);
+        }
+    }
+
+    setUniform4f(name: string, x: number, y: number, z: number, w: number): void {
+        const location = this.getUniformLocation(name);
+        if (location) {
+            this.gl.uniform4f(location, x, y, z, w);
+        }
+    }
+
+    setUniform3f(name: string, x: number, y: number, z: number): void {
+        const location = this.getUniformLocation(name);
+        if (location) {
+            this.gl.uniform3f(location, x, y, z);
+        }
+    }
+
+    setUniform2f(name: string, x: number, y: number): void {
+        const location = this.getUniformLocation(name);
+        if (location) {
+            this.gl.uniform2f(location, x, y);
+        }
+    }
+
+    setUniform1f(name: string, x: number): void {
+        const location = this.getUniformLocation(name);
+        if (location) {
+            this.gl.uniform1f(location, x);
+        }
+    }
+
+    setUniform1i(name: string, x: number): void {
+        const location = this.getUniformLocation(name);
+        if (location) {
+            this.gl.uniform1i(location, x);
+        }
+    }
+
+    dispose(): void {
+        this.gl.deleteProgram(this.program);
+    }
+
     private createShader(type: number, source: string): WebGLShader {
         const shader = this.gl.createShader(type);
         if (!shader) {
@@ -77,68 +139,6 @@ export class ShaderProgram {
                 this.attributes.set(info.name, location);
             }
         }
-    }
-
-    use(): void {
-        this.gl.useProgram(this.program);
-    }
-
-    getUniformLocation(name: string): WebGLUniformLocation | null {
-        const cached = this.uniforms.get(name);
-        if (cached) {
-            return cached;
-        }
-        return this.gl.getUniformLocation(this.program, name);
-    }
-
-    getAttributeLocation(name: string): number {
-        return this.attributes.get(name) ?? -1;
-    }
-
-    setUniformMatrix4(name: string, matrix: Float32Array): void {
-        const location = this.getUniformLocation(name);
-        if (location) {
-            this.gl.uniformMatrix4fv(location, false, matrix);
-        }
-    }
-
-    setUniform4f(name: string, x: number, y: number, z: number, w: number): void {
-        const location = this.getUniformLocation(name);
-        if (location) {
-            this.gl.uniform4f(location, x, y, z, w);
-        }
-    }
-
-    setUniform3f(name: string, x: number, y: number, z: number): void {
-        const location = this.getUniformLocation(name);
-        if (location) {
-            this.gl.uniform3f(location, x, y, z);
-        }
-    }
-
-    setUniform2f(name: string, x: number, y: number): void {
-        const location = this.getUniformLocation(name);
-        if (location) {
-            this.gl.uniform2f(location, x, y);
-        }
-    }
-
-    setUniform1f(name: string, x: number): void {
-        const location = this.getUniformLocation(name);
-        if (location) {
-            this.gl.uniform1f(location, x);
-        }
-    }
-
-    setUniform1i(name: string, x: number): void {
-        const location = this.getUniformLocation(name);
-        if (location) {
-            this.gl.uniform1i(location, x);
-        }
-    }
-
-    dispose(): void {
-        this.gl.deleteProgram(this.program);
     }
 }
 

@@ -1,4 +1,3 @@
-
 namespace Core.Math;
 
 public struct AABB
@@ -14,11 +13,12 @@ public struct AABB
 
     public Vector3 Center => (Min + Max) * 0.5f;
     public Vector3 Size => Max - Min;
+
     public float SurfaceArea
     {
         get
         {
-            var size = Size;
+            Vector3 size = Size;
             return 2.0f * (size.X * size.Y + size.Y * size.Z + size.Z * size.X);
         }
     }

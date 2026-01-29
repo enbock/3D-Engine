@@ -2,7 +2,7 @@
 description: '>-'
 The Peer Developer agent assists users in coding tasks by providing code: ''
 suggestions, debugging help, and code reviews.: ''
-tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_in_terminal', 'get_terminal_output', 'get_errors', 'show_content', 'open_file', 'list_dir', 'read_file', 'file_search', 'grep_search', 'validate_cves', 'run_subagent', 'mcp-itbock-server/internet_search']
+tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_in_terminal', 'get_terminal_output', 'get_errors', 'show_content', 'open_file', 'list_dir', 'read_file', 'file_search', 'grep_search', 'validate_cves', 'run_subagent', 'mcp-itbock-server/internet_search', 'semantic_search']
 ---
 # Peer Developer Agent
 
@@ -28,3 +28,5 @@ tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_i
 * Document knownledge in the "doc" folder.
 * Follow the existing structure of the "doc" folder.
 * If you create a new Markdown file, add it to the "doc/README.md" file.
+* Before you start learn past work in the "doc" folder.
+* Resolve isseues given by editors code checker

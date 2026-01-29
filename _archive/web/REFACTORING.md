@@ -7,33 +7,39 @@
 ### 1. **EngineConfig nach Application Layer verschoben**
 
 **Vorher:**
+
 ```
 src/Core/Types/EngineConfig.ts
 ```
 
 **Nachher:**
+
 ```
 src/Application/EngineConfig.ts
 ```
 
-**Begründung:** Die Konfiguration gehört zur Application Layer, da sie die Schnittstelle zwischen dem UI (main.ts) und der Core-Domain darstellt.
+**Begründung:** Die Konfiguration gehört zur Application Layer, da sie die Schnittstelle zwischen dem UI (main.ts) und
+der Core-Domain darstellt.
 
 ---
 
 ### 2. **EngineController in Application Layer erstellt**
 
 **Neue Datei:**
+
 ```
 src/Application/Engine/EngineController.ts
 ```
 
 **Verantwortlichkeiten des Controllers:**
+
 - Orchestriert den Engine-Lebenszyklus
 - Koordiniert zwischen den Layern (Application ↔ Core)
 - Verwaltet die Initialisierung, Updates und Resource Management
 - Bietet eine saubere API für die UI-Schicht
 
 **Öffentliche Methoden:**
+
 - `initialize()` - Initialisiert die Engine
 - `start()` - Startet die Render-Loop
 - `stop()` - Stoppt die Render-Loop
@@ -48,12 +54,14 @@ src/Application/Engine/EngineController.ts
 ### 3. **Core Engine bereinigt**
 
 **Änderungen:**
+
 - Import von `EngineConfig` zeigt nun auf Application Layer
 - Property `isRunning` umbenannt zu `running` (um Namenskonflikt mit Methode zu vermeiden)
 - Neue public Methode `isRunning()` hinzugefügt
 - Engine fokussiert sich jetzt rein auf WebGL-Rendering und Domain-Logik
 
 **Core Engine bleibt verantwortlich für:**
+
 - WebGL Context Management
 - Render Loop
 - Update/Render Cycle
@@ -65,6 +73,7 @@ src/Application/Engine/EngineController.ts
 ### 4. **main.ts aktualisiert**
 
 **Vorher:**
+
 ```typescript
 import { Engine } from './Core/Engine';
 // ...
@@ -73,6 +82,7 @@ await this.engine.initialize();
 ```
 
 **Nachher:**
+
 ```typescript
 import { EngineController } from './Application/Engine/EngineController';
 // ...
@@ -80,13 +90,15 @@ this.engineController = new EngineController(config);
 await this.engineController.initialize();
 ```
 
-**Begründung:** Die UI-Schicht kommuniziert nun über den Controller mit der Core Engine, was die Abhängigkeiten korrekt invertiert.
+**Begründung:** Die UI-Schicht kommuniziert nun über den Controller mit der Core Engine, was die Abhängigkeiten korrekt
+invertiert.
 
 ---
 
 ## Clean Architecture Prinzipien
 
 ### Dependency Flow:
+
 ```
 main.ts (UI/Entry Point)
     ↓
@@ -144,11 +156,13 @@ src/
 Folgende Komponenten sollten in Zukunft hinzugefügt werden:
 
 ### Application Layer:
+
 - `SceneController.ts` - Szenen-Management
 - `CameraController.ts` - Kamera-Steuerung
 - `InputController.ts` - Input-Handling-Orchestrierung
 
 ### Infrastructure Layer:
+
 - `Rendering/ShaderManager.ts` - Shader-Verwaltung
 - `Input/KeyboardHandler.ts` - Tastatur-Input
 - `Input/MouseHandler.ts` - Maus-Input
@@ -156,6 +170,7 @@ Folgende Komponenten sollten in Zukunft hinzugefügt werden:
 - `Assets/ModelLoader.ts` - Model-Laden
 
 ### Core Layer:
+
 - `Scene.ts` - Szenen-Graph
 - `Camera.ts` - Kamera-Domain-Logik
 - `Mesh.ts` - Mesh/Geometry

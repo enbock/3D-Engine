@@ -1,5 +1,5 @@
-import { Mesh } from './Geometry';
-import { Light } from './Light';
+import {Mesh} from './Geometry';
+import {Light} from './Light';
 
 export class Scene {
     public meshes: Mesh[] = [];

@@ -22,6 +22,23 @@ export class MouseHandler {
         this.setupEventListeners();
     }
 
+    public getMouseState(): MouseState {
+        const state = {...this.mouseState};
+        this.mouseState.deltaX = 0;
+        this.mouseState.deltaY = 0;
+        return state;
+    }
+
+    public getIsLocked(): boolean {
+        return this.isLocked;
+    }
+
+    public dispose(): void {
+        this.canvas.removeEventListener('mousemove', this.handleMouseMove.bind(this));
+        this.canvas.removeEventListener('click', this.requestPointerLock.bind(this));
+        document.removeEventListener('pointerlockchange', this.handlePointerLockChange.bind(this));
+    }
+
     private setupEventListeners(): void {
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.canvas.addEventListener('click', this.requestPointerLock.bind(this));
@@ -57,23 +74,6 @@ export class MouseHandler {
             this.mouseState.deltaX = 0;
             this.mouseState.deltaY = 0;
         }
-    }
-
-    public getMouseState(): MouseState {
-        const state = { ...this.mouseState };
-        this.mouseState.deltaX = 0;
-        this.mouseState.deltaY = 0;
-        return state;
-    }
-
-    public getIsLocked(): boolean {
-        return this.isLocked;
-    }
-
-    public dispose(): void {
-        this.canvas.removeEventListener('mousemove', this.handleMouseMove.bind(this));
-        this.canvas.removeEventListener('click', this.requestPointerLock.bind(this));
-        document.removeEventListener('pointerlockchange', this.handlePointerLockChange.bind(this));
     }
 }
 

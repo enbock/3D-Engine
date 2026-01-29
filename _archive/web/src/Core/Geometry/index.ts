@@ -1,2 +1,2 @@
-export { Mesh } from './Mesh';
+export {Mesh} from './Mesh';
 

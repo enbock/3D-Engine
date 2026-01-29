@@ -1,5 +1,5 @@
-using Silk.NET.Input;
 using Core.Math;
+using Silk.NET.Input;
 
 namespace Core.Input;
 

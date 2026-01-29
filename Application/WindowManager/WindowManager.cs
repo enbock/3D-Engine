@@ -10,7 +10,7 @@ public interface WindowManager : IDisposable
     event Action<float>? OnUpdate;
     event Action<float>? OnRender;
     event Action<int, int>? OnResize;
-    
+
     void Initialize();
     void Run();
     void Close();

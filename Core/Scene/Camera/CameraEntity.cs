@@ -4,14 +4,6 @@ namespace Core.Scene.Camera;
 
 public class CameraEntity
 {
-    public Vector3 Position { get; set; }
-    public Vector3 Target { get; set; }
-    public Vector3 Up { get; set; }
-    public float Fov { get; set; }
-    public float AspectRatio { get; set; }
-    public float Near { get; set; }
-    public float Far { get; set; }
-
     public CameraEntity()
     {
         Position = new Vector3(0, 0, 10);
@@ -23,7 +15,8 @@ public class CameraEntity
         Far = 1000.0f;
     }
 
-    public CameraEntity(Vector3 position, Vector3 target, float fovDegrees = 45.0f, float aspectRatio = 16.0f / 9.0f, float near = 0.1f, float far = 1000.0f)
+    public CameraEntity(Vector3 position, Vector3 target, float fovDegrees = 45.0f, float aspectRatio = 16.0f / 9.0f,
+        float near = 0.1f, float far = 1000.0f)
     {
         Position = position;
         Target = target;
@@ -34,11 +27,19 @@ public class CameraEntity
         Far = far;
     }
 
+    public Vector3 Position { get; set; }
+    public Vector3 Target { get; set; }
+    public Vector3 Up { get; set; }
+    public float Fov { get; set; }
+    public float AspectRatio { get; set; }
+    public float Near { get; set; }
+    public float Far { get; set; }
+
     public Vector3 Forward
     {
         get
         {
-            var forward = (Target - Position).Normalized;
+            Vector3 forward = (Target - Position).Normalized;
             return forward;
         }
     }
@@ -47,8 +48,8 @@ public class CameraEntity
     {
         get
         {
-            var forward = Forward;
-            var right = Vector3.Cross(forward, Up).Normalized;
+            Vector3 forward = Forward;
+            Vector3 right = Vector3.Cross(forward, Up).Normalized;
             return right;
         }
     }

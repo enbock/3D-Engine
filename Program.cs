@@ -1,5 +1,6 @@
 using Application;
 using Application.Engine;
+using Core.EngineInitialization;
 
 public static class Program
 {
@@ -10,7 +11,7 @@ public static class Program
         Console.WriteLine("   Native C# with Silk.NET");
         Console.WriteLine("===========================================\n");
 
-        var config = new EngineConfig
+        EngineConfig config = new()
         {
             Title = "Vulkan Raytracing Engine - C#",
             Width = 2560,
@@ -21,8 +22,8 @@ public static class Program
 
         try
         {
-            var engine = new EngineController(config);
-            var response = engine.Initialize();
+            EngineController engine = new(config);
+            InitializeEngineResponse response = engine.Initialize();
 
             if (response.Success)
             {
@@ -30,7 +31,7 @@ public static class Program
             }
             else
             {
-                var errorMsg = response.ErrorMessage ?? "Unknown error";
+                string errorMsg = response.ErrorMessage ?? "Unknown error";
                 Console.WriteLine($"Engine initialization failed: {errorMsg}");
             }
 

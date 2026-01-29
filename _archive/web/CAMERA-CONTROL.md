@@ -3,38 +3,43 @@
 ## Änderungen
 
 ### Problem behoben:
+
 - ❌ Alte Kamera drehte sich im Kreis und die Welt ging aus dem Bild
 - ✅ Kamera ist jetzt fest positioniert und neigt sich nur zur Mausposition
 
 ### Implementierte Features:
 
 #### 1. **MouseHandler** (`Infrastructure/Input/MouseHandler.ts`)
+
 - Trackt Maus-Position auf dem Canvas
 - Berechnet normalisierte Koordinaten (-1 bis +1)
 - Bietet `MouseState` Interface mit:
-  - `x`, `y` - Absolute Pixel-Koordinaten
-  - `normalizedX`, `normalizedY` - Normalisierte Koordinaten
+    - `x`, `y` - Absolute Pixel-Koordinaten
+    - `normalizedX`, `normalizedY` - Normalisierte Koordinaten
 
 #### 2. **CameraController** (`Application/Camera/CameraController.ts`)
+
 - Steuert Kamera basierend auf Maus-Position
 - **Konfigurierbar:**
-  - `basePosition` - Feste Kamera-Position (Standard: 0, 5, 12)
-  - `baseTarget` - Zentrum der Szene (Standard: 0, 0, 0)
-  - `maxTiltAngle` - Maximale Neigung in Grad (Standard: 30°)
+    - `basePosition` - Feste Kamera-Position (Standard: 0, 5, 12)
+    - `baseTarget` - Zentrum der Szene (Standard: 0, 0, 0)
+    - `maxTiltAngle` - Maximale Neigung in Grad (Standard: 30°)
 
 - **Funktionsweise:**
-  - Maus in der Mitte → Kamera schaut geradeaus auf Zentrum
-  - Maus nach oben → Kamera neigt sich nach oben (max. 30°)
-  - Maus nach unten → Kamera neigt sich nach unten (max. 30°)
-  - Maus nach links → Kamera neigt sich nach links (max. 30°)
-  - Maus nach rechts → Kamera neigt sich nach rechts (max. 30°)
+    - Maus in der Mitte → Kamera schaut geradeaus auf Zentrum
+    - Maus nach oben → Kamera neigt sich nach oben (max. 30°)
+    - Maus nach unten → Kamera neigt sich nach unten (max. 30°)
+    - Maus nach links → Kamera neigt sich nach links (max. 30°)
+    - Maus nach rechts → Kamera neigt sich nach rechts (max. 30°)
 
 #### 3. **Engine Integration**
+
 - `Engine.setUpdateCallback()` - Callback für Updates pro Frame
 - Wird automatisch im Render-Loop aufgerufen
 - Camera-Controller wird in jedem Frame aktualisiert
 
 #### 4. **EngineController Erweiterung**
+
 - Initialisiert `CameraController` automatisch
 - Verbindet Camera-Updates mit Engine-Loop
 - Dispose-Pattern für sauberes Cleanup
@@ -56,6 +61,7 @@ cameraController.setMaxTiltAngle(degrees);
 ### Technische Details:
 
 **Berechnung der Kamera-Neigung:**
+
 ```typescript
 tiltX = normalizedY * maxTiltAngle // Vertikale Maus → Vertikale Neigung
 tiltY = normalizedX * maxTiltAngle // Horizontale Maus → Horizontale Neigung
@@ -65,6 +71,7 @@ camera.lookAt(adjustedTarget)
 ```
 
 **Update-Zyklus:**
+
 ```
 Engine Render Loop
   → update(deltaTime)
@@ -83,6 +90,7 @@ npm run dev
 ```
 
 **Interaktion:**
+
 - Bewegen Sie die Maus über das Canvas
 - Kamera folgt sanft der Maus-Position
 - Maximale Neigung: 30° in alle Richtungen

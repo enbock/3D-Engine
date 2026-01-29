@@ -14,7 +14,7 @@ public class SceneBuilderService
 
     public SceneEntity CreateSimpleScene()
     {
-        var scene = new SceneEntity();
+        SceneEntity scene = new();
 
         scene.Camera.Position = new Vector3(0, 3, 10);
         scene.Camera.Target = new Vector3(0, 1, 0);

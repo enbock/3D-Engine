@@ -1,7 +1,6 @@
-﻿using Core.Math;
-using Core.Scene.Geometry;
+﻿using Core.Acceleration.Tasks;
 using Core.Scene.Acceleration;
-using Core.Acceleration.Tasks;
+using Core.Scene.Geometry;
 
 namespace Core.Acceleration;
 
@@ -20,18 +19,15 @@ public class BVHBuilderService
 
     public BVHNodeEntity Build(List<TriangleEntity> triangles)
     {
-        if (triangles.Count == 0)
-        {
-            return new BVHNodeEntity();
-        }
+        if (triangles.Count == 0) return new BVHNodeEntity();
 
-        var indices = Enumerable.Range(0, triangles.Count).ToList();
+        List<int> indices = Enumerable.Range(0, triangles.Count).ToList();
         return BuildRecursive(triangles, indices);
     }
 
     private BVHNodeEntity BuildRecursive(List<TriangleEntity> triangles, List<int> indices)
     {
-        var node = new BVHNodeEntity();
+        BVHNodeEntity node = new();
 
         node.Bounds = calculateBoundsTask.Execute(triangles, indices);
 
@@ -42,9 +38,10 @@ public class BVHBuilderService
             return node;
         }
 
-        var (axis, splitPos) = findBestSplitTask.Execute(triangles, indices, node.Bounds);
+        (int axis, float splitPos) = findBestSplitTask.Execute(triangles, indices, node.Bounds);
 
-        var (leftIndices, rightIndices) = partitionTrianglesTask.Execute(triangles, indices, axis, splitPos);
+        (List<int> leftIndices, List<int> rightIndices) =
+            partitionTrianglesTask.Execute(triangles, indices, axis, splitPos);
 
         if (leftIndices.Count == 0 || rightIndices.Count == 0)
         {

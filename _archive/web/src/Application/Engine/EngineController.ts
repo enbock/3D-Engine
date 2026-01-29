@@ -1,9 +1,9 @@
-import { Engine } from '../../Core/Engine';
-import { EngineConfig } from '../EngineConfig';
-import { Scene } from '../../Core/Scene';
-import { Camera } from '../../Core/Camera';
-import { CameraController } from '../Camera/CameraController';
-import { RenderMode } from '../../Infrastructure/Rendering/RendererManager';
+import {Engine} from '../../Core/Engine';
+import {EngineConfig} from '../EngineConfig';
+import {Scene} from '../../Core/Scene';
+import {Camera} from '../../Core/Camera';
+import {CameraController} from '../Camera/CameraController';
+import {RenderMode} from '../../Infrastructure/Rendering/RendererManager';
 
 export class EngineController {
     private engine: Engine | null = null;

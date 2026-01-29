@@ -8,7 +8,12 @@
     "dev": "webpack serve --mode development --open",
     "watch": "webpack --watch --mode development"
   },
-  "keywords": ["3d", "engine", "typescript", "webgl"],
+  "keywords": [
+    "3d",
+    "engine",
+    "typescript",
+    "webgl"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {

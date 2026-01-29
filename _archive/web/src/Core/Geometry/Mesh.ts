@@ -1,4 +1,4 @@
-import { Vector3, Color } from '../Math';
+import {Color, Vector3} from '../Math';
 
 export interface MeshData {
     vertices: number[];
@@ -18,18 +18,19 @@ export class Mesh {
         public indices: Uint16Array,
         public normals: Float32Array,
         public colors?: Float32Array
-    ) {}
+    ) {
+    }
 
     static createCube(size: number = 1): Mesh {
         const s = size / 2;
 
         const vertices = new Float32Array([
-            -s, -s, s,  s, -s, s,  s, s, s,  -s, s, s,
-            -s, -s, -s,  -s, s, -s,  s, s, -s,  s, -s, -s,
-            -s, s, -s,  -s, s, s,  s, s, s,  s, s, -s,
-            -s, -s, -s,  s, -s, -s,  s, -s, s,  -s, -s, s,
-            s, -s, -s,  s, s, -s,  s, s, s,  s, -s, s,
-            -s, -s, -s,  -s, -s, s,  -s, s, s,  -s, s, -s
+            -s, -s, s, s, -s, s, s, s, s, -s, s, s,
+            -s, -s, -s, -s, s, -s, s, s, -s, s, -s, -s,
+            -s, s, -s, -s, s, s, s, s, s, s, s, -s,
+            -s, -s, -s, s, -s, -s, s, -s, s, -s, -s, s,
+            s, -s, -s, s, s, -s, s, s, s, s, -s, s,
+            -s, -s, -s, -s, -s, s, -s, s, s, -s, s, -s
         ]);
 
         const indices = new Uint16Array([
@@ -42,12 +43,12 @@ export class Mesh {
         ]);
 
         const normals = new Float32Array([
-            0, 0, 1,  0, 0, 1,  0, 0, 1,  0, 0, 1,
-            0, 0, -1,  0, 0, -1,  0, 0, -1,  0, 0, -1,
-            0, 1, 0,  0, 1, 0,  0, 1, 0,  0, 1, 0,
-            0, -1, 0,  0, -1, 0,  0, -1, 0,  0, -1, 0,
-            1, 0, 0,  1, 0, 0,  1, 0, 0,  1, 0, 0,
-            -1, 0, 0,  -1, 0, 0,  -1, 0, 0,  -1, 0, 0
+            0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
+            0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1,
+            0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
+            0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0,
+            1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0,
+            -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0
         ]);
 
         return new Mesh(vertices, indices, normals);

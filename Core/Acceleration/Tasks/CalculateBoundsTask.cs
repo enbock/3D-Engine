@@ -7,11 +7,11 @@ public class CalculateBoundsTask
 {
     public AABB Execute(List<TriangleEntity> triangles, List<int> indices)
     {
-        var bounds = AABB.Empty;
+        AABB bounds = AABB.Empty;
 
-        foreach (var index in indices)
+        foreach (int index in indices)
         {
-            var triangle = triangles[index];
+            TriangleEntity triangle = triangles[index];
             bounds.Expand(triangle.V0);
             bounds.Expand(triangle.V1);
             bounds.Expand(triangle.V2);

@@ -1,13 +1,16 @@
 # Render-Modus Wechsel
 
 ## Überblick
+
 Die 3D-Engine unterstützt jetzt zwei Rendering-Modi:
+
 - **Raytracing**: GPU-basiertes Raytracing mit Schatten und Reflexionen
 - **Raster**: Klassisches polygonales Rendering mit Vertex/Fragment-Shadern
 
 ## Implementierung
 
 ### Neue Dateien:
+
 1. **RasterRenderer.ts**: Klassischer Raster-Renderer
    - Vertex-/Fragment-Shader
    - Buffer-Management für Meshes
@@ -20,6 +23,7 @@ Die 3D-Engine unterstützt jetzt zwei Rendering-Modi:
    - Automatisches Dispose beider Renderer
 
 ### Änderungen:
+
 - **Engine.ts**: Nutzt RendererManager statt direkten Renderer
 - **EngineController.ts**: Expose Render-Modus-Methoden
 - **main.ts**: Button-Event-Handler zum Wechseln
@@ -28,17 +32,20 @@ Die 3D-Engine unterstützt jetzt zwei Rendering-Modi:
 ## Verwendung
 
 ### Programmgesteuert:
+
 ```typescript
 engineController.setRenderMode(RenderMode.Raytracing);
 engineController.setRenderMode(RenderMode.Raster);
 ```
 
 ### UI-Button:
+
 Klicke auf "Zu Raster wechseln" / "Zu Raytracing wechseln" oben rechts.
 
 ## Unterschiede
 
 ### Raytracing:
+
 - ✅ Realistische Schatten
 - ✅ Reflexionen
 - ✅ Accurate Beleuchtung
@@ -46,6 +53,7 @@ Klicke auf "Zu Raster wechseln" / "Zu Raytracing wechseln" oben rechts.
 - ❌ Triangle-Limit (~87,000)
 
 ### Raster:
+
 - ✅ Sehr schnell
 - ✅ Unbegrenzte Dreiecke
 - ✅ Hardware-beschleunigt
@@ -53,5 +61,6 @@ Klicke auf "Zu Raster wechseln" / "Zu Raytracing wechseln" oben rechts.
 - ❌ Einfachere Schatten
 
 ## Performance
+
 Der Wechsel erfolgt in Echtzeit ohne Neustart der Engine.
 

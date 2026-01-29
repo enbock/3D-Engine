@@ -1,8 +1,8 @@
-import { EngineConfig } from '../Application/EngineConfig';
-import { Scene } from './Scene';
-import { Camera } from './Camera';
-import { Vector3 } from './Math';
-import { RendererManager, RenderMode } from '../Infrastructure/Rendering/RendererManager';
+import {EngineConfig} from '../Application/EngineConfig';
+import {Scene} from './Scene';
+import {Camera} from './Camera';
+import {Vector3} from './Math';
+import {RendererManager, RenderMode} from '../Infrastructure/Rendering/RendererManager';
 
 export class Engine {
     private config: EngineConfig;
@@ -36,29 +36,6 @@ export class Engine {
         this.resize(this.config.width, this.config.height);
     }
 
-    private initializeContext(): void {
-        const contextAttributes: WebGLContextAttributes = {
-            antialias: this.config.antialias,
-            powerPreference: this.config.powerPreference,
-            alpha: false,
-            depth: true,
-            stencil: false,
-        };
-
-        this.context = this.canvas.getContext('webgl2', contextAttributes)
-                    || this.canvas.getContext('webgl', contextAttributes);
-
-        if (!this.context) {
-            throw new Error('WebGL wird von diesem Browser nicht unterstützt');
-        }
-
-        console.log(`WebGL Context initialisiert: ${this.context instanceof WebGL2RenderingContext ? 'WebGL2' : 'WebGL1'}`);
-
-        this.context.clearColor(0.0, 0.0, 0.0, 1.0);
-
-        this.rendererManager = new RendererManager(this.context);
-    }
-
     public start(): void {
         if (this.running) return;
 
@@ -76,34 +53,6 @@ export class Engine {
 
     public isRunning(): boolean {
         return this.running;
-    }
-
-    private renderLoop(currentTime: number): void {
-        if (!this.running) return;
-
-        const deltaTime = (currentTime - this.lastFrameTime) / 1000;
-        this.lastFrameTime = currentTime;
-        this.frameCount++;
-
-        this.update(deltaTime);
-        this.render();
-
-        requestAnimationFrame((time) => this.renderLoop(time));
-    }
-
-    private update(deltaTime: number): void {
-        if (this.updateCallback) {
-            this.updateCallback(deltaTime);
-        }
-    }
-
-    private render(): void {
-        if (!this.context || !this.rendererManager) return;
-
-        this.rendererManager.clear();
-
-        const deltaTime = (performance.now() - this.lastFrameTime) / 1000;
-        this.rendererManager.render(this.camera, this.scene, deltaTime);
     }
 
     public resize(width: number, height: number): void {
@@ -154,6 +103,58 @@ export class Engine {
 
     public getRenderMode(): RenderMode | null {
         return this.rendererManager ? this.rendererManager.getRenderMode() : null;
+    }
+
+    private initializeContext(): void {
+        const contextAttributes: WebGLContextAttributes = {
+            antialias: this.config.antialias,
+            powerPreference: this.config.powerPreference,
+            alpha: false,
+            depth: true,
+            stencil: false
+        };
+
+        this.context = this.canvas.getContext('webgl2', contextAttributes)
+            || this.canvas.getContext('webgl', contextAttributes);
+
+        if (!this.context) {
+            throw new Error('WebGL wird von diesem Browser nicht unterstützt');
+        }
+
+        console.log(
+            `WebGL Context initialisiert: ${this.context instanceof WebGL2RenderingContext ? 'WebGL2' : 'WebGL1'}`);
+
+        this.context.clearColor(0.0, 0.0, 0.0, 1.0);
+
+        this.rendererManager = new RendererManager(this.context);
+    }
+
+    private renderLoop(currentTime: number): void {
+        if (!this.running) return;
+
+        const deltaTime = (currentTime - this.lastFrameTime) / 1000;
+        this.lastFrameTime = currentTime;
+        this.frameCount++;
+
+        this.update(deltaTime);
+        this.render();
+
+        requestAnimationFrame((time) => this.renderLoop(time));
+    }
+
+    private update(deltaTime: number): void {
+        if (this.updateCallback) {
+            this.updateCallback(deltaTime);
+        }
+    }
+
+    private render(): void {
+        if (!this.context || !this.rendererManager) return;
+
+        this.rendererManager.clear();
+
+        const deltaTime = (performance.now() - this.lastFrameTime) / 1000;
+        this.rendererManager.render(this.camera, this.scene, deltaTime);
     }
 }
 

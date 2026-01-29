@@ -21,12 +21,14 @@ Implementierung.
 
 **KRITISCH für Shader-Entwicklung**: WebStorm/Rider muss sofort speichern!
 
-**Problem**: 
+**Problem**:
+
 - Standardmäßig verzögertes Speichern (mehrere Sekunden idle time)
 - Shader-Kompilierung verwendet alte Dateiversion
 - Debugging zeigt falsche/inkonsistente Ergebnisse
 
 **Lösung**:
+
 1. WebStorm: `Settings → Appearance & Behavior → System Settings → Synchronization`
 2. Setze "Save files automatically if application is idle for" auf **1 Sekunde**
 3. Oder: Aktiviere "Save files on frame deactivation"
@@ -72,6 +74,7 @@ dotnet run
 ## 🎮 Steuerung
 
 ### Kamera-Bewegung:
+
 - **W** - Vorwärts
 - **S** - Rückwärts
 - **A** - Links
@@ -80,11 +83,13 @@ dotnet run
 - **E** - Runter
 
 ### Kamera-Rotation:
+
 - **Rechte Maustaste + Bewegen** - Kamera drehen (Look Speed: 0.003)
 - **Maus X-Bewegung** - Yaw (Links/Rechts)
 - **Maus Y-Bewegung** - Pitch (Hoch/Runter)
 
 ### Sonstiges:
+
 - **ESC** - Beenden
 
 ## 📁 Projektstruktur
@@ -131,17 +136,20 @@ VulkanEngine/
 ## 🏗️ Architektur-Prinzipien
 
 ### Clean Architecture Layers:
+
 1. **Core** - Domain Logic (Entities, Interfaces, Services)
 2. **Application** - Use Cases (SceneBuilder, Container, Config)
 3. **Infrastructure** - External Dependencies (Vulkan, Window, Input)
 
 ### Design Patterns:
+
 - **Dependency Injection** - ServiceContainer
 - **Strategy Pattern** - IRenderer Interface
 - **Observer Pattern** - Event-basiertes Window Management
 - **Builder Pattern** - SceneBuilder
 
 ### Code-Qualität:
+
 - ✅ Keine Kommentare im Code
 - ✅ Single Responsibility Principle
 - ✅ Separation of Concerns
@@ -152,22 +160,26 @@ VulkanEngine/
 ## 🎨 Raytracing Features
 
 ### Acceleration:
+
 - **BVH (Bounding Volume Hierarchy)** - Binary tree acceleration structure
 - **SAH (Surface Area Heuristic)** - Optimal split plane selection
 - **Adaptive Leaf Size** - Max 4 triangles per leaf
 - **Early Ray Termination** - Efficient traversal
 
 ### Geometrie:
+
 - Triangle Mesh Support
 - Analytische Intersection Tests
 - AABB (Axis-Aligned Bounding Box) Culling
 
 ### Beleuchtung:
+
 - **Directional Light** - Sonne/Mond-ähnlich
 - **Point Light** - Punktlichtquelle mit Attenuation
 - **Ambient Light** - Globale Beleuchtung
 
 ### Shading:
+
 - Diffuse (Lambertian)
 - Specular (Phong, Exponent 32)
 - Soft Shadows (Monte Carlo Sampling, 1-16 Samples)
@@ -177,11 +189,13 @@ VulkanEngine/
 - Energy Decay (50% pro Bounce)
 
 ### Quality Presets:
+
 - **Performance**: 1 Bounce, 1 Shadow Sample (Hard), 0% Softness
 - **Default**: 3 Bounces, 4 Shadow Samples (Soft), 5% Softness
 - **Quality**: 5 Bounces, 8 Shadow Samples (Very Soft), 10% Softness
 
 ### Optimierungen:
+
 - Compute Shader basiert (16x16 Work Groups)
 - GPU-seitige Szenen-Daten (SSBO)
 - Uniform Buffers für Kamera & Lights
@@ -196,6 +210,7 @@ VulkanEngine/
 ## 🔧 Konfiguration
 
 [EngineConfig.cs](VulkanEngine/Application/EngineConfig.cs):
+
 ```csharp
 var config = new EngineConfig
 {
@@ -211,11 +226,13 @@ var config = new EngineConfig
 ## 🎓 Von WebGL gelernt
 
 Diese Engine basiert auf Erkenntnissen aus dem WebGL-Experiment:
+
 - Raytracing Algorithmus aus `web/src/Infrastructure/Rendering/RaytracingShaders.ts`
 - Scene Management aus `web/src/Core/Scene.ts`
 - Camera Control aus `web/src/Core/Camera.ts`
 
 **Verbesserungen gegenüber WebGL:**
+
 - Native Performance (kein JavaScript Overhead)
 - Vulkan statt WebGL (mehr Kontrolle)
 - Compute Shader (statt Fragment Shader Tricks)

@@ -37,43 +37,95 @@ public struct Vector3
     {
         get
         {
-            var length = Length;
+            float length = Length;
             return length > 0 ? new Vector3(X / length, Y / length, Z / length) : Zero;
         }
     }
 
-    public static Vector3 operator +(Vector3 a, Vector3 b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
-    public static Vector3 operator -(Vector3 a, Vector3 b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
-    public static Vector3 operator *(Vector3 v, float s) => new(v.X * s, v.Y * s, v.Z * s);
-    public static Vector3 operator *(float s, Vector3 v) => new(v.X * s, v.Y * s, v.Z * s);
-    public static Vector3 operator /(Vector3 v, float s) => new(v.X / s, v.Y / s, v.Z / s);
-    public static Vector3 operator -(Vector3 v) => new(-v.X, -v.Y, -v.Z);
-    public static bool operator ==(Vector3 a, Vector3 b) => a.X == b.X && a.Y == b.Y && a.Z == b.Z;
-    public static bool operator !=(Vector3 a, Vector3 b) => !(a == b);
+    public static Vector3 operator +(Vector3 a, Vector3 b)
+    {
+        return new Vector3(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+    }
 
-    public override bool Equals(object? obj) => obj is Vector3 other && this == other;
-    public override int GetHashCode() => HashCode.Combine(X, Y, Z);
+    public static Vector3 operator -(Vector3 a, Vector3 b)
+    {
+        return new Vector3(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+    }
 
-    public static float Dot(Vector3 a, Vector3 b) => a.X * b.X + a.Y * b.Y + a.Z * b.Z;
+    public static Vector3 operator *(Vector3 v, float s)
+    {
+        return new Vector3(v.X * s, v.Y * s, v.Z * s);
+    }
 
-    public static Vector3 Cross(Vector3 a, Vector3 b) => new(
-        a.Y * b.Z - a.Z * b.Y,
-        a.Z * b.X - a.X * b.Z,
-        a.X * b.Y - a.Y * b.X
-    );
+    public static Vector3 operator *(float s, Vector3 v)
+    {
+        return new Vector3(v.X * s, v.Y * s, v.Z * s);
+    }
+
+    public static Vector3 operator /(Vector3 v, float s)
+    {
+        return new Vector3(v.X / s, v.Y / s, v.Z / s);
+    }
+
+    public static Vector3 operator -(Vector3 v)
+    {
+        return new Vector3(-v.X, -v.Y, -v.Z);
+    }
+
+    public static bool operator ==(Vector3 a, Vector3 b)
+    {
+        return a.X == b.X && a.Y == b.Y && a.Z == b.Z;
+    }
+
+    public static bool operator !=(Vector3 a, Vector3 b)
+    {
+        return !(a == b);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Vector3 other && this == other;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(X, Y, Z);
+    }
+
+    public static float Dot(Vector3 a, Vector3 b)
+    {
+        return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
+    }
+
+    public static Vector3 Cross(Vector3 a, Vector3 b)
+    {
+        return new Vector3(
+            a.Y * b.Z - a.Z * b.Y,
+            a.Z * b.X - a.X * b.Z,
+            a.X * b.Y - a.Y * b.X
+        );
+    }
 
     public static float Distance(Vector3 a, Vector3 b)
     {
-        var dx = a.X - b.X;
-        var dy = a.Y - b.Y;
-        var dz = a.Z - b.Z;
+        float dx = a.X - b.X;
+        float dy = a.Y - b.Y;
+        float dz = a.Z - b.Z;
         return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a + (b - a) * t;
+    public static Vector3 Lerp(Vector3 a, Vector3 b, float t)
+    {
+        return a + (b - a) * t;
+    }
 
-    public static Vector3 Reflect(Vector3 direction, Vector3 normal) =>
-        direction - 2 * Dot(direction, normal) * normal;
+    public static Vector3 Reflect(Vector3 direction, Vector3 normal)
+    {
+        return direction - 2 * Dot(direction, normal) * normal;
+    }
 
-    public override string ToString() => $"({X:F2}, {Y:F2}, {Z:F2})";
+    public override string ToString()
+    {
+        return $"({X:F2}, {Y:F2}, {Z:F2})";
+    }
 }

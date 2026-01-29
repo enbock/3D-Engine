@@ -1,6 +1,6 @@
-import { ShaderProgram } from './ShaderProgram';
-import { Camera } from '../../Core/Camera';
-import { Scene } from '../../Core/Scene';
+import {ShaderProgram} from './ShaderProgram';
+import {Camera} from '../../Core/Camera';
+import {Scene} from '../../Core/Scene';
 
 const vertexShader = `
 attribute vec3 aPosition;
@@ -94,13 +94,6 @@ export class RasterRenderer {
         this.setupGL();
     }
 
-    private setupGL(): void {
-        this.gl.clearColor(0.1, 0.1, 0.15, 1.0);
-        this.gl.enable(this.gl.DEPTH_TEST);
-        this.gl.enable(this.gl.CULL_FACE);
-        this.gl.cullFace(this.gl.BACK);
-    }
-
     clear(): void {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     }
@@ -143,6 +136,26 @@ export class RasterRenderer {
         for (const mesh of meshes) {
             this.renderMesh(mesh);
         }
+    }
+
+    dispose(): void {
+        this.vertexBuffers.forEach(buffer => this.gl.deleteBuffer(buffer));
+        this.indexBuffers.forEach(buffer => this.gl.deleteBuffer(buffer));
+        this.normalBuffers.forEach(buffer => this.gl.deleteBuffer(buffer));
+        this.colorBuffers.forEach(buffer => this.gl.deleteBuffer(buffer));
+        this.vertexBuffers.clear();
+        this.indexBuffers.clear();
+        this.normalBuffers.clear();
+        this.colorBuffers.clear();
+        this.indexCounts.clear();
+        this.shaderProgram.dispose();
+    }
+
+    private setupGL(): void {
+        this.gl.clearColor(0.1, 0.1, 0.15, 1.0);
+        this.gl.enable(this.gl.DEPTH_TEST);
+        this.gl.enable(this.gl.CULL_FACE);
+        this.gl.cullFace(this.gl.BACK);
     }
 
     private renderMesh(mesh: any): void {
@@ -224,24 +237,23 @@ export class RasterRenderer {
 
     private getModelMatrix(mesh: any): Float32Array {
         const matrix = new Float32Array(16);
-        matrix[0] = mesh.scale.x;  matrix[4] = 0;             matrix[8] = 0;             matrix[12] = mesh.position.x;
-        matrix[1] = 0;             matrix[5] = mesh.scale.y;  matrix[9] = 0;             matrix[13] = mesh.position.y;
-        matrix[2] = 0;             matrix[6] = 0;             matrix[10] = mesh.scale.z; matrix[14] = mesh.position.z;
-        matrix[3] = 0;             matrix[7] = 0;             matrix[11] = 0;            matrix[15] = 1;
+        matrix[0] = mesh.scale.x;
+        matrix[4] = 0;
+        matrix[8] = 0;
+        matrix[12] = mesh.position.x;
+        matrix[1] = 0;
+        matrix[5] = mesh.scale.y;
+        matrix[9] = 0;
+        matrix[13] = mesh.position.y;
+        matrix[2] = 0;
+        matrix[6] = 0;
+        matrix[10] = mesh.scale.z;
+        matrix[14] = mesh.position.z;
+        matrix[3] = 0;
+        matrix[7] = 0;
+        matrix[11] = 0;
+        matrix[15] = 1;
         return matrix;
-    }
-
-    dispose(): void {
-        this.vertexBuffers.forEach(buffer => this.gl.deleteBuffer(buffer));
-        this.indexBuffers.forEach(buffer => this.gl.deleteBuffer(buffer));
-        this.normalBuffers.forEach(buffer => this.gl.deleteBuffer(buffer));
-        this.colorBuffers.forEach(buffer => this.gl.deleteBuffer(buffer));
-        this.vertexBuffers.clear();
-        this.indexBuffers.clear();
-        this.normalBuffers.clear();
-        this.colorBuffers.clear();
-        this.indexCounts.clear();
-        this.shaderProgram.dispose();
     }
 }
 

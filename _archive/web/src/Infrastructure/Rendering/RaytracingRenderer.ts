@@ -1,7 +1,7 @@
-import { ShaderProgram } from './ShaderProgram';
-import { raytracingVertexShader, raytracingFragmentShader } from './RaytracingShaders';
-import { Camera } from '../../Core/Camera';
-import { Scene } from '../../Core/Scene';
+import {ShaderProgram} from './ShaderProgram';
+import {raytracingFragmentShader, raytracingVertexShader} from './RaytracingShaders';
+import {Camera} from '../../Core/Camera';
+import {Scene} from '../../Core/Scene';
 
 export class RaytracingRenderer {
     private gl: WebGLRenderingContext | WebGL2RenderingContext;
@@ -18,6 +18,74 @@ export class RaytracingRenderer {
         this.setupQuad();
         this.setupGL();
         this.setupTriangleTexture();
+    }
+
+    clear(): void {
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    }
+
+    render(camera: Camera, scene: Scene, deltaTime: number): void {
+        this.time += deltaTime;
+        this.shaderProgram.use();
+
+        const width = this.gl.canvas.width;
+        const height = this.gl.canvas.height;
+
+        this.shaderProgram.setUniform3f(
+            'uCameraPosition',
+            camera.position.x,
+            camera.position.y,
+            camera.position.z
+        );
+
+        this.shaderProgram.setUniform3f(
+            'uCameraTarget',
+            camera.target.x,
+            camera.target.y,
+            camera.target.z
+        );
+
+        const resolutionLocation = this.shaderProgram.getUniformLocation('uResolution');
+        if (resolutionLocation) {
+            this.gl.uniform2f(resolutionLocation, width, height);
+        }
+
+        const timeLocation = this.shaderProgram.getUniformLocation('uTime');
+        if (timeLocation) {
+            this.gl.uniform1f(timeLocation, this.time);
+        }
+
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.triangleTexture);
+
+        const texLocation = this.shaderProgram.getUniformLocation('uTriangleData');
+        if (texLocation) {
+            this.gl.uniform1i(texLocation, 0);
+        }
+
+        const texSizeLocation = this.shaderProgram.getUniformLocation('uTriangleTexSize');
+        if (texSizeLocation) {
+            this.gl.uniform2f(texSizeLocation, this.triangleTexWidth, this.triangleTexHeight);
+        }
+
+        this.uploadSceneData(scene);
+
+        const positionLoc = this.shaderProgram.getAttributeLocation('aPosition');
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.quadVertexBuffer);
+        this.gl.enableVertexAttribArray(positionLoc);
+        this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
+
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    }
+
+    dispose(): void {
+        if (this.quadVertexBuffer) {
+            this.gl.deleteBuffer(this.quadVertexBuffer);
+        }
+        if (this.triangleTexture) {
+            this.gl.deleteTexture(this.triangleTexture);
+        }
+        this.shaderProgram.dispose();
     }
 
     private setupGL(): void {
@@ -80,9 +148,9 @@ export class RaytracingRenderer {
     private setupQuad(): void {
         const vertices = new Float32Array([
             -1, -1,
-             1, -1,
-            -1,  1,
-             1,  1
+            1, -1,
+            -1, 1,
+            1, 1
         ]);
 
         this.quadVertexBuffer = this.gl.createBuffer();
@@ -92,63 +160,6 @@ export class RaytracingRenderer {
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.quadVertexBuffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-    }
-
-    clear(): void {
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-    }
-
-    render(camera: Camera, scene: Scene, deltaTime: number): void {
-        this.time += deltaTime;
-        this.shaderProgram.use();
-
-        const width = this.gl.canvas.width;
-        const height = this.gl.canvas.height;
-
-
-        this.shaderProgram.setUniform3f('uCameraPosition',
-            camera.position.x,
-            camera.position.y,
-            camera.position.z
-        );
-
-        this.shaderProgram.setUniform3f('uCameraTarget',
-            camera.target.x,
-            camera.target.y,
-            camera.target.z
-        );
-
-        const resolutionLocation = this.shaderProgram.getUniformLocation('uResolution');
-        if (resolutionLocation) {
-            this.gl.uniform2f(resolutionLocation, width, height);
-        }
-
-        const timeLocation = this.shaderProgram.getUniformLocation('uTime');
-        if (timeLocation) {
-            this.gl.uniform1f(timeLocation, this.time);
-        }
-
-        this.gl.activeTexture(this.gl.TEXTURE0);
-        this.gl.bindTexture(this.gl.TEXTURE_2D, this.triangleTexture);
-
-        const texLocation = this.shaderProgram.getUniformLocation('uTriangleData');
-        if (texLocation) {
-            this.gl.uniform1i(texLocation, 0);
-        }
-
-        const texSizeLocation = this.shaderProgram.getUniformLocation('uTriangleTexSize');
-        if (texSizeLocation) {
-            this.gl.uniform2f(texSizeLocation, this.triangleTexWidth, this.triangleTexHeight);
-        }
-
-        this.uploadSceneData(scene);
-
-        const positionLoc = this.shaderProgram.getAttributeLocation('aPosition');
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.quadVertexBuffer);
-        this.gl.enableVertexAttribArray(positionLoc);
-        this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
-
-        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
 
     private uploadSceneData(scene: Scene): void {
@@ -161,8 +172,10 @@ export class RaytracingRenderer {
         for (let i = 0; i < numLights; i++) {
             const light = lights[i];
             this.shaderProgram.setUniform1i(`uLights[${i}].type`, light.type);
-            this.shaderProgram.setUniform3f(`uLights[${i}].position`, light.position.x, light.position.y, light.position.z);
-            this.shaderProgram.setUniform3f(`uLights[${i}].direction`, light.direction.x, light.direction.y, light.direction.z);
+            this.shaderProgram.setUniform3f(
+                `uLights[${i}].position`, light.position.x, light.position.y, light.position.z);
+            this.shaderProgram.setUniform3f(
+                `uLights[${i}].direction`, light.direction.x, light.direction.y, light.direction.z);
             this.shaderProgram.setUniform3f(`uLights[${i}].color`, light.color.r, light.color.g, light.color.b);
             this.shaderProgram.setUniform1f(`uLights[${i}].intensity`, light.intensity);
         }
@@ -242,16 +255,6 @@ export class RaytracingRenderer {
                 texData
             );
         }
-    }
-
-    dispose(): void {
-        if (this.quadVertexBuffer) {
-            this.gl.deleteBuffer(this.quadVertexBuffer);
-        }
-        if (this.triangleTexture) {
-            this.gl.deleteTexture(this.triangleTexture);
-        }
-        this.shaderProgram.dispose();
     }
 }
 

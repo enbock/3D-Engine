@@ -1,10 +1,10 @@
-﻿# Dokumentation - Vulkan 3D-Engine
+﻿﻿# Dokumentation - Vulkan 3D-Engine
 
 ## Übersicht
 
 Dieses Verzeichnis enthält die gesamte technische Dokumentation des Projekts.
 
-## Hauptdokument
+## Hauptdokumente
 
 - **[ENTWICKLERTAGEBUCH.md](./ENTWICKLERTAGEBUCH.md)** - Vollständiges Entwicklertagebuch mit:
     - Projektübersicht & Architektur
@@ -13,6 +13,43 @@ Dieses Verzeichnis enthält die gesamte technische Dokumentation des Projekts.
     - Technische Lösungen & Best Practices
     - Gelernte Lektionen
     - Aktueller Status & Roadmap
+
+- **[BILDAUSGABE_PIPELINE.md](./BILDAUSGABE_PIPELINE.md)** - Detaillierte Erklärung der Vulkan Render-Pipeline:
+  - Phase 1: Initialisierung (Swapchain, Buffers, Pipeline, Synchronisation)
+  - Phase 2: Render-Loop (Frame-by-Frame Ablauf mit allen Schritten)
+  - Phase 3: Compute Shader Execution (GPU-seitige Raytracing-Berechnung)
+  - Synchronisations-Mechanismen (Semaphoren, Fences, Image Layout Transitions)
+  - Present-Mechanismus und VSync-Handling
+  - Performance-Charakteristiken und Fehlerbehandlung
+
+- **[MULTI_SHADER_IMPLEMENTATION.md](./MULTI_SHADER_IMPLEMENTATION.md)** - Multi-Pass Rendering Analyse (Geplant):
+  - Konzept für Multi-Shader Architektur mit G-Buffer
+  - Deferred Shading Ansatz für Raytracing
+  - **Entscheidung**: Zu komplex, auf Eis gelegt
+  - **Alternative**: Funktions-Refactoring im bestehenden Shader
+  - Empfehlungen für zukünftige Shader-Organisation
+
+- **[SHADER_REFACTORING_COMPLETE.md](./SHADER_REFACTORING_COMPLETE.md)** - Shader Funktions-Refactoring (✅
+  Abgeschlossen):
+  - Vollständiges Refactoring des raytracing.comp Shaders
+  - main() von 47→16 Zeilen (-66%)
+  - shade() von 50→16 Zeilen (-68%)
+  - 7 neue spezialisierte Funktionen
+  - Magic Numbers durch Konstanten ersetzt
+  - Identische Performance, dramatisch bessere Lesbarkeit
+
+- **[SHADER_CODE_COMPARISON.md](./SHADER_CODE_COMPARISON.md)** - Vorher/Nachher Vergleich:
+  - Detaillierter Code-Vergleich des Refactorings
+  - Metriken und Verbesserungen
+  - Neue Funktions-Hierarchie
+  - Konstanten-Eliminierung
+
+- **[RENDERER_REFACTORING_TASKS.md](./RENDERER_REFACTORING_TASKS.md)** - Renderer Task-Architektur (✅ Abgeschlossen):
+  - Zerlegung des 1450-Zeilen Renderers in 7 spezialisierte Task-Klassen
+  - Separation of Concerns (SoC) Prinzip angewendet
+  - VulkanDeviceTask, VulkanSwapchainTask, VulkanBufferTask, etc.
+  - 70% weniger Zeilen pro Datei
+  - Dramatisch verbesserte Wartbarkeit und Testbarkeit
 
 ## Archivierte Dokumente
 
@@ -65,9 +102,16 @@ Die archivierten Dokumente enthalten teilweise mehr Details zu einzelnen Debuggi
 
 ```
 doc/
-├── README.md                    # Diese Datei
-├── ENTWICKLERTAGEBUCH.md        # Hauptdokumentation
-└── archive/                     # Archivierte Einzeldokumente
+├── README.md                         # Diese Datei
+├── ENTWICKLERTAGEBUCH.md             # Hauptdokumentation
+├── BILDAUSGABE_PIPELINE.md           # Vulkan Render-Pipeline Erklärung
+├── MULTI_SHADER_IMPLEMENTATION.md    # Multi-Pass Rendering Analyse (Geplant)
+├── ENTSCHEIDUNG_MULTI_PASS.md        # Entscheidungsdokumentation Multi-Pass
+├── SHADER_REFACTORING_COMPLETE.md    # Shader Refactoring Abschluss
+├── SHADER_CODE_COMPARISON.md         # Vorher/Nachher Vergleich
+├── RENDERER_REFACTORING_TASKS.md     # Renderer Task-Architektur
+├── SESSION_SUMMARY_MULTI_SHADER.md   # Session-Zusammenfassung
+└── archive/                          # Archivierte Einzeldokumente
     ├── BELEUCHTUNG_ERFOLGREICH.md
     ├── DYNAMISCHE_BELEUCHTUNG.md
     ├── LIGHTING_IMPLEMENTATION.md

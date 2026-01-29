@@ -1,7 +1,7 @@
-import { RaytracingRenderer } from './RaytracingRenderer';
-import { RasterRenderer } from './RasterRenderer';
-import { Camera } from '../../Core/Camera';
-import { Scene } from '../../Core/Scene';
+import {RaytracingRenderer} from './RaytracingRenderer';
+import {RasterRenderer} from './RasterRenderer';
+import {Camera} from '../../Core/Camera';
+import {Scene} from '../../Core/Scene';
 
 export enum RenderMode {
     Raytracing = 'raytracing',
@@ -10,7 +10,9 @@ export enum RenderMode {
 
 export interface Renderer {
     clear(): void;
+
     render(camera: Camera, scene: Scene, deltaTime: number): void;
+
     dispose(): void;
 }
 
