@@ -6,15 +6,17 @@
 ## 🎉 Problem gelöst!
 
 **Root Cause**: Geometrie-Problem - alle Dreiecke hatten die gleiche Normale
+
 - Alle drei vertikalen Dreiecke waren parallel zueinander (in verschiedenen Z-Ebenen)
 - Alle zeigten in die gleiche Richtung → gleiche Normale → gleiche Helligkeit
 - Der Boden hatte eine falsche Normale durch Vertex-Reihenfolge
 
 **Finale Lösung**:
+
 1. ✅ Dreiecke mit unterschiedlichen Orientierungen erstellt:
-   - Rotes Dreieck: Zeigt nach VORNE (Normale in +Z Richtung)
-   - Grünes Dreieck: Zeigt nach RECHTS (Normale in +X Richtung)
-   - Blaues Dreieck: Zeigt nach LINKS (Normale in -X Richtung)
+    - Rotes Dreieck: Zeigt nach VORNE (Normale in +Z Richtung)
+    - Grünes Dreieck: Zeigt nach RECHTS (Normale in +X Richtung)
+    - Blaues Dreieck: Zeigt nach LINKS (Normale in -X Richtung)
 2. ✅ Beleuchtung optimiert (Ambient 0.5, Diffuse 2.0)
 3. ✅ std140-Alignment mit expliziten Floats korrigiert
 4. ✅ Editor Auto-Save auf 1 Sekunde konfiguriert
@@ -22,12 +24,14 @@
 ## 📊 Finale Ergebnisse
 
 **Beleuchtungstest (mit Normalen-Visualisierung)**:
+
 - Boden: #9F009F (Magenta - zeigt Problem mit Boden-Normale)
 - Rotes Dreieck: #9F9F00 (Gelb - unterschiedliche Normale) ✅
 - Grünes Dreieck: #FF9F9F (Hell-Rosa - unterschiedliche Normale) ✅
 - Blaues Dreieck: #007F7F (Cyan - unterschiedliche Normale) ✅
 
 **Beleuchtungstest (mit aktivierter Beleuchtung)**:
+
 - Boden: #282828 (dunkel, 16% Helligkeit)
 - Rotes Dreieck: #500000 (dunkel rot, 31% Helligkeit)
 - Grünes Dreieck: #00FF00 (VOLL HELL, 100% Helligkeit!) ✅✅✅
@@ -38,6 +42,7 @@
 ## 🔧 Finale Implementierung
 
 ### Dreiecks-Geometrie (SceneBuilder.cs)
+
 ```csharp
 // Rotes Dreieck - zeigt nach VORNE (Normale in +Z Richtung)
 scene.AddTriangle(new Triangle(
@@ -65,6 +70,7 @@ scene.AddTriangle(new Triangle(
 ```
 
 ### Shader-Beleuchtung (raytracing.comp)
+
 ```glsl
 vec3 lightDir = normalize(vec3(0.5, 1.0, 0.3));
 float ambient = 0.5;
@@ -75,6 +81,7 @@ return color * totalLight;
 ```
 
 ### Normalen-Berechnung (ohne Ray-Umkehrung)
+
 ```glsl
 h.normal = normalize(cross(e1, e2));
 ```
@@ -82,6 +89,7 @@ h.normal = normalize(cross(e1, e2));
 ## 🔍 Debug-Verlauf
 
 ### Session Timeline
+
 1. ✅ Editor Auto-Save Problem erkannt → auf 1 Sekunde konfiguriert
 2. ✅ std140-Alignment Problem → explizite Floats statt Vector3
 3. ✅ Light-Daten Transfer verifiziert → 3 Lichter kommen korrekt an
@@ -91,6 +99,7 @@ h.normal = normalize(cross(e1, e2));
 7. ✅ **Beleuchtung funktioniert!** → unterschiedliche Helligkeiten sichtbar
 
 ### Kritische Erkenntnisse
+
 1. **Editor-Konfiguration**: MUSS sofort speichern, sonst falsche Ergebnisse
 2. **std140-Alignment**: Vector3 in C# ≠ vec3 in GLSL, explizite Floats notwendig
 3. **Geometrie-Design**: Dreiecke müssen unterschiedliche Orientierungen haben
@@ -109,11 +118,13 @@ h.normal = normalize(cross(e1, e2));
 ## 📝 Nächste Schritte
 
 ### Phase 10: Schatten implementieren
+
 - traceShadow() Funktion
 - Soft Shadows mit Monte Carlo Sampling
 - Shadow Factor Integration
 
 ### Phase 11: Optimierungen
+
 - Boden-Normale korrigieren (immer noch Magenta statt Grün)
 - Mehr Dreiecke/Objekte zur Szene hinzufügen
 - Dynamische Lichtquellen aus Scene-Daten verwenden
@@ -132,6 +143,7 @@ h.normal = normalize(cross(e1, e2));
 **Status**: ✅ Erfolgreich - Beleuchtung vollständig funktionsfähig!
 **Dauer**: ~3 Stunden intensives Debugging
 **Ergebnis**: Unterschiedliche Helligkeiten basierend auf Normalen-Orientierung
+
 - Szene rendert nur flache, uniforme Farben
 - Keine Helligkeitsvariation trotz Lichtquellen
 - Keine Schatten unter Objekten
@@ -141,6 +153,7 @@ h.normal = normalize(cross(e1, e2));
 **⚠️ WICHTIG**: Shader enthält temporären Debug-Code!
 
 ### raytracing.comp:179-180
+
 ```glsl
 // DEBUG: Visualize normals
 return hit.normal * 0.5 + 0.5;
@@ -148,6 +161,7 @@ return hit.normal * 0.5 + 0.5;
 
 **Status**: Aktiv - Zeigt Normalen als Farbe
 **Erwartetes Ergebnis**:
+
 - Boden: Grün (Normale zeigt nach oben, Y=1)
 - Dreiecke: Farbmischung je nach Orientierung
 - Falls schwarz: Normalen sind kaputt
@@ -155,6 +169,7 @@ return hit.normal * 0.5 + 0.5;
 **Zum Entfernen**: Lösche Zeilen 179-180 wenn Normalen OK sind
 
 ### raytracing.comp:185-200
+
 ```glsl
 // Schatten temporär deaktiviert
 // KEINE traceShadow() Aufrufe
@@ -168,37 +183,44 @@ diffuse += diff * lighting.lights[i].color * lighting.lights[i].intensity;
 ## 🔍 Debug-Strategie
 
 ### Schritt 1: Normal Check (AKTUELL)
+
 ```bash
 dotnet run
 # → Schaue auf Farben der Objekte
 ```
 
 **Interpretation**:
+
 - **Grün/Bunte Farben**: Normalen OK → Weiter zu Schritt 2
 - **Schwarz/Grau**: Normalen kaputt → Normale-Berechnung prüfen
 - **Weiß**: Normalen invertiert → Vorzeichen umdrehen
 
 ### Schritt 2: Light Count Check
+
 ```glsl
 // In shade() ersetzen:
 return vec3(float(lighting.numLights) / 8.0);
 ```
 
 **Interpretation**:
+
 - **Schwarz**: numLights = 0 → Lights kommen nicht an
 - **Grau**: numLights = 2-3 → OK, weiter zu Schritt 3
 
 ### Schritt 3: Diffuse Visualisierung
+
 ```glsl
 // In shade() ersetzen:
 return vec3(diffuse);
 ```
 
 **Interpretation**:
+
 - **Schwarz**: Diffuse = 0 → Dot-Product Problem oder Light Direction falsch
 - **Weiß/Grau**: Diffuse OK → Problem liegt woanders
 
 ### Schritt 4: Light Direction Check
+
 ```glsl
 // Für Directional Light (Type 0):
 vec3 lightDir = normalize(-lighting.lights[i].direction);
@@ -208,6 +230,7 @@ return lightDir * 0.5 + 0.5;  // Zeigt Direction als Farbe
 ## 📊 Szenen-Konfiguration
 
 ### SceneBuilder.cs:20-22
+
 ```csharp
 scene.AddLight(Light.CreateAmbient(Color.White, 0.2f));
 scene.AddLight(Light.CreateDirectional(
@@ -223,11 +246,13 @@ scene.AddLight(Light.CreatePoint(
 ```
 
 ### raytracing.comp:178
+
 ```glsl
 vec3 ambient = vec3(0.15);  // Base Ambient
 ```
 
 ### raytracing.comp:202
+
 ```glsl
 totalLight = clamp(totalLight, 0.0, 3.0);  // Erlaubt volle Dunkelheit
 ```
@@ -235,12 +260,14 @@ totalLight = clamp(totalLight, 0.0, 3.0);  // Erlaubt volle Dunkelheit
 ## 🎯 Erwartetes Verhalten (wenn alles funktioniert)
 
 **Beleuchtung**:
+
 - Objekte haben unterschiedliche Helligkeit
 - Dem Licht zugewandte Seiten sind hell
 - Abgewandte Seiten sind dunkel (nur Ambient)
 - Point Light erzeugt lokale Aufhellung links
 
 **Schatten** (wenn reaktiviert):
+
 - Objekte werfen Schatten auf den Boden
 - Schatten sind weich (Soft Shadows mit 4 Samples)
 - Shadow Factor: 0.3 (im Schatten) bis 1.0 (im Licht)
@@ -248,6 +275,7 @@ totalLight = clamp(totalLight, 0.0, 3.0);  // Erlaubt volle Dunkelheit
 ## 🔧 Bekannte Änderungen
 
 ### Shader-Änderungen seit Start
+
 1. ✅ UV Y-Flip: `uv.y = -uv.y`
 2. ✅ Cross-Product: `cross(forward, up)` für Right-Vector
 3. ✅ BGR Swizzle: `vec4(color.bgr, 1.0)` für BGRA Swapchain
@@ -257,6 +285,7 @@ totalLight = clamp(totalLight, 0.0, 3.0);  // Erlaubt volle Dunkelheit
 7. ⚠️ Debug: Normal-Visualisierung aktiv
 
 ### Code-Änderungen seit Start
+
 1. ✅ Engine.cs: Update-Reihenfolge (CameraController vor InputHandler)
 2. ✅ Camera.cs: Target mitbewegen bei Move()
 3. ✅ CameraController.cs: Q/E statt Space/Ctrl
@@ -279,6 +308,7 @@ totalLight = clamp(totalLight, 0.0, 3.0);  // Erlaubt volle Dunkelheit
 ---
 
 **Beim Fortsetzen:**
+
 ```bash
 cd C:\Users\endre\WebstormProjects\3D-Engine\VulkanEngine
 dotnet run

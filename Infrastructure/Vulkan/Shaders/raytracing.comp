@@ -165,66 +165,23 @@ Hit trace(Ray ray, int numTriangles) {
     return closest;
 }
 
-float random(vec2 co) {
-    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
-}
+bool traceShadow(vec3 origin, vec3 lightDir, float maxDist, int numTriangles) {
+    if (settings.enableShadows == 0) {
+        return false;
+    }
 
-vec3 randomInUnitDisk(vec2 seed) {
-    float angle = random(seed) * 2.0 * 3.14159265;
-    float radius = sqrt(random(seed + vec2(1.0, 0.0)));
-    return vec3(cos(angle) * radius, sin(angle) * radius, 0.0);
-}
-
-Hit traceShadowRay(Ray ray, int numTriangles) {
-    Hit closest;
-    closest.hit = false;
-    closest.dist = MAX_DIST;
+    Ray shadowRay;
+    shadowRay.origin = origin;
+    shadowRay.direction = lightDir;
 
     for (int i = 0; i < numTriangles; i++) {
-        Hit h = intersectTriangleShadow(ray, triangles[i]);
-        if (h.hit && h.dist < closest.dist) {
-            closest = h;
+        Hit h = intersectTriangleShadow(shadowRay, triangles[i]);
+        if (h.hit && h.dist < maxDist) {
+            return true;
         }
     }
 
-    return closest;
-}
-
-float traceShadow(vec3 origin, vec3 lightDir, float maxDist, int numTriangles) {
-    if (settings.enableShadows == 0) {
-        return 1.0;
-    }
-
-    if (settings.shadowSamples <= 1) {
-        Ray shadowRay;
-        shadowRay.origin = origin;
-        shadowRay.direction = lightDir;
-        Hit shadowHit = traceShadowRay(shadowRay, numTriangles);
-        return (shadowHit.hit && shadowHit.dist < maxDist) ? 0.1 : 1.0;
-    }
-
-    float shadowFactor = 0.0;
-    vec3 tangent = abs(lightDir.y) < 0.9 ? cross(lightDir, vec3(0, 1, 0)) : cross(lightDir, vec3(1, 0, 0));
-    tangent = normalize(tangent);
-    vec3 bitangent = cross(lightDir, tangent);
-
-    for (int i = 0; i < settings.shadowSamples; i++) {
-        vec2 seed = vec2(float(i) * 0.1, camera.time);
-        vec3 offset = randomInUnitDisk(seed + gl_GlobalInvocationID.xy * 0.01);
-        vec3 sampleDir = normalize(lightDir + (tangent * offset.x + bitangent * offset.y) * settings.shadowSoftness);
-
-        Ray shadowRay;
-        shadowRay.origin = origin;
-        shadowRay.direction = sampleDir;
-        Hit shadowHit = traceShadowRay(shadowRay, numTriangles);
-
-        if (!shadowHit.hit || shadowHit.dist >= maxDist) {
-            shadowFactor += 1.0;
-        }
-    }
-
-    shadowFactor /= float(settings.shadowSamples);
-    return mix(0.1, 1.0, shadowFactor);
+    return false;
 }
 
 vec3 shade(Hit hit, vec3 rayDir, int numTriangles) {
@@ -254,13 +211,14 @@ vec3 shade(Hit hit, vec3 rayDir, int numTriangles) {
             vec3 lDir = normalize(-lightDir);
             float diff = max(dot(normal, lDir), 0.0);
 
-            float shadow = traceShadow(hit.point + normal * EPSILON * 10.0, lDir, MAX_DIST, numTriangles);
+            bool inShadow = traceShadow(hit.point + normal * EPSILON * 10.0, lDir, MAX_DIST, numTriangles);
+            float shadowFactor = inShadow ? 0.2 : 1.0;
 
             vec3 halfDir = normalize(lDir + viewDir);
             float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
 
-            result += color * lightColor * diff * light.intensity * shadow;
-            result += lightColor * spec * light.intensity * shadow;
+            result += color * lightColor * diff * light.intensity * shadowFactor;
+            result += lightColor * spec * light.intensity * shadowFactor;
         }
         else if (light.type == 2) {
             vec3 lightVec = lightPos - hit.point;
@@ -271,13 +229,14 @@ vec3 shade(Hit hit, vec3 rayDir, int numTriangles) {
 
             float diff = max(dot(normal, lDir), 0.0);
 
-            float shadow = traceShadow(hit.point + normal * EPSILON * 10.0, lDir, dist, numTriangles);
+            bool inShadow = traceShadow(hit.point + normal * EPSILON * 10.0, lDir, dist, numTriangles);
+            float shadowFactor = inShadow ? 0.2 : 1.0;
 
             vec3 halfDir = normalize(lDir + viewDir);
             float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
 
-            result += color * lightColor * diff * light.intensity * attenuation * shadow;
-            result += lightColor * spec * light.intensity * attenuation * shadow;
+            result += color * lightColor * diff * light.intensity * attenuation * shadowFactor;
+            result += lightColor * spec * light.intensity * attenuation * shadowFactor;
         }
     }
 

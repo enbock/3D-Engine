@@ -6,6 +6,7 @@
 ## Überblick
 
 Das Raytracing-System unterstützt drei Arten von Lichtquellen mit vollständiger Phong-Beleuchtung:
+
 - Ambient Light (Umgebungslicht)
 - Directional Light (gerichtetes Licht, z.B. Sonne)
 - Point Light (Punktlicht mit Distanzabschwächung)
@@ -35,6 +36,7 @@ public class Light
 ```
 
 **Factory-Methoden**:
+
 - `Light.CreateDirectional(direction, color, intensity)`
 - `Light.CreatePoint(position, color, intensity)`
 - `Light.CreateAmbient(color, intensity)`
@@ -44,6 +46,7 @@ public class Light
 **Datei**: `Application/Services/SceneBuilder.cs`
 
 Standard-Beleuchtung in `CreateSimpleScene()`:
+
 ```csharp
 scene.AddLight(Light.CreateAmbient(Color.White, 0.2f));
 scene.AddLight(Light.CreateDirectional(
@@ -93,6 +96,7 @@ public unsafe struct LightUniformData
 ```
 
 #### Buffer-Erstellung
+
 - **Typ**: Uniform Buffer (VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
 - **Memory**: Host Visible + Host Coherent
 - **Update**: Jeden Frame via MapMemory
@@ -182,7 +186,8 @@ vec3 normal = normalize(cross(e1, e2));
 h.normal = normal;
 ```
 
-**Wichtig**: 
+**Wichtig**:
+
 - Die Normalen reflektieren die geometrische Orientierung des Dreiecks
 - Die Vertex-Reihenfolge bestimmt die Normale-Richtung (Counter-Clockwise für nach-außen)
 - Beispiel Boden: `v0, v1, v2` ergibt Normale nach oben (0, 1, 0)
@@ -195,6 +200,7 @@ attenuation = 1.0 / (constant + linear * distance + quadratic * distance²)
 ```
 
 Aktuelle Werte:
+
 - `constant = 1.0`
 - `linear = 0.09`
 - `quadratic = 0.008`
@@ -205,12 +211,12 @@ Diese Werte bieten einen guten Kompromiss zwischen Reichweite und realistischem 
 
 ### Empfohlene Werte
 
-| Parameter | Typ | Min | Typisch | Max | Effekt |
-|-----------|-----|-----|---------|-----|--------|
-| Ambient Intensity | Alle | 0.1 | 0.2 | 0.5 | Grundhelligkeit |
-| Directional Intensity | Dir | 0.5 | 1.5 | 3.0 | Hauptlicht |
-| Point Intensity | Point | 0.5 | 2.0 | 5.0 | Lokale Aufhellung |
-| Basis-Ambient (Shader) | - | 0.2 | 0.3 | 0.5 | Minimalhelligkeit |
+| Parameter              | Typ   | Min | Typisch | Max | Effekt            |
+|------------------------|-------|-----|---------|-----|-------------------|
+| Ambient Intensity      | Alle  | 0.1 | 0.2     | 0.5 | Grundhelligkeit   |
+| Directional Intensity  | Dir   | 0.5 | 1.5     | 3.0 | Hauptlicht        |
+| Point Intensity        | Point | 0.5 | 2.0     | 5.0 | Lokale Aufhellung |
+| Basis-Ambient (Shader) | -     | 0.2 | 0.3     | 0.5 | Minimalhelligkeit |
 
 ### Farb-Empfehlungen
 

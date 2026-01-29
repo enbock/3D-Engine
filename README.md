@@ -2,6 +2,19 @@
 
 Eine native 3D Raytracing-Engine in C# mit Vulkan, entwickelt mit Silk.NET.
 
+## 📚 Dokumentation
+
+Die vollständige Projektdokumentation findest du im Verzeichnis **[doc/](./doc/)**:
+
+- **[Entwicklertagebuch](./doc/ENTWICKLERTAGEBUCH.md)** - Vollständige Implementierungs-Historie, Debugging-Sessions und
+  gelernte Lektionen
+- **[Dokumentations-Übersicht](./doc/README.md)** - Übersicht über alle Dokumente
+
+Für technische Details siehe auch **[IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)** - Aktueller Stand der
+Implementierung.
+
+---
+
 ## ⚠️ WICHTIG: Entwicklungsumgebung
 
 ### Editor Auto-Save Konfiguration
