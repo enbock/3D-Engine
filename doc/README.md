@@ -14,6 +14,30 @@ Dieses Verzeichnis enthält die gesamte technische Dokumentation des Projekts.
     - Gelernte Lektionen
     - Aktueller Status & Roadmap
 
+- **[MULTI_PASS_IMPLEMENTATION_COMPLETE.md](./MULTI_PASS_IMPLEMENTATION_COMPLETE.md)** - Multi-Pass Rendering (✅
+  Abgeschlossen):
+  - 4-Pass Architektur (Primary Rays, Lighting, Reflections, Composite)
+  - G-Buffer System (Position, Normal, Albedo, RayDir)
+  - 6 zusätzliche Images (RGBA32F)
+  - 4 spezialisierte Compute Shader
+  - VulkanMultiPassTask Implementierung
+  - Toggle zwischen Single-Pass / Multi-Pass
+  - Performance Overhead: 307 MB VRAM (37x mehr)
+  - Erfolgreich kompiliert und getestet
+
+- **[MULTI_PASS_QUICKREF.md](./MULTI_PASS_QUICKREF.md)** - Multi-Pass Schnellreferenz:
+  - Toggle zwischen Single/Multi-Pass
+  - Architektur-Diagramm
+  - G-Buffer Layout
+  - Performance-Vergleich
+  - Debugging-Tipps
+
+- **[SESSION_SUMMARY_MULTI_PASS.md](./SESSION_SUMMARY_MULTI_PASS.md)** - Multi-Pass Session Log:
+  - Implementierungs-Chronologie
+  - Herausforderungen & Lösungen
+  - Lessons Learned
+  - Build-Ergebnisse
+
 - **[BILDAUSGABE_PIPELINE.md](./BILDAUSGABE_PIPELINE.md)** - Detaillierte Erklärung der Vulkan Render-Pipeline:
   - Phase 1: Initialisierung (Swapchain, Buffers, Pipeline, Synchronisation)
   - Phase 2: Render-Loop (Frame-by-Frame Ablauf mit allen Schritten)

@@ -5,11 +5,11 @@ namespace Core.Acceleration.Tasks;
 
 public class PartitionTrianglesTask
 {
-    public (List<int> left, List<int> right) Execute(List<TriangleEntity> triangles, List<int> indices, int axis,
+    public static (List<int> left, List<int> right) Execute(List<TriangleEntity> triangles, List<int> indices, int axis,
         float splitPos)
     {
-        List<int> leftIndices = new();
-        List<int> rightIndices = new();
+        List<int> leftIndices = [];
+        List<int> rightIndices = [];
 
         foreach (int index in indices)
         {

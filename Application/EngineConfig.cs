@@ -19,4 +19,5 @@ public class EngineConfig
     public bool VSync { get; set; } = true;
     public bool EnableValidation { get; set; } = true;
     public int MaxFramesInFlight { get; set; } = 2;
+    public bool UseMultiPassRendering { get; set; } = true;
 }

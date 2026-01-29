@@ -39,6 +39,7 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
     private KhrSurface _khrSurface = null!;
     private Buffer _lightBuffer;
     private DeviceMemory _lightBufferMemory;
+    private VulkanMultiPassTask? _multiPassTask;
     private PipelineLayout _pipelineLayout;
     private VulkanPipelineTask _pipelineTask = null!;
     private Buffer _settingsBuffer;
@@ -64,14 +65,24 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
         _syncTask.Dispose();
         _commandTask.Dispose();
 
-        _vk.DestroyDescriptorPool(_deviceTask.Device, _descriptorPool, null);
+        if (config.UseMultiPassRendering)
+        {
+            _multiPassTask!.DestroyDescriptorPool();
+            _multiPassTask.DestroyPipelines();
+            _multiPassTask.DestroyGBufferImages();
+        }
+        else
+        {
+            _vk.DestroyDescriptorPool(_deviceTask.Device, _descriptorPool, null);
+            _pipelineTask.DestroyPipeline(_computePipeline, _pipelineLayout, _computeShaderModule,
+                _descriptorSetLayout);
+        }
 
         _bufferTask.DestroyBuffer(_cameraBuffer, _cameraBufferMemory);
         _bufferTask.DestroyBuffer(_lightBuffer, _lightBufferMemory);
         _bufferTask.DestroyBuffer(_triangleBuffer, _triangleBufferMemory);
         _bufferTask.DestroyBuffer(_settingsBuffer, _settingsBufferMemory);
 
-        _pipelineTask.DestroyPipeline(_computePipeline, _pipelineLayout, _computeShaderModule, _descriptorSetLayout);
         _imageTask.DestroyImage(_storageImage, _storageImageView, _storageImageMemory);
         _swapchainTask.Dispose();
         _deviceTask.Dispose();
@@ -107,13 +118,25 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
         CreateStorageImage();
 
         _pipelineTask = new VulkanPipelineTask(_vk, _deviceTask.Device);
-        CreatePipeline();
+
+        if (config.UseMultiPassRendering)
+        {
+            _multiPassTask = new VulkanMultiPassTask(_vk, _deviceTask.Device, _deviceTask, _imageTask, _pipelineTask);
+            _multiPassTask.CreateGBufferImages(_swapchainTask.SwapchainExtent.Width,
+                _swapchainTask.SwapchainExtent.Height);
+            Console.WriteLine("Multi-Pass Rendering enabled");
+        }
+        else
+        {
+            CreatePipeline();
+            Console.WriteLine("Single-Pass Rendering enabled");
+        }
 
         _syncTask = new VulkanSyncTask(_vk, _deviceTask.Device, config);
         _syncTask.CreateSyncObjects((uint)_swapchainTask.SwapchainImages.Length);
 
         _isInitialized = true;
-        Console.WriteLine("Vulkan Renderer (Refactored) fully initialized");
+        Console.WriteLine("Vulkan Renderer fully initialized");
     }
 
     private void CreateInstance()
@@ -141,7 +164,7 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
 
         if (config.EnableValidation)
         {
-            string[] layers = new[] { "VK_LAYER_KHRONOS_validation" };
+            string[] layers = ["VK_LAYER_KHRONOS_validation"];
             IntPtr layerNames = SilkMarshal.StringArrayToPtr(layers);
             createInfo.EnabledLayerCount = 1;
             createInfo.PpEnabledLayerNames = (byte**)layerNames;
@@ -230,15 +253,22 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
         CommandBuffer commandBuffer = _commandTask.CommandBuffers[_currentFrame];
         _vk.ResetCommandBuffer(commandBuffer, 0);
 
-        _commandTask.RecordComputeAndCopyCommands(
-            commandBuffer,
-            _computePipeline,
-            _pipelineLayout,
-            _descriptorSet,
-            _swapchainTask.SwapchainExtent,
-            _storageImage,
-            _swapchainTask.SwapchainImages[imageIndex],
-            imageIndex);
+        if (config.UseMultiPassRendering)
+            _commandTask.RecordMultiPassCommands(
+                commandBuffer,
+                _multiPassTask!,
+                _swapchainTask.SwapchainExtent,
+                _storageImage,
+                _swapchainTask.SwapchainImages[imageIndex]);
+        else
+            _commandTask.RecordComputeAndCopyCommands(
+                commandBuffer,
+                _computePipeline,
+                _pipelineLayout,
+                _descriptorSet,
+                _swapchainTask.SwapchainExtent,
+                _storageImage,
+                _swapchainTask.SwapchainImages[imageIndex]);
 
         Semaphore waitSemaphore = _syncTask.ImageAvailableSemaphores[_currentFrame];
         Semaphore signalSemaphore = _syncTask.RenderFinishedSemaphores[imageIndex];
@@ -284,13 +314,22 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
             out _lightBuffer, out _lightBufferMemory,
             out _settingsBuffer, out _settingsBufferMemory);
 
-        VulkanDescriptorHelper.CreateDescriptorPoolAndSet(
-            _pipelineTask, _descriptorSetLayout,
-            out _descriptorPool, out _descriptorSet);
+        if (config.UseMultiPassRendering)
+        {
+            _multiPassTask!.CreatePipelines(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer);
+            _multiPassTask.CreateDescriptorSets(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer,
+                _storageImageView);
+        }
+        else
+        {
+            VulkanDescriptorHelper.CreateDescriptorPoolAndSet(
+                _pipelineTask, _descriptorSetLayout,
+                out _descriptorPool, out _descriptorSet);
 
-        VulkanDescriptorHelper.UpdateDescriptorSets(
-            _pipelineTask, _descriptorSet, _storageImageView,
-            _cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer);
+            VulkanDescriptorHelper.UpdateDescriptorSets(
+                _pipelineTask, _descriptorSet, _storageImageView,
+                _cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer);
+        }
     }
 
 
@@ -316,9 +355,21 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
 
         _imageTask.DestroyImage(_storageImage, _storageImageView, _storageImageMemory);
         CreateStorageImage();
-        VulkanDescriptorHelper.UpdateDescriptorSets(
-            _pipelineTask, _descriptorSet, _storageImageView,
-            _cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer);
+
+        if (config.UseMultiPassRendering)
+        {
+            _multiPassTask!.DestroyGBufferImages();
+            _multiPassTask.CreateGBufferImages(_swapchainTask.SwapchainExtent.Width,
+                _swapchainTask.SwapchainExtent.Height);
+            _multiPassTask.CreateDescriptorSets(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer,
+                _storageImageView);
+        }
+        else
+        {
+            VulkanDescriptorHelper.UpdateDescriptorSets(
+                _pipelineTask, _descriptorSet, _storageImageView,
+                _cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer);
+        }
 
         Console.WriteLine($"Window resized to {width}x{height}");
     }

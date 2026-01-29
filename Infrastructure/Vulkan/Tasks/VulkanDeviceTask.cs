@@ -80,7 +80,7 @@ public unsafe class VulkanDeviceTask(Vk vk, KhrSurface khrSurface, SurfaceKHR su
 
         PhysicalDeviceFeatures deviceFeatures = new();
 
-        string[] extensions = new[] { "VK_KHR_swapchain" };
+        string[] extensions = ["VK_KHR_swapchain"];
         IntPtr extensionNames = SilkMarshal.StringArrayToPtr(extensions);
 
         DeviceCreateInfo createInfo = new()

@@ -1,0 +1,246 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+layout (binding = 0, rgba32f) uniform readonly image2D gPosition;
+layout (binding = 1, rgba32f) uniform readonly image2D gNormal;
+layout (binding = 2, rgba32f) uniform readonly image2D gAlbedo;
+layout (binding = 3, rgba32f) uniform readonly image2D gRayDir;
+layout (binding = 4, rgba32f) uniform writeonly image2D litColor;
+
+struct Light {
+    int type;
+    float intensity;
+    float pad1;
+    float pad2;
+    float posX;
+    float posY;
+    float posZ;
+    float pad3;
+    float dirX;
+    float dirY;
+    float dirZ;
+    float pad4;
+    float colorR;
+    float colorG;
+    float colorB;
+    float pad5;
+};
+
+layout (std430, binding = 5) buffer LightUBO {
+    int numLights;
+    int _pad1;
+    int _pad2;
+    int _pad3;
+    Light lights[8];
+} lighting;
+
+struct Triangle {
+    vec3 v0;
+    float pad0;
+    vec3 v1;
+    float pad1;
+    vec3 v2;
+    float pad2;
+    vec3 color;
+    float pad3;
+};
+
+layout (std140, binding = 6) readonly buffer TriangleSSBO {
+    Triangle triangles[];
+};
+
+layout (binding = 7) uniform RenderSettings {
+    int maxBounces;
+    int enableShadows;
+    int enableReflections;
+    float reflectionStrength;
+    int shadowSamples;
+    float shadowSoftness;
+    vec2 _pad;
+} settings;
+
+layout (binding = 8) uniform CameraUBO {
+    vec3 position;
+    float _pad1;
+    vec3 target;
+    float _pad2;
+    vec2 resolution;
+    float time;
+    float fov;
+} camera;
+
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
+
+struct Hit {
+    bool hit;
+    float dist;
+    vec3 point;
+    vec3 normal;
+    vec3 color;
+};
+
+const float EPSILON = 0.01;
+const float MAX_DIST = 100.0;
+const float SHADOW_BIAS = EPSILON * 10.0;
+const float SPECULAR_POWER = 32.0;
+const float SHADOW_AMBIENT = 0.2;
+
+Hit intersectTriangleShadow(Ray ray, Triangle tri) {
+    Hit h;
+    h.hit = false;
+
+    vec3 e1 = tri.v1 - tri.v0;
+    vec3 e2 = tri.v2 - tri.v0;
+    vec3 pvec = cross(ray.direction, e2);
+    float det = dot(e1, pvec);
+
+    if (det > -EPSILON) return h;
+
+    float invDet = 1.0 / det;
+    vec3 tvec = ray.origin - tri.v0;
+    float u = dot(tvec, pvec) * invDet;
+
+    if (u < 0.0 || u > 1.0) return h;
+
+    vec3 qvec = cross(tvec, e1);
+    float v = dot(ray.direction, qvec) * invDet;
+
+    if (v < 0.0 || u + v > 1.0) return h;
+
+    float t = dot(e2, qvec) * invDet;
+
+    if (t > EPSILON) {
+        h.hit = true;
+        h.dist = t;
+    }
+
+    return h;
+}
+
+bool traceShadow(vec3 origin, vec3 lightDir, float maxDist, int numTriangles) {
+    if (settings.enableShadows == 0) {
+        return false;
+    }
+
+    Ray shadowRay;
+    shadowRay.origin = origin;
+    shadowRay.direction = lightDir;
+
+    for (int i = 0; i < numTriangles; i++) {
+        Hit h = intersectTriangleShadow(shadowRay, triangles[i]);
+        if (h.hit && h.dist < maxDist) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+vec3 calculateAmbientLight(vec3 albedo, Light light) {
+    vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
+    return albedo * lightColor * light.intensity;
+}
+
+vec3 calculateDirectionalLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, Light light, int numTriangles) {
+    vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
+    vec3 lightDir = vec3(light.dirX, light.dirY, light.dirZ);
+    vec3 lDir = normalize(-lightDir);
+
+    float diff = max(dot(normal, lDir), 0.0);
+
+    bool inShadow = traceShadow(hitPoint + normal * SHADOW_BIAS, lDir, MAX_DIST, numTriangles);
+    float shadowFactor = inShadow ? SHADOW_AMBIENT : 1.0;
+
+    vec3 halfDir = normalize(lDir + viewDir);
+    float spec = pow(max(dot(normal, halfDir), 0.0), SPECULAR_POWER);
+
+    vec3 diffuse = albedo * lightColor * diff * light.intensity * shadowFactor;
+    vec3 specular = lightColor * spec * light.intensity * shadowFactor;
+
+    return diffuse + specular;
+}
+
+vec3 calculatePointLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, Light light, int numTriangles) {
+    vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
+    vec3 lightPos = vec3(light.posX, light.posY, light.posZ);
+
+    vec3 lightVec = lightPos - hitPoint;
+    float dist = length(lightVec);
+    vec3 lDir = lightVec / dist;
+
+    float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+    float diff = max(dot(normal, lDir), 0.0);
+
+    bool inShadow = traceShadow(hitPoint + normal * SHADOW_BIAS, lDir, dist, numTriangles);
+    float shadowFactor = inShadow ? SHADOW_AMBIENT : 1.0;
+
+    vec3 halfDir = normalize(lDir + viewDir);
+    float spec = pow(max(dot(normal, halfDir), 0.0), SPECULAR_POWER);
+
+    vec3 diffuse = albedo * lightColor * diff * light.intensity * attenuation * shadowFactor;
+    vec3 specular = lightColor * spec * light.intensity * attenuation * shadowFactor;
+
+    return diffuse + specular;
+}
+
+vec3 shade(vec3 albedo, vec3 normal, vec3 rayDir, vec3 hitPoint, int numTriangles) {
+    vec3 result = vec3(0.0);
+
+    vec3 viewDir = -rayDir;
+    if (dot(normal, viewDir) < 0.0) {
+        normal = -normal;
+    }
+
+    int numLights = lighting.numLights;
+
+    for (int i = 0; i < numLights; i++) {
+        Light light = lighting.lights[i];
+
+        if (light.type == 0) {
+            result += calculateAmbientLight(albedo, light);
+        }
+        else if (light.type == 1) {
+            result += calculateDirectionalLight(albedo, normal, viewDir, hitPoint, light, numTriangles);
+        }
+        else if (light.type == 2) {
+            result += calculatePointLight(albedo, normal, viewDir, hitPoint, light, numTriangles);
+        }
+    }
+
+    return clamp(result, 0.0, 1.0);
+}
+
+void main() {
+    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+    vec2 resolution = camera.resolution;
+
+    if (pixelCoords.x >= int(resolution.x) || pixelCoords.y >= int(resolution.y)) {
+        return;
+    }
+
+    vec4 posData = imageLoad(gPosition, pixelCoords);
+    vec4 normalData = imageLoad(gNormal, pixelCoords);
+    vec4 albedoData = imageLoad(gAlbedo, pixelCoords);
+    vec4 rayDirData = imageLoad(gRayDir, pixelCoords);
+
+    float isHit = posData.w;
+
+    vec3 color;
+    if (isHit > 0.5) {
+        vec3 hitPoint = posData.xyz;
+        vec3 normal = normalData.xyz;
+        vec3 albedo = albedoData.xyz;
+        vec3 rayDir = rayDirData.xyz;
+
+        int numTriangles = triangles.length();
+        color = shade(albedo, normal, rayDir, hitPoint, numTriangles);
+    } else {
+        color = albedoData.xyz;
+    }
+
+    imageStore(litColor, pixelCoords, vec4(color, isHit));
+}

@@ -2,12 +2,7 @@ using Application;
 
 namespace Core.EngineInitialization;
 
-public class InitializeEngineRequest
+public class InitializeEngineRequest(EngineConfig config)
 {
-    public InitializeEngineRequest(EngineConfig config)
-    {
-        Config = config;
-    }
-
-    public EngineConfig Config { get; set; }
+    public EngineConfig Config { get; set; } = config;
 }

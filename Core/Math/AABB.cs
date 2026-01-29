@@ -1,15 +1,9 @@
 namespace Core.Math;
 
-public struct AABB
+public struct Aabb(Vector3 min, Vector3 max)
 {
-    public Vector3 Min { get; set; }
-    public Vector3 Max { get; set; }
-
-    public AABB(Vector3 min, Vector3 max)
-    {
-        Min = min;
-        Max = max;
-    }
+    public Vector3 Min { get; set; } = min;
+    public Vector3 Max { get; set; } = max;
 
     public Vector3 Center => (Min + Max) * 0.5f;
     public Vector3 Size => Max - Min;
@@ -23,7 +17,7 @@ public struct AABB
         }
     }
 
-    public bool Intersects(AABB other)
+    public bool Intersects(Aabb other)
     {
         return Min.X <= other.Max.X && Max.X >= other.Min.X &&
                Min.Y <= other.Max.Y && Max.Y >= other.Min.Y &&
@@ -51,7 +45,7 @@ public struct AABB
         );
     }
 
-    public void Expand(AABB other)
+    public void Expand(Aabb other)
     {
         Min = new Vector3(
             System.Math.Min(Min.X, other.Min.X),
@@ -66,7 +60,7 @@ public struct AABB
     }
 
 
-    public static AABB Empty => new(
+    public static Aabb Empty => new(
         new Vector3(float.MaxValue, float.MaxValue, float.MaxValue),
         new Vector3(float.MinValue, float.MinValue, float.MinValue)
     );

@@ -6,18 +6,9 @@ using Infrastructure.Vulkan;
 
 namespace Infrastructure.Rendering;
 
-public class VulkanRenderer : Renderer
+public class VulkanRenderer(WindowManagerService windowManager, EngineConfig config) : Renderer
 {
-    private readonly EngineConfig config;
-    private readonly InternalVulkanRenderer internalRenderer;
-    private readonly WindowManagerService windowManager;
-
-    public VulkanRenderer(WindowManagerService windowManager, EngineConfig config)
-    {
-        this.windowManager = windowManager;
-        this.config = config;
-        internalRenderer = new InternalVulkanRenderer(windowManager, config);
-    }
+    private readonly InternalVulkanRenderer internalRenderer = new(windowManager, config);
 
     public void Initialize()
     {

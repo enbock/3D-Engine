@@ -2,20 +2,12 @@
 
 namespace Core.Scene.Geometry;
 
-public class TriangleEntity
+public class TriangleEntity(Vector3 v0, Vector3 v1, Vector3 v2, Color color)
 {
-    public Vector3 V0 { get; set; }
-    public Vector3 V1 { get; set; }
-    public Vector3 V2 { get; set; }
-    public Color Color { get; set; }
-
-    public TriangleEntity(Vector3 v0, Vector3 v1, Vector3 v2, Color color)
-    {
-        V0 = v0;
-        V1 = v1;
-        V2 = v2;
-        Color = color;
-    }
+    public Vector3 V0 { get; set; } = v0;
+    public Vector3 V1 { get; set; } = v1;
+    public Vector3 V2 { get; set; } = v2;
+    public Color Color { get; set; } = color;
 
     public Vector3 Normal
     {

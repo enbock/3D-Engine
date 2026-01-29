@@ -1,11 +1,6 @@
 namespace Core.EngineRendering;
 
-public class RenderEngineRequest
+public class RenderEngineRequest(float deltaTime)
 {
-    public RenderEngineRequest(float deltaTime)
-    {
-        DeltaTime = deltaTime;
-    }
-
-    public float DeltaTime { get; set; }
+    public float DeltaTime { get; set; } = deltaTime;
 }

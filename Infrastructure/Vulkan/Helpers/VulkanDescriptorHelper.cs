@@ -11,8 +11,8 @@ public static unsafe class VulkanDescriptorHelper
         VulkanPipelineTask pipelineTask,
         out DescriptorSetLayout descriptorSetLayout)
     {
-        DescriptorSetLayoutBinding[] bindings = new DescriptorSetLayoutBinding[]
-        {
+        DescriptorSetLayoutBinding[] bindings =
+        [
             new()
             {
                 Binding = 0, DescriptorType = DescriptorType.StorageImage, DescriptorCount = 1,
@@ -38,7 +38,7 @@ public static unsafe class VulkanDescriptorHelper
                 Binding = 4, DescriptorType = DescriptorType.UniformBuffer, DescriptorCount = 1,
                 StageFlags = ShaderStageFlags.ComputeBit
             }
-        };
+        ];
 
         descriptorSetLayout = pipelineTask.CreateDescriptorSetLayout(bindings);
     }
@@ -49,12 +49,12 @@ public static unsafe class VulkanDescriptorHelper
         out DescriptorPool descriptorPool,
         out DescriptorSet descriptorSet)
     {
-        DescriptorPoolSize[] poolSizes = new DescriptorPoolSize[]
-        {
+        DescriptorPoolSize[] poolSizes =
+        [
             new() { Type = DescriptorType.StorageImage, DescriptorCount = 1 },
             new() { Type = DescriptorType.UniformBuffer, DescriptorCount = 2 },
             new() { Type = DescriptorType.StorageBuffer, DescriptorCount = 2 }
-        };
+        ];
 
         descriptorPool = pipelineTask.CreateDescriptorPool(poolSizes, 1);
         descriptorSet = pipelineTask.AllocateDescriptorSet(descriptorPool, descriptorSetLayout);
@@ -103,8 +103,8 @@ public static unsafe class VulkanDescriptorHelper
             Range = (ulong)sizeof(RenderSettingsData)
         };
 
-        WriteDescriptorSet[] writes = new WriteDescriptorSet[]
-        {
+        WriteDescriptorSet[] writes =
+        [
             new()
             {
                 SType = StructureType.WriteDescriptorSet, DstSet = descriptorSet, DstBinding = 0, DstArrayElement = 0,
@@ -130,7 +130,7 @@ public static unsafe class VulkanDescriptorHelper
                 SType = StructureType.WriteDescriptorSet, DstSet = descriptorSet, DstBinding = 4, DstArrayElement = 0,
                 DescriptorType = DescriptorType.UniformBuffer, DescriptorCount = 1, PBufferInfo = &settingsBufferInfo
             }
-        };
+        ];
 
         pipelineTask.UpdateDescriptorSets(writes);
     }

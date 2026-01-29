@@ -2,14 +2,9 @@ using Application.Container;
 
 namespace Core.EngineInitialization;
 
-public class InitializeEngineUseCase
+public class InitializeEngineUseCase(ServiceContainer container)
 {
-    private readonly ServiceContainer container;
-
-    public InitializeEngineUseCase(ServiceContainer container)
-    {
-        this.container = container;
-    }
+    private readonly ServiceContainer container = container;
 
     public InitializeEngineResponse Run(InitializeEngineRequest request)
     {

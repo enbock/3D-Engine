@@ -1,11 +1,6 @@
 namespace Core.EngineUpdate;
 
-public class UpdateEngineRequest
+public class UpdateEngineRequest(float deltaTime)
 {
-    public UpdateEngineRequest(float deltaTime)
-    {
-        DeltaTime = deltaTime;
-    }
-
-    public float DeltaTime { get; set; }
+    public float DeltaTime { get; set; } = deltaTime;
 }

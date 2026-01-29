@@ -2,20 +2,13 @@
 
 namespace Core.Scene.Acceleration;
 
-public class BVHNodeEntity
+public class BvhNodeEntity
 {
-    public BVHNodeEntity()
-    {
-        Bounds = AABB.Empty;
-        TriangleStartIndex = -1;
-        TriangleCount = 0;
-    }
-
-    public AABB Bounds { get; set; }
-    public BVHNodeEntity? Left { get; set; }
-    public BVHNodeEntity? Right { get; set; }
-    public int TriangleStartIndex { get; set; }
-    public int TriangleCount { get; set; }
+    public Aabb Bounds { get; set; } = Aabb.Empty;
+    public BvhNodeEntity? Left { get; set; }
+    public BvhNodeEntity? Right { get; set; }
+    public int TriangleStartIndex { get; set; } = -1;
+    public int TriangleCount { get; set; } = 0;
 
     public bool IsLeaf => Left == null && Right == null;
 }

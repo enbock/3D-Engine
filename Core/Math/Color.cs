@@ -1,19 +1,11 @@
 namespace Core.Math;
 
-public struct Color
+public struct Color(float r, float g, float b, float a = 1.0f)
 {
-    public float R { get; set; }
-    public float G { get; set; }
-    public float B { get; set; }
-    public float A { get; set; }
-
-    public Color(float r, float g, float b, float a = 1.0f)
-    {
-        R = r;
-        G = g;
-        B = b;
-        A = a;
-    }
+    public float R { get; set; } = r;
+    public float G { get; set; } = g;
+    public float B { get; set; } = b;
+    public float A { get; set; } = a;
 
     public static Color White => new(1, 1, 1);
     public static Color Black => new(0, 0, 0);

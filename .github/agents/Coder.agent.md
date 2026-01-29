@@ -29,4 +29,6 @@ tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_i
 * Follow the existing structure of the "doc" folder.
 * If you create a new Markdown file, add it to the "doc/README.md" file.
 * Before you start learn past work in the "doc" folder.
-* Resolve isseues given by editors code checker
+* Resolve isseues, warnings and take code suggesstion given by editors code checker
+* Write new files without BOM header
+* Check other classes to learn code style (like how to create constructor, initializing arrays, etc)

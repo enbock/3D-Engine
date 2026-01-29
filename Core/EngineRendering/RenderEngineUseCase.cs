@@ -4,15 +4,9 @@ using Core.Scene;
 
 namespace Core.EngineRendering;
 
-public class RenderEngineUseCase
+public class RenderEngineUseCase(ServiceContainer container)
 {
-    private readonly ServiceContainer container;
     private float totalTime;
-
-    public RenderEngineUseCase(ServiceContainer container)
-    {
-        this.container = container;
-    }
 
     public void Run(RenderEngineRequest request)
     {

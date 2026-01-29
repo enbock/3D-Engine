@@ -5,21 +5,12 @@ using Core.Scene;
 
 namespace Core.EngineUpdate;
 
-public class UpdateEngineUseCase
+public class UpdateEngineUseCase(ServiceContainer container)
 {
-    private readonly ServiceContainer container;
     private CameraControlUseCase? cameraControlUseCase;
-    private float totalTime;
-
-    public UpdateEngineUseCase(ServiceContainer container)
-    {
-        this.container = container;
-    }
 
     public void Run(UpdateEngineRequest request)
     {
-        totalTime += request.DeltaTime;
-
         if (cameraControlUseCase == null && container.TryResolve(out SceneEntity? scene))
         {
             InputHandler inputHandler = container.Resolve<InputHandler>();

@@ -5,7 +5,7 @@ namespace Core.Acceleration.Tasks;
 
 public class FindBestSplitTask
 {
-    public (int axis, float splitPos) Execute(List<TriangleEntity> triangles, List<int> indices, AABB bounds)
+    public static (int axis, float splitPos) Execute(List<TriangleEntity> triangles, List<int> indices, Aabb bounds)
     {
         Vector3 size = bounds.Size;
 
