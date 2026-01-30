@@ -79,6 +79,7 @@ struct Hit {
 };
 
 const float EPSILON = 0.01;
+const float BACKFACE_EPSILON = 1e-6;
 const float MAX_DIST = 100.0;
 const float SHADOW_BIAS = EPSILON * 10.0;
 const float SPECULAR_POWER = 32.0;
@@ -94,8 +95,7 @@ Hit intersectTriangle(Ray ray, Triangle tri) {
     vec3 pvec = cross(ray.direction, e2);
     float det = dot(e1, pvec);
 
-    // Backface Culling: ignoriere Rückseiten (det < 0)
-    if (det < EPSILON) return h;
+    if (det < BACKFACE_EPSILON) return h;
 
     float invDet = 1.0 / det;
     vec3 tvec = ray.origin - tri.v0;
@@ -130,8 +130,7 @@ Hit intersectTriangleShadow(Ray ray, Triangle tri) {
     vec3 pvec = cross(ray.direction, e2);
     float det = dot(e1, pvec);
 
-    // Invertiertes Backface Culling für Schatten - Shadow-Ray kommt von der anderen Seite
-    if (det > -EPSILON) return h;
+    if (det > -BACKFACE_EPSILON) return h;
 
     float invDet = 1.0 / det;
     vec3 tvec = ray.origin - tri.v0;

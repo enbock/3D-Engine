@@ -279,6 +279,35 @@ if (det > - EPSILON) return h; // Invertiertes Backface Culling
 - Trifft Dreiecke von der **Rückseite**
 - Mit `det > -EPSILON` blockieren nur Dreiecke, deren **Vorderseite** zum Licht zeigt
 
+#### 5.5 Backface Culling Epsilon-Korrektur (2026-01-30)
+
+**Problem**: Polygone die flach zur Kamera geneigt sind wurden zu früh ausgeblendet
+
+**Ursache**: Der gleiche `EPSILON = 0.01` wurde für Raytracing-Kollisionen und Backface-Culling verwendet.
+Für Raytracing ist 0.01 notwendig um Selbst-Treffer zu vermeiden, aber für Backface-Culling ist dieser Wert zu groß.
+Wenn die Determinante (det) nahe bei 0 liegt (flacher Winkel zur Kamera), wurden Dreiecke fälschlicherweise als
+Rückseiten interpretiert.
+
+**Lösung**: Separater, viel kleinerer Epsilon-Wert für Backface-Culling:
+
+```glsl
+const float EPSILON = 0.01;           // Für Raytracing-Kollisionen
+const float BACKFACE_EPSILON = 1e-6;  // Für Backface-Culling
+
+// In intersectTriangle()
+if (det < BACKFACE_EPSILON) return h;  // Viel toleranter
+
+// In intersectTriangleShadow()
+if (det > -BACKFACE_EPSILON) return h; // Invertiert für Schatten
+```
+
+**Geänderte Dateien**:
+
+- `pass1_primary.comp`
+- `pass2_lighting.comp`
+- `pass3_reflections.comp`
+- `raytracing.comp`
+
 **Zusätzlich**:
 
 - ✅ Gamma-Korrektur (1/2.2) für besseren Kontrast
