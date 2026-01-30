@@ -176,8 +176,9 @@ public static unsafe class VulkanBufferHelper
             EnableReflections = settings.EnableReflections ? 1 : 0,
             ReflectionStrength = settings.ReflectionStrength,
             ShadowSamples = settings.ShadowSamples,
-            Pad1 = 0,
-            Pad2 = new Vector2(0, 0)
+            EnableGI = settings.EnableGi ? 1 : 0,
+            GISamples = settings.GiSamples,
+            GIStrength = settings.GiStrength
         };
 
         bufferTask.CopyDataToBuffer(settingsBufferMemory, settingsData);

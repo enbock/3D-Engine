@@ -1,0 +1,405 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+layout (binding = 0, rgba32f) uniform readonly image2D gPosition;
+layout (binding = 1, rgba32f) uniform readonly image2D gNormal;
+layout (binding = 2, rgba32f) uniform readonly image2D gAlbedo;
+layout (binding = 3, rgba32f) uniform readonly image2D litColor;
+layout (binding = 4, rgba32f) uniform writeonly image2D indirectColor;
+
+struct Triangle {
+    vec3 v0;
+    float pad0;
+    vec3 v1;
+    float pad1;
+    vec3 v2;
+    float pad2;
+    vec3 color;
+    float transparency;
+    vec3 n0;
+    float ior;
+    vec3 n1;
+    float reflectivity;
+    vec3 n2;
+    float enableSchlieren;
+};
+
+layout (std140, binding = 5) readonly buffer TriangleSSBO {
+    Triangle triangles[];
+};
+
+struct Light {
+    int type;
+    float intensity;
+    float shadowSoftness;
+    float pad1;
+    float posX;
+    float posY;
+    float posZ;
+    float pad2;
+    float dirX;
+    float dirY;
+    float dirZ;
+    float pad3;
+    float colorR;
+    float colorG;
+    float colorB;
+    float pad4;
+};
+
+layout (std430, binding = 6) buffer LightUBO {
+    int numLights;
+    int _pad1;
+    int _pad2;
+    int _pad3;
+    Light lights[8];
+} lighting;
+
+layout (binding = 7) uniform RenderSettings {
+    int maxBounces;
+    int enableShadows;
+    int enableReflections;
+    float reflectionStrength;
+    int shadowSamples;
+    int enableGI;
+    int giSamples;
+    float giStrength;
+} settings;
+
+layout (binding = 8) uniform CameraUBO {
+    vec3 position;
+    float _pad1;
+    vec3 target;
+    float _pad2;
+    vec2 resolution;
+    float time;
+    float fov;
+} camera;
+
+struct BvhNode {
+    vec3 boundsMin;
+    int leftChild;
+    vec3 boundsMax;
+    int rightChild;
+    int triangleStart;
+    int triangleCount;
+    int pad0;
+    int pad1;
+};
+
+layout (std430, binding = 9) readonly buffer BvhSSBO {
+    BvhNode bvhNodes[];
+};
+
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
+
+struct Hit {
+    bool hit;
+    float dist;
+    vec3 point;
+    vec3 normal;
+    vec3 color;
+};
+
+const float EPSILON = 0.01;
+const float BACKFACE_EPSILON = 1e-6;
+const float MAX_DIST = 100.0;
+const float GI_BIAS = EPSILON * 5.0;
+const float PI = 3.14159265359;
+
+const vec2 POISSON_DISK[16] = vec2[](
+vec2(-0.94201624, -0.39906216),
+vec2(0.94558609, -0.76890725),
+vec2(-0.094184101, -0.92938870),
+vec2(0.34495938, 0.29387760),
+vec2(-0.91588581, 0.45771432),
+vec2(-0.81544232, -0.87912464),
+vec2(-0.38277543, 0.27676845),
+vec2(0.97484398, 0.75648379),
+vec2(0.44323325, -0.97511554),
+vec2(0.53742981, -0.47373420),
+vec2(-0.26496911, -0.41893023),
+vec2(0.79197514, 0.19090188),
+vec2(-0.24188840, 0.99706507),
+vec2(-0.81409955, 0.91437590),
+vec2(0.19984126, 0.78641367),
+vec2(0.14383161, -0.14100790)
+);
+
+float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+vec3 randomCosineDirection(vec3 normal, vec2 seed) {
+    float u1 = hash(seed);
+    float u2 = hash(seed + vec2(17.0, 31.0));
+
+    float r = sqrt(u1);
+    float theta = 2.0 * PI * u2;
+
+    float x = r * cos(theta);
+    float y = r * sin(theta);
+    float z = sqrt(max(0.0, 1.0 - u1));
+
+    vec3 tangent = abs(normal.y) < 0.999
+    ? normalize(cross(vec3(0.0, 1.0, 0.0), normal))
+    : normalize(cross(vec3(1.0, 0.0, 0.0), normal));
+    vec3 bitangent = cross(normal, tangent);
+
+    return normalize(tangent * x + bitangent * y + normal * z);
+}
+
+Hit intersectTriangle(Ray ray, Triangle tri) {
+    Hit h;
+    h.hit = false;
+
+    vec3 e1 = tri.v1 - tri.v0;
+    vec3 e2 = tri.v2 - tri.v0;
+    vec3 pvec = cross(ray.direction, e2);
+    float det = dot(e1, pvec);
+
+    if (det < BACKFACE_EPSILON) return h;
+
+    float invDet = 1.0 / det;
+    vec3 tvec = ray.origin - tri.v0;
+    float u = dot(tvec, pvec) * invDet;
+
+    if (u < 0.0 || u > 1.0) return h;
+
+    vec3 qvec = cross(tvec, e1);
+    float v = dot(ray.direction, qvec) * invDet;
+
+    if (v < 0.0 || u + v > 1.0) return h;
+
+    float t = dot(e2, qvec) * invDet;
+
+    if (t > EPSILON) {
+        h.hit = true;
+        h.dist = t;
+        h.point = ray.origin + ray.direction * t;
+        float w = 1.0 - u - v;
+        h.normal = normalize(w * tri.n0 + u * tri.n1 + v * tri.n2);
+        h.color = tri.color;
+    }
+
+    return h;
+}
+
+bool intersectAABB(vec3 origin, vec3 invDir, vec3 boxMin, vec3 boxMax, float tMax) {
+    vec3 t0s = (boxMin - origin) * invDir;
+    vec3 t1s = (boxMax - origin) * invDir;
+
+    vec3 tsmaller = min(t0s, t1s);
+    vec3 tbigger = max(t0s, t1s);
+
+    float tmin = max(max(tsmaller.x, tsmaller.y), tsmaller.z);
+    float tmax = min(min(tbigger.x, tbigger.y), tbigger.z);
+
+    return tmax >= max(tmin, 0.0) && tmin < tMax;
+}
+
+Hit traceBVH(Ray ray) {
+    Hit closest;
+    closest.hit = false;
+    closest.dist = MAX_DIST;
+
+    int numNodes = bvhNodes.length();
+    if (numNodes == 0) {
+        return closest;
+    }
+
+    vec3 invDir = 1.0 / ray.direction;
+
+    int stack[32];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0;
+
+    while (stackPtr > 0) {
+        int nodeIdx = stack[--stackPtr];
+        BvhNode node = bvhNodes[nodeIdx];
+
+        if (!intersectAABB(ray.origin, invDir, node.boundsMin, node.boundsMax, closest.dist)) {
+            continue;
+        }
+
+        if (node.triangleCount > 0) {
+            for (int i = 0; i < node.triangleCount; i++) {
+                int triIdx = node.triangleStart + i;
+                Hit h = intersectTriangle(ray, triangles[triIdx]);
+                if (h.hit && h.dist < closest.dist) {
+                    closest = h;
+                }
+            }
+        } else {
+            if (node.rightChild >= 0) {
+                stack[stackPtr++] = node.rightChild;
+            }
+            if (node.leftChild >= 0) {
+                stack[stackPtr++] = node.leftChild;
+            }
+        }
+    }
+
+    return closest;
+}
+
+bool traceShadowBVH(vec3 origin, vec3 lightDir, float maxDist) {
+    int numNodes = bvhNodes.length();
+    if (numNodes == 0) {
+        return false;
+    }
+
+    vec3 invDir = 1.0 / lightDir;
+
+    int stack[32];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0;
+
+    while (stackPtr > 0) {
+        int nodeIdx = stack[--stackPtr];
+        BvhNode node = bvhNodes[nodeIdx];
+
+        if (!intersectAABB(origin, invDir, node.boundsMin, node.boundsMax, maxDist)) {
+            continue;
+        }
+
+        if (node.triangleCount > 0) {
+            Ray shadowRay;
+            shadowRay.origin = origin;
+            shadowRay.direction = lightDir;
+
+            for (int i = 0; i < node.triangleCount; i++) {
+                int triIdx = node.triangleStart + i;
+                Hit h = intersectTriangle(shadowRay, triangles[triIdx]);
+                if (h.hit && h.dist < maxDist) {
+                    return true;
+                }
+            }
+        } else {
+            if (node.leftChild >= 0) {
+                stack[stackPtr++] = node.leftChild;
+            }
+            if (node.rightChild >= 0) {
+                stack[stackPtr++] = node.rightChild;
+            }
+        }
+    }
+
+    return false;
+}
+
+vec3 calculateDirectLight(vec3 hitPoint, vec3 normal, vec3 albedo) {
+    vec3 result = vec3(0.0);
+
+    int numLights = lighting.numLights;
+    for (int i = 0; i < numLights; i++) {
+        Light light = lighting.lights[i];
+        vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
+
+        if (light.type == 0) {
+            result += albedo * lightColor * light.intensity;
+        }
+        else if (light.type == 1) {
+            vec3 lightDir = normalize(- vec3(light.dirX, light.dirY, light.dirZ));
+            float diff = max(dot(normal, lightDir), 0.0);
+
+            bool inShadow = traceShadowBVH(hitPoint + normal * GI_BIAS, lightDir, MAX_DIST);
+            float shadowFactor = inShadow ? 0.15 : 1.0;
+
+            result += albedo * lightColor * diff * light.intensity * shadowFactor;
+        }
+        else if (light.type == 2) {
+            vec3 lightPos = vec3(light.posX, light.posY, light.posZ);
+            vec3 lightVec = lightPos - hitPoint;
+            float dist = length(lightVec);
+            vec3 lightDir = lightVec / dist;
+
+            float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+            float diff = max(dot(normal, lightDir), 0.0);
+
+            bool inShadow = traceShadowBVH(hitPoint + normal * GI_BIAS, lightDir, dist);
+            float shadowFactor = inShadow ? 0.15 : 1.0;
+
+            result += albedo * lightColor * diff * light.intensity * attenuation * shadowFactor;
+        }
+    }
+
+    return result;
+}
+
+vec3 getSkyColor(vec3 rayDir) {
+    return mix(vec3(0.1, 0.1, 0.15), vec3(0.5, 0.7, 1.0), rayDir.y * 0.5 + 0.5) * 0.3;
+}
+
+vec3 calculateIndirectLight(vec3 hitPoint, vec3 normal, vec3 albedo, ivec2 pixelCoords) {
+    int numSamples = clamp(settings.giSamples, 1, 16);
+    vec3 indirectSum = vec3(0.0);
+
+    float rotation = float((pixelCoords.x * 73 + pixelCoords.y * 127) & 0xFF) * (PI / 128.0);
+    float cosRot = cos(rotation);
+    float sinRot = sin(rotation);
+
+    for (int i = 0; i < numSamples; i++) {
+        vec2 offset = POISSON_DISK[i];
+        vec2 rotatedOffset = vec2(
+        offset.x * cosRot - offset.y * sinRot,
+        offset.x * sinRot + offset.y * cosRot
+        );
+
+        vec2 seed = vec2(pixelCoords) + rotatedOffset * 100.0 + camera.time * 0.01;
+        vec3 bounceDir = randomCosineDirection(normal, seed);
+
+        Ray bounceRay;
+        bounceRay.origin = hitPoint + normal * GI_BIAS;
+        bounceRay.direction = bounceDir;
+
+        Hit bounceHit = traceBVH(bounceRay);
+
+        if (bounceHit.hit) {
+            vec3 bounceLight = calculateDirectLight(bounceHit.point, bounceHit.normal, bounceHit.color);
+
+            float cosTheta = max(dot(normal, bounceDir), 0.0);
+            float dist = bounceHit.dist;
+            float falloff = 1.0 / (1.0 + dist * 0.1);
+
+            indirectSum += bounceLight * albedo * falloff;
+        } else {
+            vec3 skyLight = getSkyColor(bounceDir);
+            indirectSum += skyLight * albedo;
+        }
+    }
+
+    return (indirectSum / float(numSamples)) * settings.giStrength;
+}
+
+void main() {
+    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+
+    if (pixelCoords.x >= int(camera.resolution.x) || pixelCoords.y >= int(camera.resolution.y)) {
+        return;
+    }
+
+    vec4 posData = imageLoad(gPosition, pixelCoords);
+    vec4 normalData = imageLoad(gNormal, pixelCoords);
+    vec4 albedoData = imageLoad(gAlbedo, pixelCoords);
+    vec4 litData = imageLoad(litColor, pixelCoords);
+
+    float isHit = posData.w;
+
+    vec3 color = litData.xyz;
+
+    if (isHit > 0.5 && settings.enableGI != 0) {
+        vec3 hitPoint = posData.xyz;
+        vec3 normal = normalData.xyz;
+        vec3 albedo = albedoData.xyz;
+
+        vec3 indirect = calculateIndirectLight(hitPoint, normal, albedo, pixelCoords);
+        color += indirect;
+    }
+
+    imageStore(indirectColor, pixelCoords, vec4(color, isHit));
+}

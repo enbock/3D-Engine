@@ -17,6 +17,7 @@ if not exist "%VULKAN_SDK%\Bin\glslc.exe" (
 
 %GLSLC% %SHADER_DIR%\pass1_primary.comp -o %SHADER_DIR%\pass1_primary.comp.spv
 %GLSLC% %SHADER_DIR%\pass2_lighting.comp -o %SHADER_DIR%\pass2_lighting.comp.spv
+%GLSLC% %SHADER_DIR%\pass2b_indirect.comp -o %SHADER_DIR%\pass2b_indirect.comp.spv
 %GLSLC% %SHADER_DIR%\pass3_reflections.comp -o %SHADER_DIR%\pass3_reflections.comp.spv
 %GLSLC% %SHADER_DIR%\pass4_composite.comp -o %SHADER_DIR%\pass4_composite.comp.spv
 

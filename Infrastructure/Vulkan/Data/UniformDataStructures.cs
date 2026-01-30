@@ -79,8 +79,9 @@ public struct RenderSettingsData
     public int EnableReflections;
     public float ReflectionStrength;
     public int ShadowSamples;
-    public int Pad1;
-    public Vector2 Pad2;
+    public int EnableGI;
+    public int GISamples;
+    public float GIStrength;
 }
 
 [StructLayout(LayoutKind.Sequential)]

@@ -7,6 +7,9 @@ public class RenderSettings
     public bool EnableReflections { get; private init; } = true;
     public float ReflectionStrength { get; private init; } = 0.5f;
     public int ShadowSamples { get; private init; } = 4;
+    public bool EnableGi { get; private init; } = true;
+    public int GiSamples { get; private init; } = 4;
+    public float GiStrength { get; private init; } = 0.5f;
 
     public static RenderSettings Default => new()
     {
@@ -14,7 +17,10 @@ public class RenderSettings
         EnableShadows = true,
         EnableReflections = true,
         ReflectionStrength = 0.5f,
-        ShadowSamples = 12
+        ShadowSamples = 12,
+        EnableGi = true,
+        GiSamples = 4,
+        GiStrength = 0.5f
     };
 
     public static RenderSettings Performance => new()
@@ -23,7 +29,10 @@ public class RenderSettings
         EnableShadows = true,
         EnableReflections = true,
         ReflectionStrength = 0.4f,
-        ShadowSamples = 8
+        ShadowSamples = 8,
+        EnableGi = true,
+        GiSamples = 2,
+        GiStrength = 0.3f
     };
 
     public static RenderSettings UltraPerformance => new()
@@ -32,7 +41,10 @@ public class RenderSettings
         EnableShadows = false,
         EnableReflections = false,
         ReflectionStrength = 0.0f,
-        ShadowSamples = 0
+        ShadowSamples = 0,
+        EnableGi = false,
+        GiSamples = 0,
+        GiStrength = 0.0f
     };
 
     public static RenderSettings Quality => new()
@@ -41,6 +53,9 @@ public class RenderSettings
         EnableShadows = true,
         EnableReflections = true,
         ReflectionStrength = 0.7f,
-        ShadowSamples = 8
+        ShadowSamples = 8,
+        EnableGi = true,
+        GiSamples = 8,
+        GiStrength = 0.7f
     };
 }
