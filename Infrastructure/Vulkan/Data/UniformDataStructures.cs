@@ -99,7 +99,7 @@ public struct TriangleData
     public Vector3 N1;
     public float Reflectivity;
     public Vector3 N2;
-    public float Pad6;
+    public float EnableSchlieren;
 }
 
 [StructLayout(LayoutKind.Sequential)]

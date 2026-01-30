@@ -23,7 +23,7 @@ struct Triangle {
     vec3 n1;
     float reflectivity;
     vec3 n2;
-    float pad6;
+    float enableSchlieren;
 };
 
 layout (std140, binding = 6) readonly buffer TriangleSSBO {
@@ -114,6 +114,16 @@ const float MAX_DIST = 100.0;
 const float SHADOW_BIAS = EPSILON * 10.0;
 const float SPECULAR_POWER = 32.0;
 const float SHADOW_AMBIENT = 0.15;
+
+const float DISPERSION_STRENGTH = 0.02;
+const float CAUCHY_B = 0.004;
+
+const float PHOTON_GATHER_RADIUS = 0.3;
+
+const float SCHLIEREN_STRENGTH = 0.08;
+const float SCHLIEREN_FREQUENCY = 2.0;
+
+const float MIN_CONTRIBUTION = 0.01;
 
 const vec2 POISSON_DISK[16] = vec2[](
 vec2(-0.94201624, -0.39906216),
@@ -437,6 +447,203 @@ vec3 getSkyColor(vec3 rayDir) {
     return mix(vec3(0.1, 0.1, 0.15), vec3(0.5, 0.7, 1.0), rayDir.y * 0.5 + 0.5);
 }
 
+float cauchyIOR(float baseIOR, float wavelength) {
+    return baseIOR + CAUCHY_B / (wavelength * wavelength);
+}
+
+vec3 calculateDispersionFast(vec3 hitPoint, vec3 normal, vec3 rayDir, float baseIOR, vec3 tint, ivec2 pixelCoords) {
+    bool entering = dot(rayDir, normal) < 0.0;
+    vec3 n = entering ? normal : -normal;
+
+    float iorRed = cauchyIOR(baseIOR, 0.65);
+    float iorBlue = cauchyIOR(baseIOR, 0.45);
+    float iorGreen = baseIOR;
+
+    float etaR = entering ? (1.0 / iorRed) : iorRed;
+    float etaG = entering ? (1.0 / iorGreen) : iorGreen;
+    float etaB = entering ? (1.0 / iorBlue) : iorBlue;
+
+    vec3 refractR = refract(rayDir, n, etaR);
+    vec3 refractG = refract(rayDir, n, etaG);
+    vec3 refractB = refract(rayDir, n, etaB);
+
+    if (length(refractG) < 0.001) return vec3(0.0);
+
+    Ray refractRay;
+    refractRay.origin = hitPoint - n * SHADOW_BIAS * 2.0;
+    refractRay.direction = refractG;
+
+    Hit refractHit = traceBVH(refractRay);
+
+    vec3 baseColor = vec3(0.0);
+    if (refractHit.hit) {
+        if (refractHit.transparency > 0.5) {
+            bool exitEntering = dot(refractG, refractHit.normal) < 0.0;
+            vec3 exitN = exitEntering ? refractHit.normal : -refractHit.normal;
+            float exitEta = exitEntering ? (1.0 / refractHit.ior) : refractHit.ior;
+            vec3 exitDir = refract(refractG, exitN, exitEta);
+
+            if (length(exitDir) > 0.001) {
+                Ray exitRay;
+                exitRay.origin = refractHit.point - exitN * SHADOW_BIAS * 2.0;
+                exitRay.direction = exitDir;
+                Hit exitHit = traceBVH(exitRay);
+
+                if (exitHit.hit && exitHit.transparency < 0.5) {
+                    baseColor = shade(exitHit.color, exitHit.normal, exitDir, exitHit.point);
+                } else {
+                    baseColor = getSkyColor(exitDir);
+                }
+            }
+        } else {
+            baseColor = shade(refractHit.color, refractHit.normal, refractG, refractHit.point);
+        }
+    } else {
+        baseColor = getSkyColor(refractG);
+    }
+
+    float spread = (iorBlue - iorRed) * 2.0;
+    vec3 dispersedColor;
+    dispersedColor.r = baseColor.r * (1.0 - spread * 0.5);
+    dispersedColor.g = baseColor.g;
+    dispersedColor.b = baseColor.b * (1.0 + spread * 0.5);
+
+    float pathLength = refractHit.hit ? refractHit.dist : 1.0;
+    vec3 absorption = exp(-tint * pathLength * 0.5);
+
+    return dispersedColor * absorption;
+}
+
+vec3 calculatePhotonCausticsFast(vec3 hitPoint, vec3 normal, ivec2 pixelCoords) {
+    vec3 causticColor = vec3(0.0);
+
+    int numLights = lighting.numLights;
+    for (int li = 0; li < numLights; li++) {
+        Light light = lighting.lights[li];
+
+        if (light.type != 1 && light.type != 2) continue;
+
+        vec3 lightDir;
+        float lightDist;
+        vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
+
+        if (light.type == 1) {
+            lightDir = normalize(- vec3(light.dirX, light.dirY, light.dirZ));
+            lightDist = MAX_DIST;
+        } else {
+            vec3 lightPos = vec3(light.posX, light.posY, light.posZ);
+            vec3 lightVec = lightPos - hitPoint;
+            lightDist = length(lightVec);
+            lightDir = lightVec / lightDist;
+        }
+
+        Ray photonRay;
+        photonRay.origin = hitPoint + normal * SHADOW_BIAS;
+        photonRay.direction = lightDir;
+
+        Hit photonHit = traceBVH(photonRay);
+
+        if (photonHit.hit && photonHit.transparency > 0.5 && photonHit.dist < lightDist) {
+            float convergence = 1.0 / (1.0 + photonHit.dist * 0.3);
+            float iorFocus = (photonHit.ior - 1.0) * 1.5;
+            float dotNL = max(dot(normal, lightDir), 0.0);
+
+            causticColor += lightColor * light.intensity * convergence * iorFocus * dotNL * 0.25;
+        }
+    }
+
+    return causticColor;
+}
+
+vec3 calculateVolumetricCausticsFast(vec3 rayOrigin, vec3 rayDir, float maxDist) {
+    vec3 volumetricColor = vec3(0.0);
+
+    const int VOLUME_SAMPLES = 3;
+    float clampedDist = min(maxDist, 4.0);
+    float stepSize = clampedDist / float(VOLUME_SAMPLES);
+
+    int numLights = lighting.numLights;
+    if (numLights == 0) return volumetricColor;
+
+    for (int i = 0; i < VOLUME_SAMPLES; i++) {
+        float t = stepSize * (float(i) + 0.5);
+        vec3 samplePos = rayOrigin + rayDir * t;
+
+        for (int li = 0; li < numLights; li++) {
+            Light light = lighting.lights[li];
+            if (light.type == 0) continue;
+
+            vec3 lightDir;
+            float lightDist;
+            vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
+
+            if (light.type == 1) {
+                lightDir = normalize(- vec3(light.dirX, light.dirY, light.dirZ));
+                lightDist = MAX_DIST;
+            } else {
+                vec3 lightPos = vec3(light.posX, light.posY, light.posZ);
+                vec3 lightVec = lightPos - samplePos;
+                lightDist = length(lightVec);
+                lightDir = lightVec / lightDist;
+            }
+
+            Ray toLightRay;
+            toLightRay.origin = samplePos;
+            toLightRay.direction = lightDir;
+
+            Hit lightHit = traceBVH(toLightRay);
+
+            if (lightHit.hit && lightHit.transparency > 0.5 && lightHit.dist < lightDist) {
+                float attenuation = exp(-t * 0.15);
+                float focusFactor = 1.0 + (lightHit.ior - 1.0) * 0.3;
+
+                volumetricColor += lightColor * light.intensity * 0.015 * attenuation * focusFactor;
+            }
+        }
+    }
+
+    return volumetricColor;
+}
+
+float noise3D(vec3 p) {
+    vec3 i = floor(p);
+    vec3 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+
+    float n = dot(i, vec3(1.0, 57.0, 113.0));
+
+    return mix(
+        mix(
+            mix(fract(sin(n) * 43758.5453), fract(sin(n + 1.0) * 43758.5453), f.x),
+            mix(fract(sin(n + 57.0) * 43758.5453), fract(sin(n + 58.0) * 43758.5453), f.x),
+            f.y
+        ),
+        mix(
+            mix(fract(sin(n + 113.0) * 43758.5453), fract(sin(n + 114.0) * 43758.5453), f.x),
+            mix(fract(sin(n + 170.0) * 43758.5453), fract(sin(n + 171.0) * 43758.5453), f.x),
+            f.y
+        ),
+        f.z
+    );
+}
+
+vec3 calculateSchlieren(vec3 hitPoint, vec3 normal, vec3 rayDir, float time) {
+    vec3 distortedNormal = normal;
+
+    vec3 noiseCoord = hitPoint * SCHLIEREN_FREQUENCY + vec3(0.0, time * 0.5, 0.0);
+
+    float noiseX = noise3D(noiseCoord) * 2.0 - 1.0;
+    float noiseY = noise3D(noiseCoord + vec3(100.0, 0.0, 0.0)) * 2.0 - 1.0;
+    float noiseZ = noise3D(noiseCoord + vec3(0.0, 100.0, 0.0)) * 2.0 - 1.0;
+
+    vec3 distortion = vec3(noiseX, noiseY, noiseZ) * SCHLIEREN_STRENGTH;
+
+    distortedNormal = normalize(normal + distortion);
+
+    return distortedNormal;
+}
+
+
 vec3 calculateRefraction(vec3 hitPoint, vec3 normal, vec3 rayDir, float ior, vec3 tint) {
     vec3 refractionColor = vec3(0.0);
 
@@ -547,7 +754,10 @@ void main() {
     float isHit = posData.w;
     float transparency = normalData.w;
     float ior = albedoData.w;
-    float reflectivity = rayDirData.w;
+
+    float packedReflSchlieren = rayDirData.w;
+    float enableSchlieren = floor(packedReflSchlieren / 10.0);
+    float reflectivity = packedReflSchlieren - enableSchlieren * 10.0;
 
     vec3 color = litData.xyz;
 
@@ -557,24 +767,47 @@ void main() {
         vec3 albedo = albedoData.xyz;
         vec3 rayDir = rayDirData.xyz;
 
+        float distToHit = length(hitPoint - camera.position);
+
         if (transparency > 0.01) {
-            float cosTheta = abs(dot(-rayDir, normal));
+            vec3 effectiveNormal = normal;
+            if (enableSchlieren > 0.5) {
+                effectiveNormal = calculateSchlieren(hitPoint, normal, rayDir, camera.time);
+            }
+
+            float cosTheta = abs(dot(-rayDir, effectiveNormal));
             float fresnel = fresnelSchlick(cosTheta, ior);
 
-            vec3 reflectionColor = calculateReflections(hitPoint, normal, rayDir);
+            vec3 reflectionColor = vec3(0.0);
+            if (fresnel > MIN_CONTRIBUTION) {
+                reflectionColor = calculateReflections(hitPoint, effectiveNormal, rayDir);
+            }
 
-            vec3 refractionColor = calculateRefraction(hitPoint, normal, rayDir, ior, vec3(1.0) - albedo);
+            vec3 dispersedColor = vec3(0.0);
+            float transmissionFactor = (1.0 - fresnel) * transparency;
+            if (transmissionFactor > MIN_CONTRIBUTION) {
+                if (ior > 1.8) {
+                    dispersedColor = calculateDispersionFast(hitPoint, effectiveNormal, rayDir, ior, vec3(1.0) - albedo, pixelCoords);
+                } else {
+                    dispersedColor = calculateRefraction(hitPoint, effectiveNormal, rayDir, ior, vec3(1.0) - albedo);
+                }
+            }
 
             vec3 surfaceColor = litData.xyz * (1.0 - transparency);
 
             color = surfaceColor +
             reflectionColor * fresnel * (reflectivity + 0.1) +
-            refractionColor * (1.0 - fresnel) * transparency;
+            dispersedColor * transmissionFactor;
+
+            if (distToHit < 8.0) {
+                vec3 volumetric = calculateVolumetricCausticsFast(camera.position, rayDir, distToHit);
+                color += volumetric;
+            }
         } else {
             vec3 reflections = calculateReflections(hitPoint, normal, rayDir);
             color += reflections;
 
-            vec3 caustics = calculateCaustics(hitPoint, normal, pixelCoords);
+            vec3 caustics = calculatePhotonCausticsFast(hitPoint, normal, pixelCoords);
             color += caustics;
         }
     }

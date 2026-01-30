@@ -81,7 +81,8 @@ public static unsafe class VulkanBufferHelper
                 IndexOfRefraction = tri.Material.IndexOfRefraction,
                 N1 = new System.Numerics.Vector3(tri.N1.X, tri.N1.Y, tri.N1.Z),
                 Reflectivity = tri.Material.Reflectivity,
-                N2 = new System.Numerics.Vector3(tri.N2.X, tri.N2.Y, tri.N2.Z)
+                N2 = new System.Numerics.Vector3(tri.N2.X, tri.N2.Y, tri.N2.Z),
+                EnableSchlieren = tri.Material.EnableSchlieren ? 1.0f : 0.0f
             };
         }
 

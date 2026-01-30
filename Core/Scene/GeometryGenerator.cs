@@ -177,21 +177,21 @@ public static class GeometryGenerator
         );
     }
 
-    public static void AddGlassSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, Color tint, float ior = 1.52f)
+    public static void AddGlassSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, Color tint, float ior = 1.52f, bool enableSchlieren = false)
     {
-        MaterialEntity material = MaterialEntity.Glass(tint, ior);
+        MaterialEntity material = MaterialEntity.Glass(tint, ior, enableSchlieren);
         AddTransparentSphere(scene, center, radius, rings, segments, material);
     }
 
-    public static void AddDiamondSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, Color tint)
+    public static void AddDiamondSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, Color tint, bool enableSchlieren = false)
     {
-        MaterialEntity material = MaterialEntity.Diamond(tint);
+        MaterialEntity material = MaterialEntity.Diamond(tint, enableSchlieren);
         AddTransparentSphere(scene, center, radius, rings, segments, material);
     }
 
-    public static void AddWaterSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, Color tint)
+    public static void AddWaterSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, Color tint, bool enableSchlieren = false)
     {
-        MaterialEntity material = MaterialEntity.Water(tint);
+        MaterialEntity material = MaterialEntity.Water(tint, enableSchlieren);
         AddTransparentSphere(scene, center, radius, rings, segments, material);
     }
 

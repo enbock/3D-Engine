@@ -49,7 +49,7 @@ struct Triangle {
     vec3 n1;
     float reflectivity;
     vec3 n2;
-    float pad6;
+    float enableSchlieren;
 };
 
 layout (std140, binding = 6) readonly buffer TriangleSSBO {

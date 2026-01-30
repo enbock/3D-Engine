@@ -31,7 +31,7 @@ struct Triangle {
     vec3 n1;
     float reflectivity;
     vec3 n2;
-    float pad6;
+    float enableSchlieren;
 };
 
 layout (std140, binding = 5) readonly buffer TriangleSSBO {
@@ -74,6 +74,7 @@ struct Hit {
     float transparency;
     float ior;
     float reflectivity;
+    float enableSchlieren;
 };
 
 const float EPSILON = 0.01;
@@ -115,6 +116,7 @@ Hit intersectTriangle(Ray ray, Triangle tri) {
         h.transparency = tri.transparency;
         h.ior = tri.ior;
         h.reflectivity = tri.reflectivity;
+        h.enableSchlieren = tri.enableSchlieren;
     }
 
     return h;
@@ -217,10 +219,11 @@ void main() {
     Hit hit = traceBVH(ray);
 
     if (hit.hit) {
+        float packedReflSchlieren = hit.reflectivity + hit.enableSchlieren * 10.0;
         imageStore(gPosition, pixelCoords, vec4(hit.point, 1.0));
         imageStore(gNormal, pixelCoords, vec4(hit.normal, hit.transparency));
         imageStore(gAlbedo, pixelCoords, vec4(hit.color, hit.ior));
-        imageStore(gRayDir, pixelCoords, vec4(ray.direction, hit.reflectivity));
+        imageStore(gRayDir, pixelCoords, vec4(ray.direction, packedReflSchlieren));
     } else {
         vec3 skyColor = getSkyColor(ray.direction);
         imageStore(gPosition, pixelCoords, vec4(0.0, 0.0, 0.0, 0.0));
