@@ -74,6 +74,12 @@ Dieses Verzeichnis enthält die gesamte technische Dokumentation des Projekts.
   - Performance-Presets (Default, Performance, UltraPerformance)
   - BVH-Infrastruktur vorbereitet
   - Roadmap für weitere Optimierungen
+
+- **[MULTI_PASS_STRATEGIE.md](./MULTI_PASS_STRATEGIE.md)** - Multi-Pass Rendering Entscheidung:
+  - Warum Multi-Pass statt Single-Pass
+  - 4-Pass Architektur mit BVH
+  - Bindings pro Pass dokumentiert
+  - Erweiterbarkeit für Soft Shadows, Caustics, Transparency
   - Alle Achsen (W/A/S/D/Q/E) sind kamera-relativ
   - "Fly Mode" Navigation wie in Blender
 

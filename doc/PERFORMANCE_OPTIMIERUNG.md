@@ -185,7 +185,7 @@ Alle geplanten Optimierungen sind implementiert. Mögliche zukünftige Verbesser
 3. **Instancing** - gleiche Geometrie mehrfach ohne Kopieren
 4. **Level of Detail (LOD)** - entfernte Objekte mit weniger Dreiecken
 
-## Konfiguration umschalten
+## Konfiguration
 
 In `VulkanBufferHelper.cs`:
 
@@ -200,9 +200,5 @@ RenderSettings settings = RenderSettings.Performance;
 RenderSettings settings = RenderSettings.Default;
 ```
 
-In `EngineConfig.cs`:
-
-```csharp
-// Single-Pass ist schneller bei einfachen Szenen
-public static bool UseMultiPassRendering = false;
-```
+**Hinweis:** Single-Pass Rendering wurde zugunsten von Multi-Pass entfernt.
+Siehe [MULTI_PASS_STRATEGIE.md](./MULTI_PASS_STRATEGIE.md) für Details.

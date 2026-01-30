@@ -32,6 +32,28 @@ layout (std140, binding = 5) readonly buffer TriangleSSBO {
     Triangle triangles[];
 };
 
+struct BvhNode {
+    vec3 boundsMin;
+    int leftChild;
+    vec3 boundsMax;
+    int rightChild;
+    int triangleStart;
+    int triangleCount;
+    int pad0;
+    int pad1;
+};
+
+layout (std430, binding = 6) readonly buffer BvhSSBO {
+    BvhNode bvhNodes[];
+};
+
+shared vec3 s_camPos;
+shared vec3 s_camForward;
+shared vec3 s_camRight;
+shared vec3 s_camUp;
+shared float s_tanHalfFov;
+shared float s_aspectRatio;
+
 struct Ray {
     vec3 origin;
     vec3 direction;
@@ -84,35 +106,73 @@ Hit intersectTriangle(Ray ray, Triangle tri) {
     return h;
 }
 
-Hit trace(Ray ray, int numTriangles) {
+bool intersectAABB(vec3 origin, vec3 invDir, vec3 boxMin, vec3 boxMax, float tMax) {
+    vec3 t0s = (boxMin - origin) * invDir;
+    vec3 t1s = (boxMax - origin) * invDir;
+
+    vec3 tsmaller = min(t0s, t1s);
+    vec3 tbigger = max(t0s, t1s);
+
+    float tmin = max(max(tsmaller.x, tsmaller.y), tsmaller.z);
+    float tmax = min(min(tbigger.x, tbigger.y), tbigger.z);
+
+    return tmax >= max(tmin, 0.0) && tmin < tMax;
+}
+
+Hit traceBVH(Ray ray) {
     Hit closest;
     closest.hit = false;
     closest.dist = MAX_DIST;
 
-    for (int i = 0; i < numTriangles; i++) {
-        Hit h = intersectTriangle(ray, triangles[i]);
-        if (h.hit && h.dist < closest.dist) {
-            closest = h;
+    int numNodes = bvhNodes.length();
+    if (numNodes == 0) {
+        return closest;
+    }
+
+    vec3 invDir = 1.0 / ray.direction;
+
+    int stack[64];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0;
+
+    while (stackPtr > 0) {
+        int nodeIdx = stack[--stackPtr];
+        BvhNode node = bvhNodes[nodeIdx];
+
+        if (!intersectAABB(ray.origin, invDir, node.boundsMin, node.boundsMax, closest.dist)) {
+            continue;
+        }
+
+        if (node.triangleCount > 0) {
+            for (int i = 0; i < node.triangleCount; i++) {
+                int triIdx = node.triangleStart + i;
+                Hit h = intersectTriangle(ray, triangles[triIdx]);
+                if (h.hit && h.dist < closest.dist) {
+                    closest = h;
+                }
+            }
+        } else {
+            if (node.rightChild >= 0) {
+                stack[stackPtr++] = node.rightChild;
+            }
+            if (node.leftChild >= 0) {
+                stack[stackPtr++] = node.leftChild;
+            }
         }
     }
 
     return closest;
 }
 
-Ray generateRay(ivec2 pixelCoords, vec2 resolution) {
-    vec2 uv = (vec2(pixelCoords) / resolution) * 2.0 - 1.0;
+Ray generateRay(ivec2 pixelCoords) {
+    vec2 uv = (vec2(pixelCoords) / camera.resolution) * 2.0 - 1.0;
     uv.y = -uv.y;
-    uv.x *= resolution.x / resolution.y;
+    uv.x *= s_aspectRatio;
 
-    vec3 forward = normalize(camera.target - camera.position);
-    vec3 worldUp = vec3(0, 1, 0);
-    vec3 right = normalize(cross(forward, worldUp));
-    vec3 up = normalize(cross(right, forward));
-
-    vec3 rayDir = normalize(forward + right * uv.x * tan(camera.fov * 0.5) + up * uv.y * tan(camera.fov * 0.5));
+    vec3 rayDir = normalize(s_camForward + s_camRight * uv.x * s_tanHalfFov + s_camUp * uv.y * s_tanHalfFov);
 
     Ray ray;
-    ray.origin = camera.position;
+    ray.origin = s_camPos;
     ray.direction = rayDir;
     return ray;
 }
@@ -123,15 +183,24 @@ vec3 getSkyColor(vec3 rayDir) {
 
 void main() {
     ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-    vec2 resolution = camera.resolution;
 
-    if (pixelCoords.x >= int(resolution.x) || pixelCoords.y >= int(resolution.y)) {
+    if (gl_LocalInvocationIndex == 0) {
+        s_camPos = camera.position;
+        s_camForward = normalize(camera.target - camera.position);
+        vec3 worldUp = vec3(0.0, 1.0, 0.0);
+        s_camRight = normalize(cross(s_camForward, worldUp));
+        s_camUp = normalize(cross(s_camRight, s_camForward));
+        s_tanHalfFov = tan(camera.fov * 0.5);
+        s_aspectRatio = camera.resolution.x / camera.resolution.y;
+    }
+    barrier();
+
+    if (pixelCoords.x >= int(camera.resolution.x) || pixelCoords.y >= int(camera.resolution.y)) {
         return;
     }
 
-    Ray ray = generateRay(pixelCoords, resolution);
-    int numTriangles = triangles.length();
-    Hit hit = trace(ray, numTriangles);
+    Ray ray = generateRay(pixelCoords);
+    Hit hit = traceBVH(ray);
 
     if (hit.hit) {
         imageStore(gPosition, pixelCoords, vec4(hit.point, 1.0));

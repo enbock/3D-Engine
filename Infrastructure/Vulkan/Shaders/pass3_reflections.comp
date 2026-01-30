@@ -71,6 +71,21 @@ layout (binding = 9) uniform CameraUBO {
     float fov;
 } camera;
 
+struct BvhNode {
+    vec3 boundsMin;
+    int leftChild;
+    vec3 boundsMax;
+    int rightChild;
+    int triangleStart;
+    int triangleCount;
+    int pad0;
+    int pad1;
+};
+
+layout (std430, binding = 10) readonly buffer BvhSSBO {
+    BvhNode bvhNodes[];
+};
+
 struct Ray {
     vec3 origin;
     vec3 direction;
@@ -158,34 +173,107 @@ Hit intersectTriangleShadow(Ray ray, Triangle tri) {
     return h;
 }
 
-Hit trace(Ray ray, int numTriangles) {
+bool intersectAABB(vec3 origin, vec3 invDir, vec3 boxMin, vec3 boxMax, float tMax) {
+    vec3 t0s = (boxMin - origin) * invDir;
+    vec3 t1s = (boxMax - origin) * invDir;
+
+    vec3 tsmaller = min(t0s, t1s);
+    vec3 tbigger = max(t0s, t1s);
+
+    float tmin = max(max(tsmaller.x, tsmaller.y), tsmaller.z);
+    float tmax = min(min(tbigger.x, tbigger.y), tbigger.z);
+
+    return tmax >= max(tmin, 0.0) && tmin < tMax;
+}
+
+Hit traceBVH(Ray ray) {
     Hit closest;
     closest.hit = false;
     closest.dist = MAX_DIST;
 
-    for (int i = 0; i < numTriangles; i++) {
-        Hit h = intersectTriangle(ray, triangles[i]);
-        if (h.hit && h.dist < closest.dist) {
-            closest = h;
+    int numNodes = bvhNodes.length();
+    if (numNodes == 0) {
+        return closest;
+    }
+
+    vec3 invDir = 1.0 / ray.direction;
+
+    int stack[64];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0;
+
+    while (stackPtr > 0) {
+        int nodeIdx = stack[--stackPtr];
+        BvhNode node = bvhNodes[nodeIdx];
+
+        if (!intersectAABB(ray.origin, invDir, node.boundsMin, node.boundsMax, closest.dist)) {
+            continue;
+        }
+
+        if (node.triangleCount > 0) {
+            for (int i = 0; i < node.triangleCount; i++) {
+                int triIdx = node.triangleStart + i;
+                Hit h = intersectTriangle(ray, triangles[triIdx]);
+                if (h.hit && h.dist < closest.dist) {
+                    closest = h;
+                }
+            }
+        } else {
+            if (node.rightChild >= 0) {
+                stack[stackPtr++] = node.rightChild;
+            }
+            if (node.leftChild >= 0) {
+                stack[stackPtr++] = node.leftChild;
+            }
         }
     }
 
     return closest;
 }
 
-bool traceShadow(vec3 origin, vec3 lightDir, float maxDist, int numTriangles) {
+bool traceShadowBVH(vec3 origin, vec3 lightDir, float maxDist) {
     if (settings.enableShadows == 0) {
         return false;
     }
 
-    Ray shadowRay;
-    shadowRay.origin = origin;
-    shadowRay.direction = lightDir;
+    int numNodes = bvhNodes.length();
+    if (numNodes == 0) {
+        return false;
+    }
 
-    for (int i = 0; i < numTriangles; i++) {
-        Hit h = intersectTriangleShadow(shadowRay, triangles[i]);
-        if (h.hit && h.dist < maxDist) {
-            return true;
+    vec3 invDir = 1.0 / lightDir;
+
+    int stack[32];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0;
+
+    while (stackPtr > 0) {
+        int nodeIdx = stack[--stackPtr];
+        BvhNode node = bvhNodes[nodeIdx];
+
+        if (!intersectAABB(origin, invDir, node.boundsMin, node.boundsMax, maxDist)) {
+            continue;
+        }
+
+        if (node.triangleCount > 0) {
+            Ray shadowRay;
+            shadowRay.origin = origin;
+            shadowRay.direction = lightDir;
+
+            for (int i = 0; i < node.triangleCount; i++) {
+                int triIdx = node.triangleStart + i;
+                Hit h = intersectTriangleShadow(shadowRay, triangles[triIdx]);
+                if (h.hit && h.dist < maxDist) {
+                    return true;
+                }
+            }
+        } else {
+            if (node.leftChild >= 0) {
+                stack[stackPtr++] = node.leftChild;
+            }
+            if (node.rightChild >= 0) {
+                stack[stackPtr++] = node.rightChild;
+            }
         }
     }
 
@@ -197,14 +285,14 @@ vec3 calculateAmbientLight(vec3 albedo, Light light) {
     return albedo * lightColor * light.intensity;
 }
 
-vec3 calculateDirectionalLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, Light light, int numTriangles) {
+vec3 calculateDirectionalLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, Light light) {
     vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
     vec3 lightDir = vec3(light.dirX, light.dirY, light.dirZ);
     vec3 lDir = normalize(-lightDir);
 
     float diff = max(dot(normal, lDir), 0.0);
 
-    bool inShadow = traceShadow(hitPoint + normal * SHADOW_BIAS, lDir, MAX_DIST, numTriangles);
+    bool inShadow = traceShadowBVH(hitPoint + normal * SHADOW_BIAS, lDir, MAX_DIST);
     float shadowFactor = inShadow ? SHADOW_AMBIENT : 1.0;
 
     vec3 halfDir = normalize(lDir + viewDir);
@@ -216,7 +304,7 @@ vec3 calculateDirectionalLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitP
     return diffuse + specular;
 }
 
-vec3 calculatePointLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, Light light, int numTriangles) {
+vec3 calculatePointLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, Light light) {
     vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
     vec3 lightPos = vec3(light.posX, light.posY, light.posZ);
 
@@ -227,7 +315,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, 
     float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
     float diff = max(dot(normal, lDir), 0.0);
 
-    bool inShadow = traceShadow(hitPoint + normal * SHADOW_BIAS, lDir, dist, numTriangles);
+    bool inShadow = traceShadowBVH(hitPoint + normal * SHADOW_BIAS, lDir, dist);
     float shadowFactor = inShadow ? SHADOW_AMBIENT : 1.0;
 
     vec3 halfDir = normalize(lDir + viewDir);
@@ -239,7 +327,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, 
     return diffuse + specular;
 }
 
-vec3 shade(vec3 albedo, vec3 normal, vec3 rayDir, vec3 hitPoint, int numTriangles) {
+vec3 shade(vec3 albedo, vec3 normal, vec3 rayDir, vec3 hitPoint) {
     vec3 result = vec3(0.0);
 
     vec3 viewDir = -rayDir;
@@ -256,17 +344,17 @@ vec3 shade(vec3 albedo, vec3 normal, vec3 rayDir, vec3 hitPoint, int numTriangle
             result += calculateAmbientLight(albedo, light);
         }
         else if (light.type == 1) {
-            result += calculateDirectionalLight(albedo, normal, viewDir, hitPoint, light, numTriangles);
+            result += calculateDirectionalLight(albedo, normal, viewDir, hitPoint, light);
         }
         else if (light.type == 2) {
-            result += calculatePointLight(albedo, normal, viewDir, hitPoint, light, numTriangles);
+            result += calculatePointLight(albedo, normal, viewDir, hitPoint, light);
         }
     }
 
     return clamp(result, 0.0, 1.0);
 }
 
-vec3 calculateReflections(vec3 hitPoint, vec3 normal, vec3 rayDir, int numTriangles) {
+vec3 calculateReflections(vec3 hitPoint, vec3 normal, vec3 rayDir) {
     vec3 reflectionColor = vec3(0.0);
 
     if (settings.enableReflections == 0 || settings.maxBounces == 0) {
@@ -284,10 +372,10 @@ vec3 calculateReflections(vec3 hitPoint, vec3 normal, vec3 rayDir, int numTriang
         reflRay.origin = currentPoint + currentNormal * SHADOW_BIAS;
         reflRay.direction = reflDir;
 
-        Hit reflHit = trace(reflRay, numTriangles);
+        Hit reflHit = traceBVH(reflRay);
 
         if (reflHit.hit) {
-            vec3 reflColor = shade(reflHit.color, reflHit.normal, reflDir, reflHit.point, numTriangles);
+            vec3 reflColor = shade(reflHit.color, reflHit.normal, reflDir, reflHit.point);
 
             float fresnel = pow(1.0 - max(dot(-currentRayDir, currentNormal), 0.0), 5.0);
             float reflectionFactor = settings.reflectionStrength * (0.2 + 0.8 * fresnel);
@@ -308,9 +396,8 @@ vec3 calculateReflections(vec3 hitPoint, vec3 normal, vec3 rayDir, int numTriang
 
 void main() {
     ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-    vec2 resolution = camera.resolution;
 
-    if (pixelCoords.x >= int(resolution.x) || pixelCoords.y >= int(resolution.y)) {
+    if (pixelCoords.x >= int(camera.resolution.x) || pixelCoords.y >= int(camera.resolution.y)) {
         return;
     }
 
@@ -328,8 +415,7 @@ void main() {
         vec3 normal = normalData.xyz;
         vec3 rayDir = rayDirData.xyz;
 
-        int numTriangles = triangles.length();
-        vec3 reflections = calculateReflections(hitPoint, normal, rayDir, numTriangles);
+        vec3 reflections = calculateReflections(hitPoint, normal, rayDir);
         color += reflections;
     }
 

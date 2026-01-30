@@ -320,8 +320,8 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
 
         if (EngineConfig.UseMultiPassRendering)
         {
-            _multiPassTask!.CreatePipelines(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer);
-            _multiPassTask.CreateDescriptorSets(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer,
+            _multiPassTask!.CreatePipelines(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer, _bvhBuffer);
+            _multiPassTask.CreateDescriptorSets(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer, _bvhBuffer,
                 _storageImageView);
         }
         else
@@ -365,7 +365,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
             _multiPassTask!.DestroyGBufferImages();
             _multiPassTask.CreateGBufferImages(_swapchainTask.SwapchainExtent.Width,
                 _swapchainTask.SwapchainExtent.Height);
-            _multiPassTask.CreateDescriptorSets(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer,
+            _multiPassTask.CreateDescriptorSets(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer, _bvhBuffer,
                 _storageImageView);
         }
         else
