@@ -9,34 +9,26 @@ public enum LightType
     Point = 2
 }
 
-public class LightEntity
+public class LightEntity(LightType type, Color? color = null, float intensity = 1.0f, float shadowSoftness = 0.03f)
 {
-    public LightEntity(LightType type, Color? color = null, float intensity = 1.0f)
-    {
-        Type = type;
-        Color = color ?? Color.White;
-        Intensity = intensity;
-        Position = Vector3.Zero;
-        Direction = new Vector3(0, -1, 0);
-    }
+    public LightType Type { get; set; } = type;
+    public Vector3 Position { get; set; } = Vector3.Zero;
+    public Vector3 Direction { get; set; } = new(0, -1, 0);
+    public Color Color { get; set; } = color ?? Color.White;
+    public float Intensity { get; set; } = intensity;
+    public float ShadowSoftness { get; set; } = shadowSoftness;
 
-    public LightType Type { get; set; }
-    public Vector3 Position { get; set; }
-    public Vector3 Direction { get; set; }
-    public Color Color { get; set; }
-    public float Intensity { get; set; }
-
-    public static LightEntity CreateDirectional(Vector3 direction, Color? color = null, float intensity = 1.0f)
+    public static LightEntity CreateDirectional(Vector3 direction, Color? color = null, float intensity = 1.0f, float shadowSoftness = 0.03f)
     {
-        return new LightEntity(LightType.Directional, color, intensity)
+        return new LightEntity(LightType.Directional, color, intensity, shadowSoftness)
         {
             Direction = direction.Normalized
         };
     }
 
-    public static LightEntity CreatePoint(Vector3 position, Color? color = null, float intensity = 1.0f)
+    public static LightEntity CreatePoint(Vector3 position, Color? color = null, float intensity = 1.0f, float shadowSoftness = 0.03f)
     {
-        return new LightEntity(LightType.Point, color, intensity)
+        return new LightEntity(LightType.Point, color, intensity, shadowSoftness)
         {
             Position = position
         };
@@ -44,6 +36,6 @@ public class LightEntity
 
     public static LightEntity CreateAmbient(Color? color = null, float intensity = 0.3f)
     {
-        return new LightEntity(LightType.Ambient, color, intensity);
+        return new LightEntity(LightType.Ambient, color, intensity, 0.0f);
     }
 }

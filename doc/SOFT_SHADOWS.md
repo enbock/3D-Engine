@@ -5,6 +5,44 @@
 Die Engine verwendet jetzt Soft Shadows mit Poisson-Disk Sampling für glatte Schattenübergänge ohne Kriselmuster (
 Banding/Noise).
 
+## Per-Light ShadowSoftness
+
+Jedes Licht kann eine eigene `ShadowSoftness` haben:
+
+```csharp
+// Scharfer Schatten (z.B. helles Sonnenlicht)
+LightEntity.CreateDirectional(
+    direction: new Vector3(-1, -1, -1),
+    intensity: 1.2f,
+    shadowSoftness: 0.01f  // Sehr scharf
+);
+
+// Weicher Schatten (z.B. bedeckter Himmel)
+LightEntity.CreateDirectional(
+    direction: new Vector3(-1, -1, -1),
+    intensity: 0.8f,
+    shadowSoftness: 0.06f  // Weich
+);
+
+// Point Light mit mittlerer Softness
+LightEntity.CreatePoint(
+    position: new Vector3(2, 3, 1),
+    intensity: 1.0f,
+    shadowSoftness: 0.03f  // Standard
+);
+```
+
+### ShadowSoftness Werte
+
+| Wert      | Beschreibung   | Anwendungsfall                        |
+|-----------|----------------|---------------------------------------|
+| 0.0       | Harte Schatten | Punktlichtquelle, Laser               |
+| 0.01-0.02 | Sehr scharf    | Direktes Sonnenlicht                  |
+| 0.03      | Standard       | Normale Innenbeleuchtung              |
+| 0.04-0.06 | Weich          | Bedeckter Himmel, diffuse Lichtquelle |
+| 0.08+     | Sehr weich     | Großflächige Lichtquellen             |
+Banding/Noise).
+
 ## Technik: Poisson-Disk Sampling mit rotierendem Pattern
 
 ### Problem mit einfachem Multi-Sampling

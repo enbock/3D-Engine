@@ -20,23 +20,23 @@ public struct LightData
 {
     public int Type;
     public float Intensity;
+    public float ShadowSoftness;
     public float Pad1;
-    public float Pad2;
 
     public float PositionX;
     public float PositionY;
     public float PositionZ;
-    public float Pad3;
+    public float Pad2;
 
     public float DirectionX;
     public float DirectionY;
     public float DirectionZ;
-    public float Pad4;
+    public float Pad3;
 
     public float ColorR;
     public float ColorG;
     public float ColorB;
-    public float Pad5;
+    public float Pad4;
 }
 
 [StructLayout(LayoutKind.Sequential)]

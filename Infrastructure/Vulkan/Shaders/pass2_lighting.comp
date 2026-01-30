@@ -11,20 +11,20 @@ layout (binding = 4, rgba32f) uniform writeonly image2D litColor;
 struct Light {
     int type;
     float intensity;
+    float shadowSoftness;
     float pad1;
-    float pad2;
     float posX;
     float posY;
     float posZ;
-    float pad3;
+    float pad2;
     float dirX;
     float dirY;
     float dirZ;
-    float pad4;
+    float pad3;
     float colorR;
     float colorG;
     float colorB;
-    float pad5;
+    float pad4;
 };
 
 layout (std430, binding = 5) buffer LightUBO {
@@ -218,13 +218,13 @@ vec3 buildTangentFrame(vec3 normal, out vec3 tangent, out vec3 bitangent) {
     return normal;
 }
 
-float traceSoftShadow(vec3 origin, vec3 lightDir, float maxDist, float lightRadius, ivec2 pixelCoords) {
+float traceSoftShadow(vec3 origin, vec3 lightDir, float maxDist, float lightSoftness, ivec2 pixelCoords) {
     if (settings.enableShadows == 0) {
         return 1.0;
     }
 
     int numSamples = clamp(settings.shadowSamples, 1, 16);
-    float softness = settings.shadowSoftness * lightRadius;
+    float softness = lightSoftness;
 
     if (softness < 0.001 || numSamples <= 1) {
         return traceShadowRayBVH(origin, lightDir, maxDist) ? SHADOW_AMBIENT : 1.0;
@@ -319,7 +319,7 @@ vec3 calculateDirectionalLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitP
 
     float diff = max(dot(normal, lDir), 0.0);
 
-    float shadowFactor = traceSoftShadow(hitPoint + normal * SHADOW_BIAS, lDir, MAX_DIST, 1.0, pixelCoords);
+    float shadowFactor = traceSoftShadow(hitPoint + normal * SHADOW_BIAS, lDir, MAX_DIST, light.shadowSoftness, pixelCoords);
 
     vec3 halfDir = normalize(lDir + viewDir);
     float spec = pow(max(dot(normal, halfDir), 0.0), SPECULAR_POWER);
@@ -341,8 +341,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, 
     float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
     float diff = max(dot(normal, lDir), 0.0);
 
-    float lightRadius = max(0.5, dist * 0.1);
-    float shadowFactor = traceSoftShadow(hitPoint + normal * SHADOW_BIAS, lDir, dist, lightRadius, pixelCoords);
+    float shadowFactor = traceSoftShadow(hitPoint + normal * SHADOW_BIAS, lDir, dist, light.shadowSoftness, pixelCoords);
 
     vec3 halfDir = normalize(lDir + viewDir);
     float spec = pow(max(dot(normal, halfDir), 0.0), SPECULAR_POWER);

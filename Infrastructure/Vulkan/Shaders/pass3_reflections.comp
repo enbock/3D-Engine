@@ -27,20 +27,20 @@ layout (std140, binding = 6) readonly buffer TriangleSSBO {
 struct Light {
     int type;
     float intensity;
+    float shadowSoftness;
     float pad1;
-    float pad2;
     float posX;
     float posY;
     float posZ;
-    float pad3;
+    float pad2;
     float dirX;
     float dirY;
     float dirZ;
-    float pad4;
+    float pad3;
     float colorR;
     float colorG;
     float colorB;
-    float pad5;
+    float pad4;
 };
 
 layout (std430, binding = 7) buffer LightUBO {

@@ -145,6 +145,7 @@ public static unsafe class VulkanBufferHelper
             {
                 Type = (int)lights[i].Type,
                 Intensity = lights[i].Intensity,
+                ShadowSoftness = lights[i].ShadowSoftness,
                 PositionX = lights[i].Position.X,
                 PositionY = lights[i].Position.Y,
                 PositionZ = lights[i].Position.Z,
