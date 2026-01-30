@@ -68,10 +68,10 @@ RenderSettings settings = RenderSettings.Performance;
 Änderungen:
 | Setting | Default | Performance |
 |---------|---------|-------------|
-| MaxBounces | 3 | 1 |
-| Reflections | true | false |
+| MaxBounces | 3 | 2 |
+| Reflections | true | true |
 | ShadowSamples | 4 | 1 |
-| ReflectionStrength | 0.5 | 0.0 |
+| ReflectionStrength | 0.5 | 0.4 |
 
 ### 3. Ultra-Performance-Preset erstellt ✅
 

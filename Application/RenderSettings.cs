@@ -21,10 +21,10 @@ public class RenderSettings
 
     public static RenderSettings Performance => new()
     {
-        MaxBounces = 1,
+        MaxBounces = 2,
         EnableShadows = true,
-        EnableReflections = false,
-        ReflectionStrength = 0.0f,
+        EnableReflections = true,
+        ReflectionStrength = 0.4f,
         ShadowSamples = 1,
         ShadowSoftness = 0.0f
     };
