@@ -79,8 +79,8 @@ public struct RenderSettingsData
     public int EnableReflections;
     public float ReflectionStrength;
     public int ShadowSamples;
-    public float ShadowSoftness;
-    public Vector2 Pad;
+    public int Pad1;
+    public Vector2 Pad2;
 }
 
 [StructLayout(LayoutKind.Sequential)]

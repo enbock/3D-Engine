@@ -57,8 +57,8 @@ layout (binding = 8) uniform RenderSettings {
     int enableReflections;
     float reflectionStrength;
     int shadowSamples;
-    float shadowSoftness;
-    vec2 _pad;
+    int _pad1;
+    vec2 _pad2;
 } settings;
 
 layout (binding = 9) uniform CameraUBO {
