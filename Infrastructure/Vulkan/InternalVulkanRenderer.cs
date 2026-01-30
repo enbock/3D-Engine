@@ -13,7 +13,7 @@ using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace Infrastructure.Vulkan;
 
-public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, EngineConfig config)
+public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineConfig config)
     : IDisposable
 {
     private bool _buffersCreated;
@@ -65,7 +65,7 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
         _syncTask.Dispose();
         _commandTask.Dispose();
 
-        if (config.UseMultiPassRendering)
+        if (EngineConfig.UseMultiPassRendering)
         {
             _multiPassTask!.DestroyDescriptorPool();
             _multiPassTask.DestroyPipelines();
@@ -108,7 +108,7 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
             _deviceTask.PhysicalDevice, _deviceTask.Device, _surface, config);
         _swapchainTask.CreateSwapchain();
 
-        _commandTask = new VulkanCommandTask(_vk, _deviceTask.Device, _deviceTask.QueueFamilyIndex, config);
+        _commandTask = new VulkanCommandTask(_vk, _deviceTask.Device, _deviceTask.QueueFamilyIndex);
         _commandTask.CreateCommandPool();
 
         _bufferTask = new VulkanBufferTask(_vk, _deviceTask.Device, _deviceTask);
@@ -119,7 +119,7 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
 
         _pipelineTask = new VulkanPipelineTask(_vk, _deviceTask.Device);
 
-        if (config.UseMultiPassRendering)
+        if (EngineConfig.UseMultiPassRendering)
         {
             _multiPassTask = new VulkanMultiPassTask(_vk, _deviceTask.Device, _deviceTask, _imageTask, _pipelineTask);
             _multiPassTask.CreateGBufferImages(_swapchainTask.SwapchainExtent.Width,
@@ -182,7 +182,7 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
 
     private void CreateSurface()
     {
-        _surface = windowManager.CreateVulkanSurface(_instance, _vk);
+        _surface = windowManager.CreateVulkanSurface(_instance);
 
         if (!_vk.TryGetInstanceExtension(_instance, out _khrSurface))
             throw new Exception("KHR_surface extension not available");
@@ -253,7 +253,7 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
         CommandBuffer commandBuffer = _commandTask.CommandBuffers[_currentFrame];
         _vk.ResetCommandBuffer(commandBuffer, 0);
 
-        if (config.UseMultiPassRendering)
+        if (EngineConfig.UseMultiPassRendering)
             _commandTask.RecordMultiPassCommands(
                 commandBuffer,
                 _multiPassTask!,
@@ -302,7 +302,7 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
 
         _deviceTask.KhrSwapchain.QueuePresent(_deviceTask.PresentQueue, &presentInfo);
 
-        _currentFrame = (_currentFrame + 1) % (uint)config.MaxFramesInFlight;
+        _currentFrame = (_currentFrame + 1) % (uint)EngineConfig.MaxFramesInFlight;
     }
 
     private void CreateBuffers(SceneEntity scene)
@@ -314,7 +314,7 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
             out _lightBuffer, out _lightBufferMemory,
             out _settingsBuffer, out _settingsBufferMemory);
 
-        if (config.UseMultiPassRendering)
+        if (EngineConfig.UseMultiPassRendering)
         {
             _multiPassTask!.CreatePipelines(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer);
             _multiPassTask.CreateDescriptorSets(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer,
@@ -356,7 +356,7 @@ public unsafe class InternalVulkanRenderer(WindowManagerService windowManager, E
         _imageTask.DestroyImage(_storageImage, _storageImageView, _storageImageMemory);
         CreateStorageImage();
 
-        if (config.UseMultiPassRendering)
+        if (EngineConfig.UseMultiPassRendering)
         {
             _multiPassTask!.DestroyGBufferImages();
             _multiPassTask.CreateGBufferImages(_swapchainTask.SwapchainExtent.Width,

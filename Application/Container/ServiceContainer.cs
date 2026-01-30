@@ -1,16 +1,72 @@
+using Application.Game;
+using Application.Game.Handler;
+using Application.Window;
+using Core.CameraControl;
+using Core.EngineRendering;
+using Core.Rendering;
+using Core.Scene;
+using Core.World;
+using Infrastructure.Rendering;
+using Infrastructure.Vulkan;
+using Silk.NET.Maths;
+using Silk.NET.Windowing;
+
 namespace Application.Container;
 
-public class ServiceContainer
+public class ServiceContainer : IDisposable
 {
     private readonly Dictionary<Type, object> _services = new();
 
-    public void Register<TInterface, TImplementation>()
-        where TImplementation : TInterface, new()
+    public ServiceContainer(EngineConfig config)
     {
-        _services[typeof(TInterface)] = new TImplementation();
+        WindowOptions options = WindowOptions.DefaultVulkan with
+        {
+            Title = config.Title,
+            Size = new Vector2D<int>(config.Width, config.Height),
+            VSync = config.VSync,
+            API = new GraphicsAPI(ContextAPI.Vulkan, ContextProfile.Core, ContextFlags.Default, new APIVersion(1, 0))
+        };
+
+        RegisterInstance(Silk.NET.Windowing.Window.Create(options));
+
+        RegisterInstance(new WindowManager(Resolve<IWindow>()));
+        RegisterInstance(new InputHandler());
+
+        RegisterInstance(new SceneBuilderService());
+
+        RegisterInstance(new InternalVulkanRenderer(Resolve<WindowManager>(), config));
+        RegisterInstance<Renderer>(new VulkanRenderer(Resolve<InternalVulkanRenderer>()));
+        RegisterInstance(new WorldUseCase(Resolve<SceneBuilderService>()));
+        RegisterInstance(new CameraControlUseCase());
+        RegisterInstance(new CameraControlHandler(
+            Resolve<CameraControlUseCase>(),
+            Resolve<InputHandler>(),
+            Resolve<WorldUseCase>()
+        ));
+
+        RegisterInstance(new RenderEngineUseCase(Resolve<Renderer>()));
+
+
+        RegisterInstance(new GameController(
+            Resolve<WindowManager>(),
+            Resolve<InputHandler>(),
+            Resolve<Renderer>(),
+            Resolve<RenderEngineUseCase>(),
+            Resolve<CameraControlHandler>(),
+            Resolve<WorldUseCase>()
+        ));
     }
 
-    public void RegisterInstance<TInterface>(TInterface instance)
+    public void Dispose()
+    {
+        foreach (object service in _services.Values)
+            if (service is IDisposable disposable)
+                disposable.Dispose();
+
+        _services.Clear();
+    }
+
+    private void RegisterInstance<TInterface>(TInterface instance)
         where TInterface : notnull
     {
         _services[typeof(TInterface)] = instance;
@@ -20,26 +76,5 @@ public class ServiceContainer
     {
         if (_services.TryGetValue(typeof(TInterface), out object? service)) return (TInterface)service;
         throw new InvalidOperationException($"Service {typeof(TInterface).Name} not registered");
-    }
-
-    public bool TryResolve<TInterface>(out TInterface? service)
-    {
-        if (_services.TryGetValue(typeof(TInterface), out object? obj))
-        {
-            service = (TInterface)obj;
-            return true;
-        }
-
-        service = default;
-        return false;
-    }
-
-    public void Clear()
-    {
-        foreach (object service in _services.Values)
-            if (service is IDisposable disposable)
-                disposable.Dispose();
-
-        _services.Clear();
     }
 }

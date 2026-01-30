@@ -116,7 +116,7 @@ public unsafe class VulkanDeviceTask(Vk vk, KhrSurface khrSurface, SurfaceKHR su
         vk.GetPhysicalDeviceMemoryProperties(PhysicalDevice, &memProperties);
 
         for (uint i = 0; i < memProperties.MemoryTypeCount; i++)
-            if ((typeFilter & (1 << (int)i)) != 0 &&
+            if ((typeFilter & 1 << (int)i) != 0 &&
                 (memProperties.MemoryTypes[(int)i].PropertyFlags & properties) == properties)
                 return i;
 

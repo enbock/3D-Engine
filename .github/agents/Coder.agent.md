@@ -25,8 +25,7 @@ tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_i
 * Document automatically experiences und knowledge of the project in Markdown files.
 * Reade the existing Markdown files to get knowledge about the project.
 * An input of "." means "Continue"
-* Document knownledge in the "doc" folder.
-* Follow the existing structure of the "doc" folder.
+* Document, if needed, new important knownledge in the "doc" folder.
 * If you create a new Markdown file, add it to the "doc/README.md" file.
 * Before you start learn past work in the "doc" folder.
 * Resolve isseues, warnings and take code suggesstion given by editors code checker

@@ -409,6 +409,145 @@ imageStore(outputImage, pixelCoords, vec4(color.bgr, 1.0));
 
 Unterschiedliche Orientierungen sind essentiell für sichtbare Beleuchtungseffekte!
 
+### Phase 10: Komplexe Geometrie-Generierung (2026-01-30)
+
+**Ziel**: Erweiterung der Scene mit prozedural generierten 3D-Objekten
+
+**Implementiert**:
+
+- ✅ `GeometryGenerator` Klasse (statische Hilfsmethoden)
+- ✅ **Zylinder-Generator**: Parametrisch mit Segments (Radius, Höhe, Segmente)
+    - Mantel aus Quads (2 Dreiecke pro Segment)
+    - Obere und untere Deckfläche (Fan-Triangulation)
+    - 16 Segmente = 96 Dreiecke
+- ✅ **Kugel-Generator**: Sphärische Koordinaten mit Rings & Segments
+    - UV-Sphere Parametrisierung (θ, φ)
+    - 12 Rings × 16 Segments = 352 Dreiecke
+    - Pole mit degenerierten Dreiecken
+- ✅ **Würfel-Generator**: Axis-aligned mit 8 Vertices
+    - 6 Faces × 2 Dreiecke = 12 Dreiecke
+    - Korrekte Backface-Orientierung
+
+**Scene-Konfiguration**:
+
+- Links: Roter Zylinder (Position: -2, 1, 0)
+- Mitte: Grüne Kugel (Position: 0, 1, 0)
+- Rechts: Blauer Würfel (Position: 2, 1, 0)
+
+**Metriken**:
+
+- Gesamt-Dreiecke: ~460 (vorher: 5)
+- BVH Build Zeit: ~5ms (bei 460 Dreiecken)
+- VRAM Verbrauch: +15 KB für Geometrie-Buffer
+
+**Code-Organisation**:
+
+- Neue Klasse: `Application/Scene/GeometryGenerator.cs`
+- Clean Code: Statische Methoden, keine State
+- Wiederverwendbar für zukünftige Geometrie
+
+**Wichtig**: Alle Geometrien sind aus Dreiecken zusammengesetzt (keine nativen Primitives)
+
+#### 10.1 Bugfix: Invertierte Normalen (2026-01-30)
+
+**Problem**: Würfel, Kugel und Zylinder-Deckel hatten invertierte Normalen
+
+**Ursache**: Falsche Winding-Order (Vertex-Reihenfolge)
+
+**Diagnose**:
+
+- Normale wird durch `cross(e1, e2)` berechnet (e1 = v1-v0, e2 = v2-v0)
+- **Counter-Clockwise (CCW)**: Normale zeigt nach außen ✅
+- **Clockwise (CW)**: Normale zeigt nach innen ❌
+
+**Lösung**: Vertex-Reihenfolge korrigiert
+
+- Zylinder: Beide Deckel umgekehrt (2 Änderungen)
+- Kugel: Alle Dreiecke auf CCW (2 Änderungen)
+- Würfel: Alle 6 Faces korrigiert (12 Änderungen)
+
+**Erkenntnis**: Es war ein **Geometrie-Problem**, nicht ein Shader-Problem! Der Shader berechnet Normalen korrekt
+basierend auf der Vertex-Reihenfolge.
+
+**Dokumentation**: `doc/BUGFIX_NORMALS_WINDING.md`
+
+#### 10.2 Bugfix: Camera Verzerrung (2026-01-30)
+
+**Problem**: Verzerrung der Anzeige bei vertikaler Kamerabewegung (Längung)
+
+**Symptome**:
+
+- Bei Aufwärts-Bewegung: Objekte ziehen sich in die Länge
+- Beim Betrachten von oben: Extreme Verzerrung der Kugel
+
+**Ursache**: Gimbal Lock in der Ray-Generation
+
+**Diagnose**:
+
+```glsl
+vec3 forward = normalize(camera.target - camera.position);
+vec3 up = vec3(0, 1, 0);  // ❌ Fest definiert!
+vec3 right = normalize(cross(forward, up));
+```
+
+Problem: Wenn `forward` parallel zu `up (0, 1, 0)` wird, ist `cross(forward, up) ≈ 0` → ungültiger `right` Vektor
+
+**Lösung**: Orthonormale Basis via Gram-Schmidt
+
+```glsl
+vec3 forward = normalize(camera.target - camera.position);
+vec3 worldUp = vec3(0, 1, 0);
+vec3 right = normalize(cross(forward, worldUp));
+vec3 up = normalize(cross(right, forward));  // ✅ Garantiert orthogonal!
+```
+
+**Betroffene Dateien**:
+
+- `raytracing.comp` (Single-Pass)
+- `pass1_primary.comp` (Multi-Pass)
+
+**Erkenntnis**: Nie feste Achsen in 3D annehmen! Immer vollständige orthonormale Basis berechnen.
+
+**Dokumentation**: `doc/BUGFIX_CAMERA_DISTORTION.md`
+
+#### 10.3 Bugfix: Camera-Steuerung (2026-01-30)
+
+**Problem**: Kamera bewegte sich nicht korrekt relativ zur Blickrichtung
+
+**Ursache**: `camera.Target` wurde mitbewegt
+
+```csharp
+camera.Position += velocity;
+camera.Target += velocity;  // ❌ Falsch!
+```
+
+Dadurch blieb die relative Orientierung gleich, aber die Bewegung war nicht intuitiv.
+
+**Lösung**: Nur `Position` bewegen, `Target` aus `pitch/yaw` neu berechnen
+
+```csharp
+camera.Position += velocity;
+
+Vector3 direction = new(
+    MathF.Cos(pitch) * MathF.Cos(yaw),
+    MathF.Sin(pitch),
+    MathF.Cos(pitch) * MathF.Sin(yaw)
+);
+camera.Target = camera.Position + direction.Normalized;
+```
+
+**Verhalten**:
+
+- **Position**: Ausgangspunkt der Kamera
+- **Pitch/Yaw**: Definieren die Blickrichtung (gespeicherte Winkel)
+- **Target**: Wird immer aus Position + Richtung berechnet
+- **Bewegung**: Alle Achsen (W/A/S/D/Q/E) relativ zur Blickrichtung
+
+**Erkenntnis**: Bei FPS-Kamera darf `Target` nicht mitbewegt werden. Die Blickrichtung wird durch Winkel (pitch/yaw)
+definiert, nicht durch Differenz-Vektor.
+
+**Dokumentation**: `doc/BUGFIX_CAMERA_CONTROLS.md`
+
 ---
 
 ## Debugging-Sessions

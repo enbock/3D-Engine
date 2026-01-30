@@ -13,8 +13,8 @@ public class TriangleEntity(Vector3 v0, Vector3 v1, Vector3 v2, Color color)
     {
         get
         {
-            var edge1 = V1 - V0;
-            var edge2 = V2 - V0;
+            Vector3 edge1 = V1 - V0;
+            Vector3 edge2 = V2 - V0;
             return Vector3.Cross(edge1, edge2).Normalized;
         }
     }

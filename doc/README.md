@@ -14,6 +14,14 @@ Dieses Verzeichnis enthält die gesamte technische Dokumentation des Projekts.
     - Gelernte Lektionen
     - Aktueller Status & Roadmap
 
+- **[REFACTORING_DEPENDENCY_INJECTION.md](./REFACTORING_DEPENDENCY_INJECTION.md)** - Container Isolation (✅
+  Abgeschlossen):
+  - Entfernung von Service Locator Anti-Pattern
+  - Pure Constructor Injection für alle Use Cases
+  - Container nur im Application Layer
+  - Core Layer völlig unabhängig vom Container
+  - Klare Dependencies & verbesserte Testbarkeit
+
 - **[MULTI_PASS_IMPLEMENTATION_COMPLETE.md](./MULTI_PASS_IMPLEMENTATION_COMPLETE.md)** - Multi-Pass Rendering (✅
   Abgeschlossen):
   - 4-Pass Architektur (Primary Rays, Lighting, Reflections, Composite)
@@ -37,6 +45,39 @@ Dieses Verzeichnis enthält die gesamte technische Dokumentation des Projekts.
   - Herausforderungen & Lösungen
   - Lessons Learned
   - Build-Ergebnisse
+
+- **[SESSION_SUMMARY_COMPLEX_GEOMETRY.md](./SESSION_SUMMARY_COMPLEX_GEOMETRY.md)** - Komplexe Geometrie-Generierung (✅
+  Abgeschlossen):
+  - GeometryGenerator-Klasse
+  - Zylinder, Kugel, Würfel aus Dreiecken
+  - 430 Dreiecke statt 5
+  - Prozedural generierte Geometrie
+
+- **[BUGFIX_NORMALS_WINDING.md](./BUGFIX_NORMALS_WINDING.md)** - Normalen-Korrektur (✅ Behoben):
+  - Invertierte Normalen bei Würfel, Kugel, Zylinder-Deckeln
+  - Geometrie-Problem (nicht Shader)
+  - Winding-Order auf CCW korrigiert
+  - Erklärung der Cross-Product Richtung
+
+- **[BUGFIX_CAMERA_DISTORTION.md](./BUGFIX_CAMERA_DISTORTION.md)** - Camera Verzerrung Fix (✅ Behoben):
+  - Verzerrung bei vertikaler Kamerabewegung
+  - Gimbal Lock Problem
+  - Orthonormale Basis via Gram-Schmidt
+  - Fix in beiden Shadern (Single-Pass & Multi-Pass)
+
+- **[BUGFIX_CAMERA_CONTROLS.md](./BUGFIX_CAMERA_CONTROLS.md)** - Camera-Steuerung Korrektur (✅ Behoben):
+  - Vollständig kamera-relative Steuerung implementiert
+  - Q/E bewegen entlang camera.Up (nicht Welt-vertikal)
+  - Alle Achsen (W/A/S/D/Q/E) sind kamera-relativ
+  - "Fly Mode" Navigation wie in Blender
+
+- **[REFACTORING_CAMERA_CONTROL.md](./REFACTORING_CAMERA_CONTROL.md)** - Camera Control Architektur-Refactoring (✅
+  Abgeschlossen):
+  - CameraControlUseCase von Application nach Core verschoben
+  - Entkopplung von InputHandler durch Request-Objekte
+  - CameraControlService im Application-Layer für Input-Translation
+  - Clean Architecture Prinzipien korrekt angewendet
+  - Dependency Inversion implementiert
 
 - **[BILDAUSGABE_PIPELINE.md](./BILDAUSGABE_PIPELINE.md)** - Detaillierte Erklärung der Vulkan Render-Pipeline:
   - Phase 1: Initialisierung (Swapchain, Buffers, Pipeline, Synchronisation)
@@ -173,4 +214,4 @@ Diese Dokumentation folgt den gleichen Prinzipien wie der Code:
 
 ---
 
-**Letzte Aktualisierung**: 2026-01-29
+**Letzte Aktualisierung**: 2026-01-30

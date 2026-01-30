@@ -12,9 +12,9 @@ public unsafe class VulkanSyncTask(Vk vk, Device device, EngineConfig config)
 
     public void CreateSyncObjects(uint swapchainImageCount)
     {
-        ImageAvailableSemaphores = new VkSemaphore[config.MaxFramesInFlight];
+        ImageAvailableSemaphores = new VkSemaphore[EngineConfig.MaxFramesInFlight];
         RenderFinishedSemaphores = new VkSemaphore[swapchainImageCount];
-        InFlightFences = new Fence[config.MaxFramesInFlight];
+        InFlightFences = new Fence[EngineConfig.MaxFramesInFlight];
 
         SemaphoreCreateInfo semaphoreInfo = new()
         {
@@ -27,7 +27,7 @@ public unsafe class VulkanSyncTask(Vk vk, Device device, EngineConfig config)
             Flags = FenceCreateFlags.SignaledBit
         };
 
-        for (int i = 0; i < config.MaxFramesInFlight; i++)
+        for (int i = 0; i < EngineConfig.MaxFramesInFlight; i++)
         {
             VkSemaphore semaphore;
             if (vk.CreateSemaphore(device, &semaphoreInfo, null, &semaphore) != Result.Success)
@@ -63,7 +63,7 @@ public unsafe class VulkanSyncTask(Vk vk, Device device, EngineConfig config)
 
     public void Dispose()
     {
-        for (int i = 0; i < config.MaxFramesInFlight; i++)
+        for (int i = 0; i < EngineConfig.MaxFramesInFlight; i++)
         {
             vk.DestroySemaphore(device, ImageAvailableSemaphores[i], null);
             vk.DestroyFence(device, InFlightFences[i], null);

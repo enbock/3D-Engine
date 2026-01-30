@@ -3,7 +3,7 @@ using Silk.NET.Vulkan;
 
 namespace Infrastructure.Vulkan.Tasks;
 
-public unsafe class VulkanCommandTask(Vk vk, Device device, uint queueFamilyIndex, EngineConfig config)
+public unsafe class VulkanCommandTask(Vk vk, Device device, uint queueFamilyIndex)
 {
     public CommandPool CommandPool { get; private set; }
     public CommandBuffer[] CommandBuffers { get; private set; } = Array.Empty<CommandBuffer>();
@@ -22,13 +22,13 @@ public unsafe class VulkanCommandTask(Vk vk, Device device, uint queueFamilyInde
 
         CommandPool = commandPool;
 
-        CommandBuffers = new CommandBuffer[config.MaxFramesInFlight];
+        CommandBuffers = new CommandBuffer[EngineConfig.MaxFramesInFlight];
         CommandBufferAllocateInfo allocInfo = new()
         {
             SType = StructureType.CommandBufferAllocateInfo,
             CommandPool = CommandPool,
             Level = CommandBufferLevel.Primary,
-            CommandBufferCount = (uint)config.MaxFramesInFlight
+            CommandBufferCount = (uint)EngineConfig.MaxFramesInFlight
         };
 
         fixed (CommandBuffer* commandBuffersPtr = CommandBuffers)

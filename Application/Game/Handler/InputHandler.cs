@@ -1,29 +1,36 @@
+using System.Numerics;
 using Silk.NET.Input;
-using Core.Input;
-using Core.Math;
+using Vector3 = Core.Math.Vector3;
 
-namespace Application.Input;
+namespace Application.Game.Handler;
 
-public class InputHandlerService : InputHandler
+public class InputHandler : IDisposable
 {
     private IInputContext? inputContext;
-    private IKeyboard? keyboard;
-    private IMouse? mouse;
-    private Vector3 mouseDelta;
-    private Vector3 lastMousePosition;
     private bool isFirstMouse = true;
+    private IKeyboard? keyboard;
+    private Vector3 lastMousePosition;
+    private Vector3 mouseDelta;
+    private IMouse? mouseDevice;
+
+    public void Dispose()
+    {
+        if (mouseDevice != null)
+        {
+            mouseDevice.MouseMove -= OnMouseDeviceMove;
+        }
+    }
 
     public void Initialize(IInputContext context)
     {
         inputContext = context;
         keyboard = inputContext.Keyboards.FirstOrDefault();
-        mouse = inputContext.Mice.FirstOrDefault();
+        mouseDevice = inputContext.Mice.FirstOrDefault();
 
-        if (mouse != null)
-        {
-            mouse.Cursor.CursorMode = CursorMode.Raw;
-            mouse.MouseMove += OnMouseMove;
-        }
+        if (mouseDevice == null) return;
+
+        mouseDevice.Cursor.CursorMode = CursorMode.Raw;
+        mouseDevice.MouseMove += OnMouseDeviceMove;
     }
 
     public void Update(float deltaTime)
@@ -37,7 +44,7 @@ public class InputHandlerService : InputHandler
 
     public Vector3 GetMovementInput()
     {
-        var movement = Vector3.Zero;
+        Vector3 movement = Vector3.Zero;
 
         if (keyboard == null) return movement;
 
@@ -61,7 +68,7 @@ public class InputHandlerService : InputHandler
         mouseDelta = Vector3.Zero;
     }
 
-    private void OnMouseMove(IMouse mouse, System.Numerics.Vector2 position)
+    private void OnMouseDeviceMove(IMouse mouse, Vector2 position)
     {
         if (isFirstMouse)
         {
@@ -70,16 +77,8 @@ public class InputHandlerService : InputHandler
             return;
         }
 
-        var currentPos = new Vector3(position.X, position.Y, 0);
+        Vector3 currentPos = new(position.X, position.Y, 0);
         mouseDelta = currentPos - lastMousePosition;
         lastMousePosition = currentPos;
-    }
-
-    public void Dispose()
-    {
-        if (mouse != null)
-        {
-            mouse.MouseMove -= OnMouseMove;
-        }
     }
 }

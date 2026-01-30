@@ -1,6 +1,6 @@
 using Application;
-using Application.Engine;
-using Core.EngineInitialization;
+using Application.Container;
+using Application.Game;
 
 public static class Program
 {
@@ -22,20 +22,21 @@ public static class Program
 
         try
         {
-            EngineController engine = new(config);
-            InitializeEngineResponse response = engine.Initialize();
+            ServiceContainer container = new(config);
 
-            if (response.Success)
+            GameController gameController = container.Resolve<GameController>();
+            bool isRunning = gameController.Initialize();
+
+            if (isRunning)
             {
-                engine.Run();
+                gameController.Run();
             }
             else
             {
-                string errorMsg = response.ErrorMessage ?? "Unknown error";
-                Console.WriteLine($"Engine initialization failed: {errorMsg}");
+                Console.WriteLine("Engine initialization failed.");
             }
 
-            engine.Dispose();
+            container.Dispose();
         }
         catch (Exception ex)
         {

@@ -2,12 +2,12 @@ namespace Application;
 
 public class RenderSettings
 {
-    public int MaxBounces { get; set; } = 3;
-    public bool EnableShadows { get; set; } = true;
-    public bool EnableReflections { get; set; } = true;
-    public float ReflectionStrength { get; set; } = 0.5f;
-    public int ShadowSamples { get; set; } = 4;
-    public float ShadowSoftness { get; set; } = 0.05f;
+    public int MaxBounces { get; private init; } = 3;
+    public bool EnableShadows { get; private init; } = true;
+    public bool EnableReflections { get; private init; } = true;
+    public float ReflectionStrength { get; private init; } = 0.5f;
+    public int ShadowSamples { get; private init; } = 4;
+    public float ShadowSoftness { get; private init; } = 0.05f;
 
     public static RenderSettings Default => new()
     {

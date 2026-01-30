@@ -104,8 +104,9 @@ Ray generateRay(ivec2 pixelCoords, vec2 resolution) {
     uv.x *= resolution.x / resolution.y;
 
     vec3 forward = normalize(camera.target - camera.position);
-    vec3 up = vec3(0, 1, 0);
-    vec3 right = normalize(cross(forward, up));
+    vec3 worldUp = vec3(0, 1, 0);
+    vec3 right = normalize(cross(forward, worldUp));
+    vec3 up = normalize(cross(right, forward));
 
     vec3 rayDir = normalize(forward + right * uv.x * tan(camera.fov * 0.5) + up * uv.y * tan(camera.fov * 0.5));
 
