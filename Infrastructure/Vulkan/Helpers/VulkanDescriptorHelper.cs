@@ -37,6 +37,11 @@ public static unsafe class VulkanDescriptorHelper
             {
                 Binding = 4, DescriptorType = DescriptorType.UniformBuffer, DescriptorCount = 1,
                 StageFlags = ShaderStageFlags.ComputeBit
+            },
+            new()
+            {
+                Binding = 5, DescriptorType = DescriptorType.StorageBuffer, DescriptorCount = 1,
+                StageFlags = ShaderStageFlags.ComputeBit
             }
         ];
 
@@ -53,7 +58,7 @@ public static unsafe class VulkanDescriptorHelper
         [
             new() { Type = DescriptorType.StorageImage, DescriptorCount = 1 },
             new() { Type = DescriptorType.UniformBuffer, DescriptorCount = 2 },
-            new() { Type = DescriptorType.StorageBuffer, DescriptorCount = 2 }
+            new() { Type = DescriptorType.StorageBuffer, DescriptorCount = 3 }
         ];
 
         descriptorPool = pipelineTask.CreateDescriptorPool(poolSizes, 1);
@@ -67,7 +72,8 @@ public static unsafe class VulkanDescriptorHelper
         Buffer cameraBuffer,
         Buffer triangleBuffer,
         Buffer lightBuffer,
-        Buffer settingsBuffer)
+        Buffer settingsBuffer,
+        Buffer bvhBuffer)
     {
         DescriptorImageInfo imageInfo = new()
         {
@@ -103,6 +109,13 @@ public static unsafe class VulkanDescriptorHelper
             Range = (ulong)sizeof(RenderSettingsData)
         };
 
+        DescriptorBufferInfo bvhBufferInfo = new()
+        {
+            Buffer = bvhBuffer,
+            Offset = 0,
+            Range = Vk.WholeSize
+        };
+
         WriteDescriptorSet[] writes =
         [
             new()
@@ -129,6 +142,11 @@ public static unsafe class VulkanDescriptorHelper
             {
                 SType = StructureType.WriteDescriptorSet, DstSet = descriptorSet, DstBinding = 4, DstArrayElement = 0,
                 DescriptorType = DescriptorType.UniformBuffer, DescriptorCount = 1, PBufferInfo = &settingsBufferInfo
+            },
+            new()
+            {
+                SType = StructureType.WriteDescriptorSet, DstSet = descriptorSet, DstBinding = 5, DstArrayElement = 0,
+                DescriptorType = DescriptorType.StorageBuffer, DescriptorCount = 1, PBufferInfo = &bvhBufferInfo
             }
         ];
 

@@ -13,14 +13,20 @@ public class BvhBuilderService
     {
         _triangles = triangles;
         _triangleIndices = Enumerable.Range(0, triangles.Count).ToList();
+
+        if (triangles.Count == 0)
+        {
+            return new BvhNodeEntity { TriangleStartIndex = 0, TriangleCount = 0 };
+        }
+
         return BuildRecursive(0, triangles.Count);
     }
 
-    public List<BvhNodeEntity> Flatten(BvhNodeEntity root)
+    public (List<FlatBvhNode> nodes, List<int> reorderedIndices) FlattenForGpu(BvhNodeEntity root)
     {
-        List<BvhNodeEntity> nodes = [];
-        FlattenRecursive(root, nodes);
-        return nodes;
+        List<FlatBvhNode> flatNodes = [];
+        FlattenRecursive(root, flatNodes);
+        return (flatNodes, _triangleIndices.ToList());
     }
 
     public List<int> GetReorderedTriangleIndices()
@@ -96,17 +102,48 @@ public class BvhBuilderService
         }
     }
 
-    private int FlattenRecursive(BvhNodeEntity node, List<BvhNodeEntity> nodes)
+    private int FlattenRecursive(BvhNodeEntity node, List<FlatBvhNode> flatNodes)
     {
-        int myIndex = nodes.Count;
-        nodes.Add(node);
+        int myIndex = flatNodes.Count;
+
+        FlatBvhNode flatNode = new()
+        {
+            BoundsMin = node.Bounds.Min,
+            BoundsMax = node.Bounds.Max,
+            LeftChild = -1,
+            RightChild = -1,
+            TriangleStart = node.TriangleStartIndex,
+            TriangleCount = node.TriangleCount
+        };
+
+        flatNodes.Add(flatNode);
 
         if (!node.IsLeaf)
         {
-            node.TriangleStartIndex = FlattenRecursive(node.Left!, nodes);
-            node.TriangleCount = FlattenRecursive(node.Right!, nodes);
+            flatNodes[myIndex] = flatNode with
+            {
+                LeftChild = FlattenRecursive(node.Left!, flatNodes),
+                TriangleStart = -1,
+                TriangleCount = 0
+            };
+
+            FlatBvhNode updated = flatNodes[myIndex];
+            flatNodes[myIndex] = updated with
+            {
+                RightChild = FlattenRecursive(node.Right!, flatNodes)
+            };
         }
 
         return myIndex;
     }
+}
+
+public record struct FlatBvhNode
+{
+    public Vector3 BoundsMax;
+    public Vector3 BoundsMin;
+    public int LeftChild;
+    public int RightChild;
+    public int TriangleCount;
+    public int TriangleStart;
 }

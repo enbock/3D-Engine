@@ -2,6 +2,7 @@
 using Application;
 using Core.Math;
 using Core.Scene;
+using Core.Scene.Acceleration;
 using Core.Scene.Geometry;
 using Core.Scene.Light;
 using Infrastructure.Vulkan.Data;
@@ -20,7 +21,8 @@ public static unsafe class VulkanBufferHelper
         out Buffer cameraBuffer, out DeviceMemory cameraBufferMemory,
         out Buffer triangleBuffer, out DeviceMemory triangleBufferMemory,
         out Buffer lightBuffer, out DeviceMemory lightBufferMemory,
-        out Buffer settingsBuffer, out DeviceMemory settingsBufferMemory)
+        out Buffer settingsBuffer, out DeviceMemory settingsBufferMemory,
+        out Buffer bvhBuffer, out DeviceMemory bvhBufferMemory)
     {
         bufferTask.CreateBuffer((ulong)sizeof(CameraUniformData), BufferUsageFlags.UniformBufferBit,
             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
@@ -34,14 +36,21 @@ public static unsafe class VulkanBufferHelper
             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
             out settingsBuffer, out settingsBufferMemory);
 
-        CreateTriangleBuffer(bufferTask, scene, out triangleBuffer, out triangleBufferMemory);
+        CreateTriangleBufferWithBvh(bufferTask, scene,
+            out triangleBuffer, out triangleBufferMemory,
+            out bvhBuffer, out bvhBufferMemory);
     }
 
-    private static void CreateTriangleBuffer(VulkanBufferTask bufferTask, SceneEntity scene,
-        out Buffer triangleBuffer, out DeviceMemory triangleBufferMemory)
+    private static void CreateTriangleBufferWithBvh(
+        VulkanBufferTask bufferTask,
+        SceneEntity scene,
+        out Buffer triangleBuffer, out DeviceMemory triangleBufferMemory,
+        out Buffer bvhBuffer, out DeviceMemory bvhBufferMemory)
     {
-        TriangleEntity[] triangles = scene.Triangles.ToArray();
-        if (triangles.Length == 0)
+        List<TriangleEntity> triangles = scene.Triangles;
+
+        if (triangles.Count == 0)
+        {
             triangles =
             [
                 new TriangleEntity(
@@ -50,23 +59,60 @@ public static unsafe class VulkanBufferHelper
                     new Vector3(0, 1, 0),
                     new Color(1, 0, 0))
             ];
+        }
 
-        ulong bufferSize = (ulong)(sizeof(TriangleData) * triangles.Length);
-        bufferTask.CreateBuffer(bufferSize, BufferUsageFlags.StorageBufferBit,
-            MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
-            out triangleBuffer, out triangleBufferMemory);
+        BvhBuilderService bvhBuilder = new();
+        BvhNodeEntity bvhRoot = bvhBuilder.Build(triangles);
+        (List<FlatBvhNode> flatNodes, List<int> reorderedIndices) = bvhBuilder.FlattenForGpu(bvhRoot);
 
-        TriangleData[] triangleData = new TriangleData[triangles.Length];
-        for (int i = 0; i < triangles.Length; i++)
+        TriangleData[] triangleData = new TriangleData[triangles.Count];
+        for (int i = 0; i < triangles.Count; i++)
+        {
+            int originalIdx = reorderedIndices[i];
+            TriangleEntity tri = triangles[originalIdx];
             triangleData[i] = new TriangleData
             {
-                V0 = new System.Numerics.Vector3(triangles[i].V0.X, triangles[i].V0.Y, triangles[i].V0.Z),
-                V1 = new System.Numerics.Vector3(triangles[i].V1.X, triangles[i].V1.Y, triangles[i].V1.Z),
-                V2 = new System.Numerics.Vector3(triangles[i].V2.X, triangles[i].V2.Y, triangles[i].V2.Z),
-                Color = new System.Numerics.Vector3(triangles[i].Color.R, triangles[i].Color.G, triangles[i].Color.B)
+                V0 = new System.Numerics.Vector3(tri.V0.X, tri.V0.Y, tri.V0.Z),
+                V1 = new System.Numerics.Vector3(tri.V1.X, tri.V1.Y, tri.V1.Z),
+                V2 = new System.Numerics.Vector3(tri.V2.X, tri.V2.Y, tri.V2.Z),
+                Color = new System.Numerics.Vector3(tri.Color.R, tri.Color.G, tri.Color.B)
             };
+        }
 
+        ulong triangleBufferSize = (ulong)(sizeof(TriangleData) * triangles.Count);
+        bufferTask.CreateBuffer(triangleBufferSize, BufferUsageFlags.StorageBufferBit,
+            MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
+            out triangleBuffer, out triangleBufferMemory);
         bufferTask.CopyDataToBuffer(triangleBufferMemory, triangleData);
+
+        BvhNodeData[] bvhData = new BvhNodeData[flatNodes.Count];
+        for (int i = 0; i < flatNodes.Count; i++)
+        {
+            FlatBvhNode node = flatNodes[i];
+            bvhData[i] = new BvhNodeData
+            {
+                BoundsMin = new System.Numerics.Vector3(node.BoundsMin.X, node.BoundsMin.Y, node.BoundsMin.Z),
+                LeftChild = node.LeftChild,
+                BoundsMax = new System.Numerics.Vector3(node.BoundsMax.X, node.BoundsMax.Y, node.BoundsMax.Z),
+                RightChild = node.RightChild,
+                TriangleStart = node.TriangleStart,
+                TriangleCount = node.TriangleCount,
+                Pad0 = 0,
+                Pad1 = 0
+            };
+        }
+
+        ulong bvhBufferSize = (ulong)(sizeof(BvhNodeData) * Math.Max(flatNodes.Count, 1));
+        bufferTask.CreateBuffer(bvhBufferSize, BufferUsageFlags.StorageBufferBit,
+            MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
+            out bvhBuffer, out bvhBufferMemory);
+
+        if (bvhData.Length > 0)
+        {
+            bufferTask.CopyDataToBuffer(bvhBufferMemory, bvhData);
+        }
+
+        Console.WriteLine($"BVH created: {flatNodes.Count} nodes for {triangles.Count} triangles");
     }
 
     public static void UpdateSceneBuffers(

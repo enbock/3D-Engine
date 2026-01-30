@@ -18,6 +18,8 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
 {
     private bool _buffersCreated;
     private VulkanBufferTask _bufferTask = null!;
+    private Buffer _bvhBuffer;
+    private DeviceMemory _bvhBufferMemory;
 
     private Buffer _cameraBuffer;
     private DeviceMemory _cameraBufferMemory;
@@ -82,6 +84,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
         _bufferTask.DestroyBuffer(_lightBuffer, _lightBufferMemory);
         _bufferTask.DestroyBuffer(_triangleBuffer, _triangleBufferMemory);
         _bufferTask.DestroyBuffer(_settingsBuffer, _settingsBufferMemory);
+        _bufferTask.DestroyBuffer(_bvhBuffer, _bvhBufferMemory);
 
         _imageTask.DestroyImage(_storageImage, _storageImageView, _storageImageMemory);
         _swapchainTask.Dispose();
@@ -312,7 +315,8 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
             out _cameraBuffer, out _cameraBufferMemory,
             out _triangleBuffer, out _triangleBufferMemory,
             out _lightBuffer, out _lightBufferMemory,
-            out _settingsBuffer, out _settingsBufferMemory);
+            out _settingsBuffer, out _settingsBufferMemory,
+            out _bvhBuffer, out _bvhBufferMemory);
 
         if (EngineConfig.UseMultiPassRendering)
         {
@@ -328,7 +332,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
 
             VulkanDescriptorHelper.UpdateDescriptorSets(
                 _pipelineTask, _descriptorSet, _storageImageView,
-                _cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer);
+                _cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer, _bvhBuffer);
         }
     }
 
@@ -368,7 +372,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
         {
             VulkanDescriptorHelper.UpdateDescriptorSets(
                 _pipelineTask, _descriptorSet, _storageImageView,
-                _cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer);
+                _cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer, _bvhBuffer);
         }
 
         Console.WriteLine($"Window resized to {width}x{height}");

@@ -85,11 +85,32 @@ public static RenderSettings UltraPerformance => new()
 };
 ```
 
-### 4. BVH-Infrastruktur vorbereitet ✅
+### 4. BVH-Integration vollständig implementiert ✅
 
-- `BvhNodeData` Struktur für GPU erstellt
-- `BvhBuilderService` für CPU-seitigen Aufbau erstellt
-- `raytracing_bvh.comp` Shader mit BVH-Traversal vorbereitet
+#### CPU-Seite:
+
+- `BvhBuilderService` mit rekursivem Aufbau
+- `FlatBvhNode` Struktur für GPU-Transfer
+- Median-Split Strategie mit Sortierung nach längster Achse
+- Max 4 Dreiecke pro Leaf-Node
+
+#### GPU-Seite:
+
+- `BvhNodeData` Struktur in `UniformDataStructures.cs`
+- Binding 5 für BVH-Buffer in Descriptor Layout
+- BVH-Buffer Erstellung in `VulkanBufferHelper`
+
+#### Shader:
+
+- `intersectAABB()` - Ray-Box Intersection
+- `traceBVH()` - Stack-basierte BVH Traversal für Primary Rays
+- `traceShadowBVH()` - BVH Traversal für Shadow Rays
+- Alle Lichtberechnungen nutzen jetzt BVH
+
+#### Komplexität:
+
+- **Vorher:** O(n) - Linear durch alle Dreiecke
+- **Nachher:** O(log n) - Nur relevante Teilbäume
 
 ---
 
@@ -100,11 +121,14 @@ public static RenderSettings UltraPerformance => new()
 - [x] Performance-Preset verwenden
 - [x] Ultra-Performance-Preset erstellen
 
-### Phase 2: BVH-Integration (geplant)
+### Phase 2: BVH-Integration (erledigt ✅)
 
-1. BVH auf CPU bauen
-2. BVH-Buffer an GPU senden
-3. Shader mit BVH-Traversal aktualisieren
+- [x] BVH auf CPU bauen (`BvhBuilderService`)
+- [x] BVH-Buffer an GPU senden
+- [x] Shader mit BVH-Traversal aktualisieren
+- [x] Shadow-Rays über BVH
+- [x] Primary-Rays über BVH
+- [x] Reflection-Rays über BVH
 
 ### Phase 3: Shader-Optimierungen (geplant)
 
@@ -116,11 +140,25 @@ public static RenderSettings UltraPerformance => new()
 
 ## Performance-Erwartungen
 
-| Optimierung          | Erwarteter Speedup          |
-|----------------------|-----------------------------|
-| Performance-Preset   | 2-4x                        |
-| BVH-Integration      | 10-50x (abhängig von Szene) |
-| Shader-Optimierungen | 1.2-1.5x                    |
+| Optimierung          | Erwarteter Speedup          | Status |
+|----------------------|-----------------------------|--------|
+| Performance-Preset   | 2-4x                        | ✅      |
+| BVH-Integration      | 10-50x (abhängig von Szene) | ✅      |
+| Shader-Optimierungen | 1.2-1.5x                    | ⏳      |
+
+### BVH-Performance-Analyse
+
+Bei 450 Dreiecken:
+
+- **Ohne BVH:** 450 Intersection-Tests pro Ray
+- **Mit BVH:** ~9 Intersection-Tests pro Ray (log₂(450) ≈ 9)
+- **Theoretischer Speedup:** ~50x
+
+Bei 10.000 Dreiecken:
+
+- **Ohne BVH:** 10.000 Intersection-Tests pro Ray
+- **Mit BVH:** ~14 Intersection-Tests pro Ray
+- **Theoretischer Speedup:** ~700x
 
 ---
 
