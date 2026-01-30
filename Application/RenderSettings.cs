@@ -15,8 +15,8 @@ public class RenderSettings
         EnableShadows = true,
         EnableReflections = true,
         ReflectionStrength = 0.5f,
-        ShadowSamples = 4,
-        ShadowSoftness = 0.05f
+        ShadowSamples = 12,
+        ShadowSoftness = 0.04f
     };
 
     public static RenderSettings Performance => new()
@@ -25,8 +25,8 @@ public class RenderSettings
         EnableShadows = true,
         EnableReflections = true,
         ReflectionStrength = 0.4f,
-        ShadowSamples = 1,
-        ShadowSoftness = 0.0f
+        ShadowSamples = 8,
+        ShadowSoftness = 0.03f
     };
 
     public static RenderSettings UltraPerformance => new()

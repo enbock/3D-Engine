@@ -100,7 +100,26 @@ const float BACKFACE_EPSILON = 1e-6;
 const float MAX_DIST = 100.0;
 const float SHADOW_BIAS = EPSILON * 10.0;
 const float SPECULAR_POWER = 32.0;
-const float SHADOW_AMBIENT = 0.2;
+const float SHADOW_AMBIENT = 0.15;
+
+const vec2 POISSON_DISK[16] = vec2[](
+vec2(-0.94201624, -0.39906216),
+vec2(0.94558609, -0.76890725),
+vec2(-0.094184101, -0.92938870),
+vec2(0.34495938, 0.29387760),
+vec2(-0.91588581, 0.45771432),
+vec2(-0.81544232, -0.87912464),
+vec2(-0.38277543, 0.27676845),
+vec2(0.97484398, 0.75648379),
+vec2(0.44323325, -0.97511554),
+vec2(0.53742981, -0.47373420),
+vec2(-0.26496911, -0.41893023),
+vec2(0.79197514, 0.19090188),
+vec2(-0.24188840, 0.99706507),
+vec2(-0.81409955, 0.91437590),
+vec2(0.19984126, 0.78641367),
+vec2(0.14383161, -0.14100790)
+);
 
 Hit intersectTriangleShadow(Ray ray, Triangle tri) {
     Hit h;
@@ -145,6 +164,98 @@ bool intersectAABB(vec3 origin, vec3 invDir, vec3 boxMin, vec3 boxMax, float tMa
     float tmax = min(min(tbigger.x, tbigger.y), tbigger.z);
 
     return tmax >= max(tmin, 0.0) && tmin < tMax;
+}
+
+bool traceShadowRayBVH(vec3 origin, vec3 lightDir, float maxDist) {
+    int numNodes = bvhNodes.length();
+    if (numNodes == 0) {
+        return false;
+    }
+
+    vec3 invDir = 1.0 / lightDir;
+
+    int stack[32];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0;
+
+    while (stackPtr > 0) {
+        int nodeIdx = stack[--stackPtr];
+        BvhNode node = bvhNodes[nodeIdx];
+
+        if (!intersectAABB(origin, invDir, node.boundsMin, node.boundsMax, maxDist)) {
+            continue;
+        }
+
+        if (node.triangleCount > 0) {
+            Ray shadowRay;
+            shadowRay.origin = origin;
+            shadowRay.direction = lightDir;
+
+            for (int i = 0; i < node.triangleCount; i++) {
+                int triIdx = node.triangleStart + i;
+                Hit h = intersectTriangleShadow(shadowRay, triangles[triIdx]);
+                if (h.hit && h.dist < maxDist) {
+                    return true;
+                }
+            }
+        } else {
+            if (node.leftChild >= 0) {
+                stack[stackPtr++] = node.leftChild;
+            }
+            if (node.rightChild >= 0) {
+                stack[stackPtr++] = node.rightChild;
+            }
+        }
+    }
+
+    return false;
+}
+
+vec3 buildTangentFrame(vec3 normal, out vec3 tangent, out vec3 bitangent) {
+    vec3 up = abs(normal.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    tangent = normalize(cross(up, normal));
+    bitangent = cross(normal, tangent);
+    return normal;
+}
+
+float traceSoftShadow(vec3 origin, vec3 lightDir, float maxDist, float lightRadius, ivec2 pixelCoords) {
+    if (settings.enableShadows == 0) {
+        return 1.0;
+    }
+
+    int numSamples = clamp(settings.shadowSamples, 1, 16);
+    float softness = settings.shadowSoftness * lightRadius;
+
+    if (softness < 0.001 || numSamples <= 1) {
+        return traceShadowRayBVH(origin, lightDir, maxDist) ? SHADOW_AMBIENT : 1.0;
+    }
+
+    vec3 tangent, bitangent;
+    buildTangentFrame(lightDir, tangent, bitangent);
+
+    float shadowSum = 0.0;
+
+    float rotation = float((pixelCoords.x * 73 + pixelCoords.y * 127) & 0xFF) * (3.14159265 / 128.0);
+    float cosRot = cos(rotation);
+    float sinRot = sin(rotation);
+
+    for (int i = 0; i < numSamples; i++) {
+        vec2 offset = POISSON_DISK[i] * softness;
+
+        vec2 rotatedOffset = vec2(
+        offset.x * cosRot - offset.y * sinRot,
+        offset.x * sinRot + offset.y * cosRot
+        );
+
+        vec3 jitteredDir = normalize(lightDir + tangent * rotatedOffset.x + bitangent * rotatedOffset.y);
+
+        if (traceShadowRayBVH(origin, jitteredDir, maxDist)) {
+            shadowSum += 1.0;
+        }
+    }
+
+    float shadowFactor = 1.0 - (shadowSum / float(numSamples));
+    return mix(SHADOW_AMBIENT, 1.0, shadowFactor);
 }
 
 bool traceShadowBVH(vec3 origin, vec3 lightDir, float maxDist) {
@@ -201,15 +312,14 @@ vec3 calculateAmbientLight(vec3 albedo, Light light) {
     return albedo * lightColor * light.intensity;
 }
 
-vec3 calculateDirectionalLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, Light light) {
+vec3 calculateDirectionalLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, Light light, ivec2 pixelCoords) {
     vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
     vec3 lightDir = vec3(light.dirX, light.dirY, light.dirZ);
     vec3 lDir = normalize(-lightDir);
 
     float diff = max(dot(normal, lDir), 0.0);
 
-    bool inShadow = traceShadowBVH(hitPoint + normal * SHADOW_BIAS, lDir, MAX_DIST);
-    float shadowFactor = inShadow ? SHADOW_AMBIENT : 1.0;
+    float shadowFactor = traceSoftShadow(hitPoint + normal * SHADOW_BIAS, lDir, MAX_DIST, 1.0, pixelCoords);
 
     vec3 halfDir = normalize(lDir + viewDir);
     float spec = pow(max(dot(normal, halfDir), 0.0), SPECULAR_POWER);
@@ -220,7 +330,7 @@ vec3 calculateDirectionalLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitP
     return diffuse + specular;
 }
 
-vec3 calculatePointLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, Light light) {
+vec3 calculatePointLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, Light light, ivec2 pixelCoords) {
     vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
     vec3 lightPos = vec3(light.posX, light.posY, light.posZ);
 
@@ -231,8 +341,8 @@ vec3 calculatePointLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, 
     float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
     float diff = max(dot(normal, lDir), 0.0);
 
-    bool inShadow = traceShadowBVH(hitPoint + normal * SHADOW_BIAS, lDir, dist);
-    float shadowFactor = inShadow ? SHADOW_AMBIENT : 1.0;
+    float lightRadius = max(0.5, dist * 0.1);
+    float shadowFactor = traceSoftShadow(hitPoint + normal * SHADOW_BIAS, lDir, dist, lightRadius, pixelCoords);
 
     vec3 halfDir = normalize(lDir + viewDir);
     float spec = pow(max(dot(normal, halfDir), 0.0), SPECULAR_POWER);
@@ -243,7 +353,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, 
     return diffuse + specular;
 }
 
-vec3 shade(vec3 albedo, vec3 normal, vec3 rayDir, vec3 hitPoint) {
+vec3 shade(vec3 albedo, vec3 normal, vec3 rayDir, vec3 hitPoint, ivec2 pixelCoords) {
     vec3 result = vec3(0.0);
 
     vec3 viewDir = -rayDir;
@@ -260,10 +370,10 @@ vec3 shade(vec3 albedo, vec3 normal, vec3 rayDir, vec3 hitPoint) {
             result += calculateAmbientLight(albedo, light);
         }
         else if (light.type == 1) {
-            result += calculateDirectionalLight(albedo, normal, viewDir, hitPoint, light);
+            result += calculateDirectionalLight(albedo, normal, viewDir, hitPoint, light, pixelCoords);
         }
         else if (light.type == 2) {
-            result += calculatePointLight(albedo, normal, viewDir, hitPoint, light);
+            result += calculatePointLight(albedo, normal, viewDir, hitPoint, light, pixelCoords);
         }
     }
 
@@ -291,7 +401,7 @@ void main() {
         vec3 albedo = albedoData.xyz;
         vec3 rayDir = rayDirData.xyz;
 
-        color = shade(albedo, normal, rayDir, hitPoint);
+        color = shade(albedo, normal, rayDir, hitPoint, pixelCoords);
     } else {
         color = albedoData.xyz;
     }

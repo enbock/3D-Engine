@@ -80,6 +80,12 @@ Dieses Verzeichnis enthält die gesamte technische Dokumentation des Projekts.
   - 4-Pass Architektur mit BVH
   - Bindings pro Pass dokumentiert
   - Erweiterbarkeit für Soft Shadows, Caustics, Transparency
+
+- **[SOFT_SHADOWS.md](./SOFT_SHADOWS.md)** - Soft Shadows Implementation:
+  - Poisson-Disk Sampling für glatte Schatten
+  - Per-Pixel Pattern Rotation gegen Kriselmuster
+  - RenderSettings für ShadowSamples und ShadowSoftness
+  - Performance-Analyse
   - Alle Achsen (W/A/S/D/Q/E) sind kamera-relativ
   - "Fly Mode" Navigation wie in Blender
 
