@@ -27,33 +27,52 @@ public static class GeometryGenerator
             float x2 = (float)Math.Cos(angle2) * radius;
             float z2 = (float)Math.Sin(angle2) * radius;
 
-            Vector3 bottomOuter1 = new(center.X + x1, center.Y - halfHeight, center.Z + z1);
-            Vector3 bottomOuter2 = new(center.X + x2, center.Y - halfHeight, center.Z + z2);
-            Vector3 topOuter1 = new(center.X + x1, center.Y + halfHeight, center.Z + z1);
-            Vector3 topOuter2 = new(center.X + x2, center.Y + halfHeight, center.Z + z2);
-
             Vector3 n1 = new Vector3(x1, 0, z1).Normalized;
             Vector3 n2 = new Vector3(x2, 0, z2).Normalized;
 
-            bool useSmooth = shading == ShadingMode.Smooth ||
-                             shading == ShadingMode.HalfSmooth && topOuter1.Y > center.Y;
-
-            if (useSmooth)
+            if (shading == ShadingMode.HalfSmooth)
             {
-                scene.AddTriangle(new TriangleEntity(bottomOuter1, topOuter1, bottomOuter2, color, n1, n1, n2));
-                scene.AddTriangle(new TriangleEntity(topOuter1, topOuter2, bottomOuter2, color, n1, n2, n2));
+                Vector3 bottomOuter1 = new(center.X + x1, center.Y - halfHeight, center.Z + z1);
+                Vector3 bottomOuter2 = new(center.X + x2, center.Y - halfHeight, center.Z + z2);
+                Vector3 midOuter1 = new(center.X + x1, center.Y, center.Z + z1);
+                Vector3 midOuter2 = new(center.X + x2, center.Y, center.Z + z2);
+                Vector3 topOuter1 = new(center.X + x1, center.Y + halfHeight, center.Z + z1);
+                Vector3 topOuter2 = new(center.X + x2, center.Y + halfHeight, center.Z + z2);
+
+                scene.AddTriangle(new TriangleEntity(bottomOuter1, midOuter1, bottomOuter2, color));
+                scene.AddTriangle(new TriangleEntity(midOuter1, midOuter2, bottomOuter2, color));
+
+                scene.AddTriangle(new TriangleEntity(midOuter1, topOuter1, midOuter2, color, n1, n1, n2));
+                scene.AddTriangle(new TriangleEntity(topOuter1, topOuter2, midOuter2, color, n1, n2, n2));
             }
             else
             {
-                scene.AddTriangle(new TriangleEntity(bottomOuter1, topOuter1, bottomOuter2, color));
-                scene.AddTriangle(new TriangleEntity(topOuter1, topOuter2, bottomOuter2, color));
+                Vector3 bottomOuter1 = new(center.X + x1, center.Y - halfHeight, center.Z + z1);
+                Vector3 bottomOuter2 = new(center.X + x2, center.Y - halfHeight, center.Z + z2);
+                Vector3 topOuter1 = new(center.X + x1, center.Y + halfHeight, center.Z + z1);
+                Vector3 topOuter2 = new(center.X + x2, center.Y + halfHeight, center.Z + z2);
+
+                if (shading == ShadingMode.Smooth)
+                {
+                    scene.AddTriangle(new TriangleEntity(bottomOuter1, topOuter1, bottomOuter2, color, n1, n1, n2));
+                    scene.AddTriangle(new TriangleEntity(topOuter1, topOuter2, bottomOuter2, color, n1, n2, n2));
+                }
+                else
+                {
+                    scene.AddTriangle(new TriangleEntity(bottomOuter1, topOuter1, bottomOuter2, color));
+                    scene.AddTriangle(new TriangleEntity(topOuter1, topOuter2, bottomOuter2, color));
+                }
             }
 
             Vector3 bottomCenter = new(center.X, center.Y - halfHeight, center.Z);
-            scene.AddTriangle(new TriangleEntity(bottomCenter, bottomOuter1, bottomOuter2, color));
+            Vector3 bottomOuter1Cap = new(center.X + x1, center.Y - halfHeight, center.Z + z1);
+            Vector3 bottomOuter2Cap = new(center.X + x2, center.Y - halfHeight, center.Z + z2);
+            scene.AddTriangle(new TriangleEntity(bottomCenter, bottomOuter1Cap, bottomOuter2Cap, color));
 
             Vector3 topCenter = new(center.X, center.Y + halfHeight, center.Z);
-            scene.AddTriangle(new TriangleEntity(topCenter, topOuter2, topOuter1, color));
+            Vector3 topOuter1Cap = new(center.X + x1, center.Y + halfHeight, center.Z + z1);
+            Vector3 topOuter2Cap = new(center.X + x2, center.Y + halfHeight, center.Z + z2);
+            scene.AddTriangle(new TriangleEntity(topCenter, topOuter2Cap, topOuter1Cap, color));
         }
     }
 

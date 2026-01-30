@@ -2,15 +2,18 @@
 
 ## Übersicht
 
-Die Engine unterstützt jetzt drei Shading-Modi für Geometrie:
+Die Engine unterstützt jetzt **Per-Polygon Shading Control**. Jedes einzelne Dreieck kann unabhängig als Flat oder
+Smooth gerendert werden, basierend auf seinen Vertex-Normalen.
 
-- **Flat Shading**: Jedes Dreieck hat eine einheitliche Normale (scharfe Kanten sichtbar)
-- **Smooth Shading**: Vertex-Normalen werden interpoliert (glatte Oberfläche)
-- **HalfSmooth**: Obere Hälfte glatt, untere Hälfte kantig (Demo-Effekt)
+### Shading-Kontrolle pro Dreieck
 
-## Verwendung
+- **Flat Shading**: `new TriangleEntity(v0, v1, v2, color)` - alle Vertex-Normalen = Face-Normal
+- **Smooth Shading**: `new TriangleEntity(v0, v1, v2, color, n0, n1, n2)` - eigene interpolierte Normalen
 
-### ShadingMode Enum
+Der `ShadingMode` Enum im GeometryGenerator ist nur ein Convenience-Parameter, der steuert, welcher Konstruktor intern
+verwendet wird.
+
+## ShadingMode Enum (Convenience)
 
 ```csharp
 public enum ShadingMode
@@ -117,6 +120,13 @@ Vector3 n = new Vector3(x, 0, z).Normalized;
 
 Die Deckel verwenden immer Flat Shading (Normale = (0, ±1, 0)).
 
+**HalfSmooth für Zylinder**: Der Mantel wird in zwei Hälften geteilt:
+
+- Obere Hälfte (center.Y bis top): Smooth Shading mit interpolierten Normalen
+- Untere Hälfte (bottom bis center.Y): Flat Shading mit Face-Normalen
+
+Dies erzeugt zusätzliche Vertices in der Mitte des Zylinders.
+
 ## Visueller Effekt
 
 | Shading Mode | Beschreibung                                             |
@@ -138,6 +148,23 @@ Die Berechnung im Shader bleibt gleich effizient, da nur eine Normalisierung hin
 
 ## Erweiterte Szenarien
 
+### Per-Polygon Shading (Manuell)
+
+Jedes Dreieck entscheidet selbst über sein Shading durch die Wahl des Konstruktors:
+
+```csharp
+// Flat Shading - Polygon ist kantig
+scene.AddTriangle(new TriangleEntity(v0, v1, v2, color));
+
+// Smooth Shading - Polygon ist glatt mit eigenen Normalen
+Vector3 n0 = (v0 - sphereCenter).Normalized;
+Vector3 n1 = (v1 - sphereCenter).Normalized;
+Vector3 n2 = (v2 - sphereCenter).Normalized;
+scene.AddTriangle(new TriangleEntity(v0, v1, v2, color, n0, n1, n2));
+```
+
+Dies ermöglicht volle Kontrolle: Jedes Polygon kann unabhängig von seiner Position im Objekt smooth oder flat sein.
+
 ### Smooth Shading nur für bestimmte Objekte
 
 Da ShadingMode pro AddXxx-Aufruf gesetzt wird, können verschiedene Objekte unterschiedliche Modi haben:
@@ -153,5 +180,5 @@ GeometryGenerator.AddCube(scene, pos2, 1.0f, Color.Blue);  // Flat ist Default
 ### Zukünftige Erweiterungen
 
 1. **Normal Maps**: Normalen aus Texturen
-2. **Per-Triangle Shading Flag**: Einzelne Dreiecke mit unterschiedlichem Shading
-3. **Edge Detection**: Automatische Erkennung von harten Kanten (z.B. bei Würfeln)
+2. **Edge Detection**: Automatische Erkennung von harten Kanten (z.B. bei Würfeln)
+3. **Smooth Groups**: Automatische Normalen-Berechnung basierend auf Winkel zwischen Flächen
