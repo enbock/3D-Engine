@@ -8,5 +8,5 @@ public class EngineConfig
     public bool VSync { get; init; } = true;
     public bool EnableValidation { get; init; } = true;
     public static int MaxFramesInFlight => 1;
-    public static bool UseMultiPassRendering => true;
+    public static bool UseMultiPassRendering => false;
 }

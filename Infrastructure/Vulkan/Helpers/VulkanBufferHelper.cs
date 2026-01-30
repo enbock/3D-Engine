@@ -114,7 +114,7 @@ public static unsafe class VulkanBufferHelper
 
         bufferTask.CopyDataToBuffer(lightBufferMemory, lightData);
 
-        RenderSettings settings = RenderSettings.Default;
+        RenderSettings settings = RenderSettings.Performance;
         RenderSettingsData settingsData = new()
         {
             MaxBounces = settings.MaxBounces,

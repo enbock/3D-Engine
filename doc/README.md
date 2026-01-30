@@ -68,6 +68,12 @@ Dieses Verzeichnis enthält die gesamte technische Dokumentation des Projekts.
 - **[BUGFIX_CAMERA_CONTROLS.md](./BUGFIX_CAMERA_CONTROLS.md)** - Camera-Steuerung Korrektur (✅ Behoben):
   - Vollständig kamera-relative Steuerung implementiert
   - Q/E bewegen entlang camera.Up (nicht Welt-vertikal)
+
+- **[PERFORMANCE_OPTIMIERUNG.md](./PERFORMANCE_OPTIMIERUNG.md)** - Performance-Analyse & Optimierung:
+  - Analyse der FPS-Probleme bei 450+ Polygonen
+  - Performance-Presets (Default, Performance, UltraPerformance)
+  - BVH-Infrastruktur vorbereitet
+  - Roadmap für weitere Optimierungen
   - Alle Achsen (W/A/S/D/Q/E) sind kamera-relativ
   - "Fly Mode" Navigation wie in Blender
 

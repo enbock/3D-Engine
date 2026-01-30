@@ -95,3 +95,16 @@ public struct TriangleData
     public Vector3 Color;
     public float Pad3;
 }
+
+[StructLayout(LayoutKind.Sequential)]
+public struct BvhNodeData
+{
+    public Vector3 BoundsMin;
+    public int LeftChild;
+    public Vector3 BoundsMax;
+    public int RightChild;
+    public int TriangleStart;
+    public int TriangleCount;
+    public int Pad0;
+    public int Pad1;
+}

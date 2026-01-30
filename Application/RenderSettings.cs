@@ -23,9 +23,19 @@ public class RenderSettings
     {
         MaxBounces = 1,
         EnableShadows = true,
-        EnableReflections = true,
-        ReflectionStrength = 0.3f,
+        EnableReflections = false,
+        ReflectionStrength = 0.0f,
         ShadowSamples = 1,
+        ShadowSoftness = 0.0f
+    };
+
+    public static RenderSettings UltraPerformance => new()
+    {
+        MaxBounces = 0,
+        EnableShadows = false,
+        EnableReflections = false,
+        ReflectionStrength = 0.0f,
+        ShadowSamples = 0,
         ShadowSoftness = 0.0f
     };
 
