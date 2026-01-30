@@ -95,6 +95,15 @@ Dieses Verzeichnis enthält die gesamte technische Dokumentation des Projekts.
   - Baryzentrische Interpolation im Shader
   - Demo: Obere Hälfte glatt, untere Hälfte kantig
 
+- **[TRANSPARENCY_REFRACTION.md](./TRANSPARENCY_REFRACTION.md)** - Transparenz & Lichtbrechung (✅ Abgeschlossen):
+  - MaterialEntity für transparente Objekte
+  - Snell'sches Brechungsgesetz (Refraktion)
+  - Fresnel-Reflexion (Schlick-Approximation)
+  - Beer-Lambert Absorption
+  - Kaustik-Effekte (Photon-Simulation)
+  - Vordefinierte Materialien: Glass, Water, Diamond
+  - Demo: Glaskugel in der Szene
+
 - **[BUGFIX_CAMERA_MOVEMENT_REFACTORING.md](./BUGFIX_CAMERA_MOVEMENT_REFACTORING.md)** - Camera-Bewegung nach
   Refactoring (✅ Behoben):
   - Forward-Vektor wurde falsch berechnet (aus camera.Forward statt pitch/yaw)

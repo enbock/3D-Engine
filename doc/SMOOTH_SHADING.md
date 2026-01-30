@@ -182,3 +182,8 @@ GeometryGenerator.AddCube(scene, pos2, 1.0f, Color.Blue);  // Flat ist Default
 1. **Normal Maps**: Normalen aus Texturen
 2. **Edge Detection**: Automatische Erkennung von harten Kanten (z.B. bei Würfeln)
 3. **Smooth Groups**: Automatische Normalen-Berechnung basierend auf Winkel zwischen Flächen
+
+## Verwandte Features
+
+- **[TRANSPARENCY_REFRACTION.md](./TRANSPARENCY_REFRACTION.md)** - Transparenz und Lichtbrechung für Glaseffekte
+

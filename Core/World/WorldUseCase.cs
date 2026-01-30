@@ -4,7 +4,7 @@ using Core.Scene.Camera;
 
 namespace Core.World;
 
-public class WorldUseCase(SceneBuilderService sceneBuilderService)
+public class WorldUseCase
 {
     private readonly SceneEntity scene = new();
 
@@ -15,7 +15,7 @@ public class WorldUseCase(SceneBuilderService sceneBuilderService)
             new Vector3()
         );
 
-        sceneBuilderService.CreateSimpleScene(scene);
+        SceneBuilderService.CreateSimpleScene(scene);
     }
 
     public void UpdateAspectRatio(float aspectRatio)

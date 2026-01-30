@@ -176,4 +176,57 @@ public static class GeometryGenerator
             center.Z + radius * sinTheta * sinPhi
         );
     }
+
+    public static void AddGlassSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, Color tint, float ior = 1.52f)
+    {
+        MaterialEntity material = MaterialEntity.Glass(tint, ior);
+        AddTransparentSphere(scene, center, radius, rings, segments, material);
+    }
+
+    public static void AddDiamondSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, Color tint)
+    {
+        MaterialEntity material = MaterialEntity.Diamond(tint);
+        AddTransparentSphere(scene, center, radius, rings, segments, material);
+    }
+
+    public static void AddWaterSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, Color tint)
+    {
+        MaterialEntity material = MaterialEntity.Water(tint);
+        AddTransparentSphere(scene, center, radius, rings, segments, material);
+    }
+
+    public static void AddTransparentSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, MaterialEntity material)
+    {
+        for (int ring = 0; ring < rings; ring++)
+        {
+            float theta1 = (float)(Math.PI * ring / rings);
+            float theta2 = (float)(Math.PI * (ring + 1) / rings);
+
+            for (int segment = 0; segment < segments; segment++)
+            {
+                float phi1 = (float)(2.0 * Math.PI * segment / segments);
+                float phi2 = (float)(2.0 * Math.PI * (segment + 1) / segments);
+
+                Vector3 v1 = SphericalToCartesian(center, radius, theta1, phi1);
+                Vector3 v2 = SphericalToCartesian(center, radius, theta1, phi2);
+                Vector3 v3 = SphericalToCartesian(center, radius, theta2, phi1);
+                Vector3 v4 = SphericalToCartesian(center, radius, theta2, phi2);
+
+                Vector3 n1 = (v1 - center).Normalized;
+                Vector3 n2 = (v2 - center).Normalized;
+                Vector3 n3 = (v3 - center).Normalized;
+                Vector3 n4 = (v4 - center).Normalized;
+
+                if (ring > 0)
+                {
+                    scene.AddTriangle(new TriangleEntity(v1, v2, v3, material, n1, n2, n3));
+                }
+
+                if (ring < rings - 1)
+                {
+                    scene.AddTriangle(new TriangleEntity(v2, v4, v3, material, n2, n4, n3));
+                }
+            }
+        }
+    }
 }

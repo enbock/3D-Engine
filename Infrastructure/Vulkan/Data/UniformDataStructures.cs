@@ -93,11 +93,11 @@ public struct TriangleData
     public Vector3 V2;
     public float Pad2;
     public Vector3 Color;
-    public float Pad3;
+    public float Transparency;
     public Vector3 N0;
-    public float Pad4;
+    public float IndexOfRefraction;
     public Vector3 N1;
-    public float Pad5;
+    public float Reflectivity;
     public Vector3 N2;
     public float Pad6;
 }

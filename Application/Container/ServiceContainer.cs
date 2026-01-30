@@ -4,7 +4,6 @@ using Application.Window;
 using Core.CameraControl;
 using Core.EngineRendering;
 using Core.Rendering;
-using Core.Scene;
 using Core.World;
 using Infrastructure.Rendering;
 using Infrastructure.Vulkan;
@@ -32,11 +31,9 @@ public class ServiceContainer : IDisposable
         RegisterInstance(new WindowManager(Resolve<IWindow>()));
         RegisterInstance(new InputHandler());
 
-        RegisterInstance(new SceneBuilderService());
-
         RegisterInstance(new InternalVulkanRenderer(Resolve<WindowManager>(), config));
         RegisterInstance<Renderer>(new VulkanRenderer(Resolve<InternalVulkanRenderer>()));
-        RegisterInstance(new WorldUseCase(Resolve<SceneBuilderService>()));
+        RegisterInstance(new WorldUseCase());
         RegisterInstance(new CameraControlUseCase());
         RegisterInstance(new CameraControlHandler(
             Resolve<CameraControlUseCase>(),

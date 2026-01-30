@@ -76,8 +76,11 @@ public static unsafe class VulkanBufferHelper
                 V1 = new System.Numerics.Vector3(tri.V1.X, tri.V1.Y, tri.V1.Z),
                 V2 = new System.Numerics.Vector3(tri.V2.X, tri.V2.Y, tri.V2.Z),
                 Color = new System.Numerics.Vector3(tri.Color.R, tri.Color.G, tri.Color.B),
+                Transparency = tri.Material.Transparency,
                 N0 = new System.Numerics.Vector3(tri.N0.X, tri.N0.Y, tri.N0.Z),
+                IndexOfRefraction = tri.Material.IndexOfRefraction,
                 N1 = new System.Numerics.Vector3(tri.N1.X, tri.N1.Y, tri.N1.Z),
+                Reflectivity = tri.Material.Reflectivity,
                 N2 = new System.Numerics.Vector3(tri.N2.X, tri.N2.Y, tri.N2.Z)
             };
         }

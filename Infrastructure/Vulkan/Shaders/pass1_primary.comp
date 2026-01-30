@@ -25,11 +25,11 @@ struct Triangle {
     vec3 v2;
     float pad2;
     vec3 color;
-    float pad3;
+    float transparency;
     vec3 n0;
-    float pad4;
+    float ior;
     vec3 n1;
-    float pad5;
+    float reflectivity;
     vec3 n2;
     float pad6;
 };
@@ -71,6 +71,9 @@ struct Hit {
     vec3 point;
     vec3 normal;
     vec3 color;
+    float transparency;
+    float ior;
+    float reflectivity;
 };
 
 const float EPSILON = 0.01;
@@ -109,6 +112,9 @@ Hit intersectTriangle(Ray ray, Triangle tri) {
         vec3 interpolatedNormal = normalize(w * tri.n0 + u * tri.n1 + v * tri.n2);
         h.normal = interpolatedNormal;
         h.color = tri.color;
+        h.transparency = tri.transparency;
+        h.ior = tri.ior;
+        h.reflectivity = tri.reflectivity;
     }
 
     return h;
@@ -212,9 +218,9 @@ void main() {
 
     if (hit.hit) {
         imageStore(gPosition, pixelCoords, vec4(hit.point, 1.0));
-        imageStore(gNormal, pixelCoords, vec4(hit.normal, 0.0));
-        imageStore(gAlbedo, pixelCoords, vec4(hit.color, 0.0));
-        imageStore(gRayDir, pixelCoords, vec4(ray.direction, 0.0));
+        imageStore(gNormal, pixelCoords, vec4(hit.normal, hit.transparency));
+        imageStore(gAlbedo, pixelCoords, vec4(hit.color, hit.ior));
+        imageStore(gRayDir, pixelCoords, vec4(ray.direction, hit.reflectivity));
     } else {
         vec3 skyColor = getSkyColor(ray.direction);
         imageStore(gPosition, pixelCoords, vec4(0.0, 0.0, 0.0, 0.0));

@@ -43,11 +43,11 @@ struct Triangle {
     vec3 v2;
     float pad2;
     vec3 color;
-    float pad3;
+    float transparency;
     vec3 n0;
-    float pad4;
+    float ior;
     vec3 n1;
-    float pad5;
+    float reflectivity;
     vec3 n2;
     float pad6;
 };
