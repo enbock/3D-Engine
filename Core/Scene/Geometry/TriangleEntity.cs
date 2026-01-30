@@ -2,14 +2,40 @@
 
 namespace Core.Scene.Geometry;
 
-public class TriangleEntity(Vector3 v0, Vector3 v1, Vector3 v2, Color color)
+public class TriangleEntity
 {
-    public Vector3 V0 { get; set; } = v0;
-    public Vector3 V1 { get; set; } = v1;
-    public Vector3 V2 { get; set; } = v2;
-    public Color Color { get; set; } = color;
+    public TriangleEntity(Vector3 v0, Vector3 v1, Vector3 v2, Color color)
+    {
+        V0 = v0;
+        V1 = v1;
+        V2 = v2;
+        Color = color;
+        Vector3 faceNormal = FaceNormal;
+        N0 = faceNormal;
+        N1 = faceNormal;
+        N2 = faceNormal;
+    }
 
-    public Vector3 Normal
+    public TriangleEntity(Vector3 v0, Vector3 v1, Vector3 v2, Color color, Vector3 n0, Vector3 n1, Vector3 n2)
+    {
+        V0 = v0;
+        V1 = v1;
+        V2 = v2;
+        Color = color;
+        N0 = n0;
+        N1 = n1;
+        N2 = n2;
+    }
+
+    public Vector3 V0 { get; set; }
+    public Vector3 V1 { get; set; }
+    public Vector3 V2 { get; set; }
+    public Color Color { get; set; }
+    public Vector3 N0 { get; set; }
+    public Vector3 N1 { get; set; }
+    public Vector3 N2 { get; set; }
+
+    public Vector3 FaceNormal
     {
         get
         {
@@ -18,6 +44,8 @@ public class TriangleEntity(Vector3 v0, Vector3 v1, Vector3 v2, Color color)
             return Vector3.Cross(edge1, edge2).Normalized;
         }
     }
+
+    public Vector3 Normal => FaceNormal;
 
     public Vector3 Center => (V0 + V1 + V2) / 3.0f;
 }

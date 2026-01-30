@@ -4,9 +4,16 @@ using Core.Scene.Geometry;
 
 namespace Application.Scene;
 
+public enum ShadingMode
+{
+    Flat,
+    Smooth,
+    HalfSmooth
+}
+
 public static class GeometryGenerator
 {
-    public static void AddCylinder(SceneEntity scene, Vector3 center, float radius, float height, int segments, Color color)
+    public static void AddCylinder(SceneEntity scene, Vector3 center, float radius, float height, int segments, Color color, ShadingMode shading = ShadingMode.Flat)
     {
         float halfHeight = height / 2.0f;
 
@@ -25,8 +32,22 @@ public static class GeometryGenerator
             Vector3 topOuter1 = new(center.X + x1, center.Y + halfHeight, center.Z + z1);
             Vector3 topOuter2 = new(center.X + x2, center.Y + halfHeight, center.Z + z2);
 
-            scene.AddTriangle(new TriangleEntity(bottomOuter1, topOuter1, bottomOuter2, color));
-            scene.AddTriangle(new TriangleEntity(topOuter1, topOuter2, bottomOuter2, color));
+            Vector3 n1 = new Vector3(x1, 0, z1).Normalized;
+            Vector3 n2 = new Vector3(x2, 0, z2).Normalized;
+
+            bool useSmooth = shading == ShadingMode.Smooth ||
+                             shading == ShadingMode.HalfSmooth && topOuter1.Y > center.Y;
+
+            if (useSmooth)
+            {
+                scene.AddTriangle(new TriangleEntity(bottomOuter1, topOuter1, bottomOuter2, color, n1, n1, n2));
+                scene.AddTriangle(new TriangleEntity(topOuter1, topOuter2, bottomOuter2, color, n1, n2, n2));
+            }
+            else
+            {
+                scene.AddTriangle(new TriangleEntity(bottomOuter1, topOuter1, bottomOuter2, color));
+                scene.AddTriangle(new TriangleEntity(topOuter1, topOuter2, bottomOuter2, color));
+            }
 
             Vector3 bottomCenter = new(center.X, center.Y - halfHeight, center.Z);
             scene.AddTriangle(new TriangleEntity(bottomCenter, bottomOuter1, bottomOuter2, color));
@@ -36,7 +57,7 @@ public static class GeometryGenerator
         }
     }
 
-    public static void AddSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, Color color)
+    public static void AddSphere(SceneEntity scene, Vector3 center, float radius, int rings, int segments, Color color, ShadingMode shading = ShadingMode.Flat)
     {
         for (int ring = 0; ring < rings; ring++)
         {
@@ -53,14 +74,39 @@ public static class GeometryGenerator
                 Vector3 v3 = SphericalToCartesian(center, radius, theta2, phi1);
                 Vector3 v4 = SphericalToCartesian(center, radius, theta2, phi2);
 
+                Vector3 n1 = (v1 - center).Normalized;
+                Vector3 n2 = (v2 - center).Normalized;
+                Vector3 n3 = (v3 - center).Normalized;
+                Vector3 n4 = (v4 - center).Normalized;
+
+                bool upperHalf = v1.Y >= center.Y || v2.Y >= center.Y || v3.Y >= center.Y;
+                bool useSmooth = shading == ShadingMode.Smooth ||
+                                 shading == ShadingMode.HalfSmooth && upperHalf;
+
                 if (ring > 0)
                 {
-                    scene.AddTriangle(new TriangleEntity(v1, v2, v3, color));
+                    if (useSmooth)
+                    {
+                        scene.AddTriangle(new TriangleEntity(v1, v2, v3, color, n1, n2, n3));
+                    }
+                    else
+                    {
+                        scene.AddTriangle(new TriangleEntity(v1, v2, v3, color));
+                    }
                 }
 
                 if (ring < rings - 1)
                 {
-                    scene.AddTriangle(new TriangleEntity(v2, v4, v3, color));
+                    bool lowerUseSmooth = shading == ShadingMode.Smooth ||
+                                          shading == ShadingMode.HalfSmooth && (v2.Y >= center.Y || v4.Y >= center.Y || v3.Y >= center.Y);
+                    if (lowerUseSmooth)
+                    {
+                        scene.AddTriangle(new TriangleEntity(v2, v4, v3, color, n2, n4, n3));
+                    }
+                    else
+                    {
+                        scene.AddTriangle(new TriangleEntity(v2, v4, v3, color));
+                    }
                 }
             }
         }

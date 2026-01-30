@@ -44,6 +44,12 @@ struct Triangle {
     float pad2;
     vec3 color;
     float pad3;
+    vec3 n0;
+    float pad4;
+    vec3 n1;
+    float pad5;
+    vec3 n2;
+    float pad6;
 };
 
 layout (std140, binding = 6) readonly buffer TriangleSSBO {

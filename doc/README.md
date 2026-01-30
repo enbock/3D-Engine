@@ -89,6 +89,12 @@ Dieses Verzeichnis enthält die gesamte technische Dokumentation des Projekts.
   - Alle Achsen (W/A/S/D/Q/E) sind kamera-relativ
   - "Fly Mode" Navigation wie in Blender
 
+- **[SMOOTH_SHADING.md](./SMOOTH_SHADING.md)** - Smooth Shading Implementation (✅ Abgeschlossen):
+  - Vertex-Normalen für interpolierte Beleuchtung
+  - ShadingMode Enum (Flat, Smooth, HalfSmooth)
+  - Baryzentrische Interpolation im Shader
+  - Demo: Obere Hälfte glatt, untere Hälfte kantig
+
 - **[BUGFIX_CAMERA_MOVEMENT_REFACTORING.md](./BUGFIX_CAMERA_MOVEMENT_REFACTORING.md)** - Camera-Bewegung nach
   Refactoring (✅ Behoben):
   - Forward-Vektor wurde falsch berechnet (aus camera.Forward statt pitch/yaw)

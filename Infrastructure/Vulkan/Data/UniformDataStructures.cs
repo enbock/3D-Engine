@@ -94,6 +94,12 @@ public struct TriangleData
     public float Pad2;
     public Vector3 Color;
     public float Pad3;
+    public Vector3 N0;
+    public float Pad4;
+    public Vector3 N1;
+    public float Pad5;
+    public Vector3 N2;
+    public float Pad6;
 }
 
 [StructLayout(LayoutKind.Sequential)]

@@ -26,6 +26,12 @@ struct Triangle {
     float pad2;
     vec3 color;
     float pad3;
+    vec3 n0;
+    float pad4;
+    vec3 n1;
+    float pad5;
+    vec3 n2;
+    float pad6;
 };
 
 layout (std140, binding = 5) readonly buffer TriangleSSBO {
@@ -99,7 +105,9 @@ Hit intersectTriangle(Ray ray, Triangle tri) {
         h.hit = true;
         h.dist = t;
         h.point = ray.origin + ray.direction * t;
-        h.normal = normalize(cross(e1, e2));
+        float w = 1.0 - u - v;
+        vec3 interpolatedNormal = normalize(w * tri.n0 + u * tri.n1 + v * tri.n2);
+        h.normal = interpolatedNormal;
         h.color = tri.color;
     }
 
