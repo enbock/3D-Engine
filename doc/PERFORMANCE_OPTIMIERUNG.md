@@ -130,11 +130,25 @@ public static RenderSettings UltraPerformance => new()
 - [x] Primary-Rays über BVH
 - [x] Reflection-Rays über BVH
 
-### Phase 3: Shader-Optimierungen (geplant)
+### Phase 3: Shader-Optimierungen (erledigt ✅)
 
-1. Early-Exit bei Shadow-Rays verbessern
-2. Frustum Culling vor Ray-Trace
-3. Shared Memory für häufig verwendete Daten
+1. **Shared Memory für Camera-Daten**
+    - Camera-Position, Forward, Right, Up Vektoren
+    - tanHalfFov und AspectRatio vorberechnet
+    - Nur Thread 0 berechnet, alle anderen lesen aus Shared Memory
+    - Spart redundante Berechnungen pro Pixel
+
+2. **Optimierte AABB-Intersection**
+    - invDir wird einmal pro Ray berechnet, nicht pro AABB-Test
+    - Reduziert Divisionen drastisch
+
+3. **Entfernung ungenutzter Code**
+    - Alte lineare trace() und traceShadow() Funktionen entfernt
+    - Kleinerer Shader = schnellere Kompilierung und Ausführung
+
+4. **Stack-Größen optimiert**
+    - Primary Rays: Stack[64] (tiefe BVH-Bäume)
+    - Shadow Rays: Stack[32] (früher Abbruch wahrscheinlich)
 
 ---
 
@@ -144,7 +158,7 @@ public static RenderSettings UltraPerformance => new()
 |----------------------|-----------------------------|--------|
 | Performance-Preset   | 2-4x                        | ✅      |
 | BVH-Integration      | 10-50x (abhängig von Szene) | ✅      |
-| Shader-Optimierungen | 1.2-1.5x                    | ⏳      |
+| Shader-Optimierungen | 1.2-1.5x                    | ✅      |
 
 ### BVH-Performance-Analyse
 
@@ -164,9 +178,12 @@ Bei 10.000 Dreiecken:
 
 ## Nächste Schritte
 
-1. Testen ob Performance-Preset ausreicht
-2. Bei Bedarf: Single-Pass statt Multi-Pass
-3. BVH-Integration wenn >1000 Dreiecke benötigt
+Alle geplanten Optimierungen sind implementiert. Mögliche zukünftige Verbesserungen:
+
+1. **SAH (Surface Area Heuristic) für BVH-Aufbau** - bessere Baumqualität
+2. **Morton-Code Sortierung** - cache-freundlichere Speicheranordnung
+3. **Instancing** - gleiche Geometrie mehrfach ohne Kopieren
+4. **Level of Detail (LOD)** - entfernte Objekte mit weniger Dreiecken
 
 ## Konfiguration umschalten
 
