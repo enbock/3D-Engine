@@ -132,7 +132,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
             Console.WriteLine("Single-Pass Rendering enabled");
         }
 
-        _syncTask = new VulkanSyncTask(_vk, _deviceTask.Device, config);
+        _syncTask = new VulkanSyncTask(_vk, _deviceTask.Device);
         _syncTask.CreateSyncObjects((uint)_swapchainTask.SwapchainImages.Length);
 
         _isInitialized = true;

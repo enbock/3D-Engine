@@ -4,7 +4,7 @@ using VkSemaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace Infrastructure.Vulkan.Tasks;
 
-public unsafe class VulkanSyncTask(Vk vk, Device device, EngineConfig config)
+public unsafe class VulkanSyncTask(Vk vk, Device device)
 {
     public VkSemaphore[] ImageAvailableSemaphores { get; private set; } = Array.Empty<VkSemaphore>();
     public VkSemaphore[] RenderFinishedSemaphores { get; private set; } = Array.Empty<VkSemaphore>();

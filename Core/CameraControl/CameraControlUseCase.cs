@@ -23,20 +23,20 @@ public class CameraControlUseCase
         Vector3 movement = request.Movement;
         if (movement == Vector3.Zero) return;
 
-        Vector3 forward = camera.Forward;
-        Vector3 right = camera.Right;
-        Vector3 up = camera.Up;
-
-        Vector3 velocity = (forward * -movement.Z + right * movement.X + up * movement.Y) * MoveSpeed * request.DeltaTime;
-
-        camera.Position += velocity;
-
-        Vector3 direction = new(
+        Vector3 forward = new(
             MathF.Cos(pitch) * MathF.Cos(yaw),
             MathF.Sin(pitch),
             MathF.Cos(pitch) * MathF.Sin(yaw)
         );
-        camera.Target = camera.Position + direction.Normalized;
+        forward = forward.Normalized;
+
+        Vector3 right = Vector3.Cross(forward, new Vector3(0, 1, 0)).Normalized;
+        Vector3 up = Vector3.Cross(right, forward).Normalized;
+
+        Vector3 velocity = (forward * -movement.Z + right * movement.X + up * movement.Y) * MoveSpeed * request.DeltaTime;
+
+        camera.Position += velocity;
+        camera.Target = camera.Position + forward;
     }
 
     public void UpdateLook(UpdateCameraLookRequest request)

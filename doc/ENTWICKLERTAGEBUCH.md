@@ -548,6 +548,89 @@ definiert, nicht durch Differenz-Vektor.
 
 **Dokumentation**: `doc/BUGFIX_CAMERA_CONTROLS.md`
 
+#### 10.4 Bugfix: Kamera-Bewegung nach Refactoring (2026-01-30)
+
+**Problem**: Nach dem Reorganisieren der CameraControl-Klassen funktionierte die Kamerabewegung nicht mehr - die Kamera
+bewegte sich nicht relativ zur Blickrichtung.
+
+**Ursachen (2 Probleme gefunden)**:
+
+1. **Falsche Forward-Vektor Berechnung**:
+    - In `UpdateMovement` wurde `camera.Forward` verwendet
+    - Dieser basierte auf `Target - Position`, was noch die alte Richtung war
+    - Die neuen `pitch/yaw` Werte wurden nicht verwendet
+
+2. **Separate Camera-Instanzen**:
+    - `WorldUseCase` hatte zwei separate `CameraEntity` Instanzen:
+        - Ein separates `camera` Field
+        - Die Camera in `scene.Camera`
+    - `GetCamera()` gab die falsche Instanz zurück
+    - Der Renderer verwendete `scene.Camera`, aber Updates gingen an `camera`
+
+**Lösung Teil 1 - CameraControlUseCase.cs**:
+
+```csharp
+public void UpdateMovement(UpdateCameraMovementRequest request)
+{
+    // Forward-Vektor aus pitch/yaw berechnen, nicht aus camera.Forward
+    Vector3 forward = new(
+        MathF.Cos(pitch) * MathF.Cos(yaw),
+        MathF.Sin(pitch),
+        MathF.Cos(pitch) * MathF.Sin(yaw)
+    );
+    forward = forward.Normalized;
+
+    // Right-Vektor korrekt berechnen
+    Vector3 right = Vector3.Cross(forward, camera.Up).Normalized;
+    
+    // Bewegung korrekt: W/S = forward.Z, A/D = right.X, Q/E = up.Y
+    Vector3 velocity = (forward * movement.Z + right * movement.X + up * movement.Y) * MoveSpeed * request.DeltaTime;
+
+    camera.Position += velocity;
+    camera.Target = camera.Position + forward;  // Target aus neuer Position + Richtung
+}
+```
+
+**Lösung Teil 2 - WorldUseCase.cs**:
+
+```csharp
+public class WorldUseCase
+{
+    // Nur EINE Camera-Instanz - die aus der Scene
+    private readonly SceneEntity scene = new();
+
+    public void Initialize()
+    {
+        // Camera direkt in Scene initialisieren
+        scene.Camera = new CameraEntity(
+            new Vector3(0, 0, 10),
+            new Vector3()
+        );
+        
+        sceneBuilderService.CreateSimpleScene(scene);
+    }
+
+    public CameraEntity GetCamera()
+    {
+        return scene.Camera;  // Gibt die gleiche Instanz zurück, die der Renderer verwendet
+    }
+}
+```
+
+**Wichtige Erkenntnisse**:
+
+1. **Forward-Vektor muss aus pitch/yaw berechnet werden**, nicht aus `camera.Forward`
+2. **Nur eine Camera-Instanz** - direkt aus der Scene verwenden
+3. **Bewegungsrichtung**: `forward * movement.Z` (nicht `-movement.Z` - das war ein Vorzeichen-Fehler)
+4. **Right-Vektor**: Immer aus `Cross(forward, up)` berechnen, nicht aus `camera.Right`
+
+**Test**: Kamera bewegt sich jetzt korrekt:
+
+- W/S: Vorwärts/Rückwärts relativ zur Blickrichtung
+- A/D: Links/Rechts relativ zur Blickrichtung
+- Q/E: Hoch/Runter (weltkoordinaten-basiert)
+- Maus: Pitch/Yaw Rotation
+
 ---
 
 ## Debugging-Sessions
@@ -1037,7 +1120,7 @@ aller Fehler, Debugging-Sessions und gelernten Lektionen.
 
 ---
 
-**Letzte Aktualisierung**: 2026-01-29  
+**Letzte Aktualisierung**: 2026-01-30  
 **Status**: Production Ready ✅  
 **Version**: 1.0.0
 

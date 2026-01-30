@@ -71,6 +71,14 @@ Dieses Verzeichnis enthält die gesamte technische Dokumentation des Projekts.
   - Alle Achsen (W/A/S/D/Q/E) sind kamera-relativ
   - "Fly Mode" Navigation wie in Blender
 
+- **[BUGFIX_CAMERA_MOVEMENT_REFACTORING.md](./BUGFIX_CAMERA_MOVEMENT_REFACTORING.md)** - Camera-Bewegung nach
+  Refactoring (✅ Behoben):
+  - Forward-Vektor wurde falsch berechnet (aus camera.Forward statt pitch/yaw)
+  - Separate Camera-Instanzen (WorldUseCase.camera vs scene.Camera)
+  - Updates kamen nicht beim Renderer an
+  - Lösung: Forward aus pitch/yaw berechnen, nur eine Camera-Instanz verwenden
+  - Wichtige Lektion über Single Source of Truth
+
 - **[REFACTORING_CAMERA_CONTROL.md](./REFACTORING_CAMERA_CONTROL.md)** - Camera Control Architektur-Refactoring (✅
   Abgeschlossen):
   - CameraControlUseCase von Application nach Core verschoben

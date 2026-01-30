@@ -6,26 +6,26 @@ namespace Core.World;
 
 public class WorldUseCase(SceneBuilderService sceneBuilderService)
 {
-    private readonly CameraEntity camera = new(
-        new Vector3(0, 0, 10),
-        new Vector3()
-    );
-
     private readonly SceneEntity scene = new();
 
     public void Initialize()
     {
+        scene.Camera = new CameraEntity(
+            new Vector3(0, 0, 10),
+            new Vector3()
+        );
+
         sceneBuilderService.CreateSimpleScene(scene);
     }
 
     public void UpdateAspectRatio(float aspectRatio)
     {
-        camera.SetAspectRatio(aspectRatio);
+        scene.Camera.SetAspectRatio(aspectRatio);
     }
 
     public CameraEntity GetCamera()
     {
-        return camera;
+        return scene.Camera;
     }
 
     public SceneEntity GetScene()
