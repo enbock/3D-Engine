@@ -15,7 +15,7 @@ layout (binding = 2) uniform CameraUBO {
     float fov;
 } camera;
 
-const float GAMMA = 1.5;
+const float GAMMA = 1.0;
 
 vec3 applyGammaCorrection(vec3 color) {
     return pow(color, vec3(1.0 / GAMMA));

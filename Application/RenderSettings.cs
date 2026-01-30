@@ -55,7 +55,7 @@ public class RenderSettings
         ReflectionStrength = 0.7f,
         ShadowSamples = 8,
         EnableGi = true,
-        GiSamples = 8,
-        GiStrength = 0.7f
+        GiSamples = 4,
+        GiStrength = 0.6f
     };
 }

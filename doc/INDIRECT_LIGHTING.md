@@ -79,9 +79,9 @@ float rotation = float((pixelCoords.x * 73 + pixelCoords.y * 127) & 0xFF) * (PI 
 | Preset           | EnableGi | GiSamples | GiStrength | Performance Impact |
 |------------------|----------|-----------|------------|--------------------|
 | UltraPerformance | false    | 0         | 0.0        | Kein               |
-| Performance      | true     | 2         | 0.3        | Gering             |
-| Default          | true     | 4         | 0.5        | Mittel             |
-| Quality          | true     | 8         | 0.7        | Hoch               |
+| Performance      | true     | 2         | 0.3        | Gering (~1-2ms)    |
+| Default          | true     | 4         | 0.5        | Mittel (~2-4ms)    |
+| Quality          | true     | 4         | 0.6        | Mittel (~2-4ms)    |
 
 ## Shader: pass2b_indirect.comp
 
@@ -129,11 +129,28 @@ vec3 calculateIndirectLight(hitPoint, normal, albedo, pixelCoords) {
 
 ## Performance
 
+### Optimierungen (v2)
+
+Die GI-Implementierung wurde für bessere Performance optimiert:
+
+1. **Keine Shadow-Traces für Bounce-Light**: Der größte Performance-Gewinn. Für indirekte Beleuchtung werden keine
+   Shadow-Rays gecastet.
+
+2. **Kürzere Max-Distanz**: `GI_MAX_DIST = 15.0` statt 100.0. GI-Rays müssen nicht weit reisen.
+
+3. **Kleinerer BVH-Stack**: Stack von 32 auf 16 Elemente reduziert.
+
+4. **Vereinfachte Light-Berechnung**: `calculateSimpleLight()` ohne Schatten, max. 3 Lichter.
+
+5. **Lazy Image-Loads**: Normal und Albedo werden nur bei Hit geladen.
+
+6. **Max 8 Samples**: GI-Samples auf 8 begrenzt (vorher 16).
+
 ### Overhead
 
-- **Zusätzliche BVH-Traversals**: GiSamples pro Pixel
+- **Zusätzliche BVH-Traversals**: GiSamples pro Pixel (ohne Shadow-Traces)
 - **Memory**: +1 RGBA32F Image (~50MB bei 1920x1080)
-- **Compute Time**: Abhängig von Szenen-Komplexität und GiSamples
+- **Compute Time**: ~2-5ms pro Frame (abhängig von Samples)
 
 ### Empfehlungen
 
