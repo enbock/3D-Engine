@@ -1,8 +1,7 @@
 using Core.EngineRendering;
 using Core.Scene;
-using Infrastructure.Vulkan;
 
-namespace Infrastructure.Rendering;
+namespace Infrastructure.Rendering.Vulkan;
 
 public class VulkanRenderer(InternalVulkanRenderer internalRenderer) : Renderer
 {

@@ -2,7 +2,7 @@
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 
-namespace Infrastructure.Vulkan.Tasks;
+namespace Infrastructure.Rendering.Vulkan.Tasks;
 
 public unsafe class VulkanSwapchainTask(
     Vk vk,

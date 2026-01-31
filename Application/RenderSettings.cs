@@ -18,6 +18,7 @@ public class RenderSettings
     public bool EnableGi { get; private init; } = true;
     public int GiSamples { get; private init; } = 4;
     public float GiStrength { get; private init; } = 0.5f;
+    public bool EnableCaustics { get; private init; } = true;
 
     public static RenderSettings Default => new()
     {
@@ -27,8 +28,9 @@ public class RenderSettings
         ReflectionStrength = 0.5f,
         ShadowSamples = 8,
         EnableGi = true,
-        GiSamples = 4,
-        GiStrength = 0.5f
+        GiSamples = 2,
+        GiStrength = 0.5f,
+        EnableCaustics = true
     };
 
     public static RenderSettings Performance => new()
@@ -39,8 +41,9 @@ public class RenderSettings
         ReflectionStrength = 0.5f,
         ShadowSamples = 4,
         EnableGi = true,
-        GiSamples = 2,
-        GiStrength = 0.5f
+        GiSamples = 1,
+        GiStrength = 0.5f,
+        EnableCaustics = true
     };
 
     public static RenderSettings UltraPerformance => new()
@@ -52,7 +55,8 @@ public class RenderSettings
         ShadowSamples = 0,
         EnableGi = false,
         GiSamples = 0,
-        GiStrength = 0.0f
+        GiStrength = 0.0f,
+        EnableCaustics = false
     };
 
     public static RenderSettings Quality => new()
@@ -63,7 +67,8 @@ public class RenderSettings
         ReflectionStrength = 0.5f,
         ShadowSamples = 12,
         EnableGi = true,
-        GiSamples = 10,
-        GiStrength = 0.5f
+        GiSamples = 8,
+        GiStrength = 0.5f,
+        EnableCaustics = true
     };
 }

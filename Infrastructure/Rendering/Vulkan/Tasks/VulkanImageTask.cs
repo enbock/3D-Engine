@@ -1,6 +1,6 @@
 ﻿using Silk.NET.Vulkan;
 
-namespace Infrastructure.Vulkan.Tasks;
+namespace Infrastructure.Rendering.Vulkan.Tasks;
 
 public unsafe class VulkanImageTask(
     Vk vk,

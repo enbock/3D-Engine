@@ -1,7 +1,7 @@
 ﻿using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
-namespace Infrastructure.Vulkan.Tasks;
+namespace Infrastructure.Rendering.Vulkan.Tasks;
 
 public unsafe class VulkanBufferTask(Vk vk, Device device, VulkanDeviceTask deviceTask)
 {

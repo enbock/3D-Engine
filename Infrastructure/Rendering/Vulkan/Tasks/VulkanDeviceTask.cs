@@ -4,7 +4,7 @@ using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 
-namespace Infrastructure.Vulkan.Tasks;
+namespace Infrastructure.Rendering.Vulkan.Tasks;
 
 public unsafe class VulkanDeviceTask(Vk vk, KhrSurface khrSurface, SurfaceKHR surface)
 {

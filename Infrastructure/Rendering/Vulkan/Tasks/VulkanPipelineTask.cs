@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Silk.NET.Vulkan;
 
-namespace Infrastructure.Vulkan.Tasks;
+namespace Infrastructure.Rendering.Vulkan.Tasks;
 
 public unsafe class VulkanPipelineTask(Vk vk, Device device)
 {

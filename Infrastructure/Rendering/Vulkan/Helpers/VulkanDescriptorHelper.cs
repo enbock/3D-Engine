@@ -1,9 +1,9 @@
-﻿using Infrastructure.Vulkan.Data;
-using Infrastructure.Vulkan.Tasks;
+﻿using Infrastructure.Rendering.Vulkan.Data;
+using Infrastructure.Rendering.Vulkan.Tasks;
 using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
-namespace Infrastructure.Vulkan.Helpers;
+namespace Infrastructure.Rendering.Vulkan.Helpers;
 
 public static unsafe class VulkanDescriptorHelper
 {

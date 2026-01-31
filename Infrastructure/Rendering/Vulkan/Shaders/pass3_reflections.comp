@@ -71,6 +71,7 @@ layout (binding = 8) uniform RenderSettings {
     int enableGI;
     int giSamples;
     float giStrength;
+    int enableCaustics;
     int enableHdr;
     float exposure;
     float gamma;
@@ -472,7 +473,8 @@ float cauchyIOR(float baseIOR, float wavelength) {
 }
 
 vec3 calculateDispersionFast(vec3 hitPoint, vec3 normal, vec3 rayDir, float baseIOR, vec3 tint, ivec2 pixelCoords) {
-    bool entering = dot(rayDir, normal) < 0.0;
+    float enterDot = dot(rayDir, normal);
+    bool entering = enterDot < 0.0;
     vec3 n = entering ? normal : -normal;
 
     float iorRed = cauchyIOR(baseIOR, 0.65);
@@ -498,7 +500,8 @@ vec3 calculateDispersionFast(vec3 hitPoint, vec3 normal, vec3 rayDir, float base
     vec3 baseColor = vec3(0.0);
     if (refractHit.hit) {
         if (refractHit.transparency > 0.5) {
-            bool exitEntering = dot(refractG, refractHit.normal) < 0.0;
+            float exitDot = dot(refractG, refractHit.normal);
+            bool exitEntering = exitDot < 0.0;
             vec3 exitN = exitEntering ? refractHit.normal : -refractHit.normal;
             float exitEta = exitEntering ? (1.0 / refractHit.ior) : refractHit.ior;
             vec3 exitDir = refract(refractG, exitN, exitEta);
@@ -667,7 +670,8 @@ vec3 calculateSchlieren(vec3 hitPoint, vec3 normal, vec3 rayDir, float time) {
 vec3 calculateRefraction(vec3 hitPoint, vec3 normal, vec3 rayDir, float ior, vec3 tint) {
     vec3 refractionColor = vec3(0.0);
 
-    bool entering = dot(rayDir, normal) < 0.0;
+    float enterDot = dot(rayDir, normal);
+    bool entering = enterDot < 0.0;
     vec3 n = entering ? normal : -normal;
     float eta = entering ? (1.0 / ior) : ior;
 
@@ -685,7 +689,8 @@ vec3 calculateRefraction(vec3 hitPoint, vec3 normal, vec3 rayDir, float ior, vec
 
     if (refractHit.hit) {
         if (refractHit.transparency > 0.5) {
-            bool exitEntering = dot(refractedDir, refractHit.normal) < 0.0;
+            float exitDot = dot(refractedDir, refractHit.normal);
+            bool exitEntering = exitDot < 0.0;
             vec3 exitN = exitEntering ? refractHit.normal : -refractHit.normal;
             float exitEta = exitEntering ? (1.0 / refractHit.ior) : refractHit.ior;
 
@@ -820,15 +825,19 @@ void main() {
             dispersedColor * transmissionFactor;
 
             if (distToHit < 8.0) {
-                vec3 volumetric = calculateVolumetricCausticsFast(camera.position, rayDir, distToHit);
-                color += volumetric;
+                if (settings.enableCaustics != 0) {
+                    vec3 volumetric = calculateVolumetricCausticsFast(camera.position, rayDir, distToHit);
+                    color += volumetric;
+                }
             }
         } else {
             vec3 reflections = calculateReflections(hitPoint, normal, rayDir);
             color += reflections;
 
-            vec3 caustics = calculatePhotonCausticsFast(hitPoint, normal, pixelCoords);
-            color += caustics;
+            if (settings.enableCaustics != 0) {
+                vec3 caustics = calculatePhotonCausticsFast(hitPoint, normal, pixelCoords);
+                color += caustics;
+            }
         }
     }
 

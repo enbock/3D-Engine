@@ -3,8 +3,8 @@ using System.Runtime.InteropServices;
 using Application;
 using Application.Window;
 using Core.Scene;
-using Infrastructure.Vulkan.Helpers;
-using Infrastructure.Vulkan.Tasks;
+using Infrastructure.Rendering.Vulkan.Helpers;
+using Infrastructure.Rendering.Vulkan.Tasks;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
@@ -12,7 +12,7 @@ using Buffer = Silk.NET.Vulkan.Buffer;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 using InfraTextureLoader = Infrastructure.Assets.TextureLoader;
 
-namespace Infrastructure.Vulkan;
+namespace Infrastructure.Rendering.Vulkan;
 
 public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineConfig config)
     : IDisposable

@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace Infrastructure.Vulkan.Data;
+namespace Infrastructure.Rendering.Vulkan.Data;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct CameraUniformData
@@ -82,6 +82,7 @@ public struct RenderSettingsData
     public int EnableGI;
     public int GISamples;
     public float GIStrength;
+    public int EnableCaustics;
     public int EnableHdr;
     public float Exposure;
     public float Gamma;

@@ -1,4 +1,4 @@
-﻿using Infrastructure.Vulkan.Tasks;
+﻿using Infrastructure.Rendering.Vulkan.Tasks;
 using Silk.NET.Vulkan;
 using StbImageSharp;
 using Buffer = Silk.NET.Vulkan.Buffer;

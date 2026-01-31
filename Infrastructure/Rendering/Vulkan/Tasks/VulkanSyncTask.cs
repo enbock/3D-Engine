@@ -2,7 +2,7 @@
 using Silk.NET.Vulkan;
 using VkSemaphore = Silk.NET.Vulkan.Semaphore;
 
-namespace Infrastructure.Vulkan.Tasks;
+namespace Infrastructure.Rendering.Vulkan.Tasks;
 
 public unsafe class VulkanSyncTask(Vk vk, Device device)
 {

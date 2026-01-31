@@ -45,3 +45,5 @@ bld/
 .DS_Store
 Thumbs.db
 *.log
+*build*
+*output*

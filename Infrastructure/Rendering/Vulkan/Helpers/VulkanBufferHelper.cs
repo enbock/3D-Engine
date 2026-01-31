@@ -5,13 +5,13 @@ using Core.Scene;
 using Core.Scene.Acceleration;
 using Core.Scene.Geometry;
 using Core.Scene.Light;
-using Infrastructure.Vulkan.Data;
-using Infrastructure.Vulkan.Tasks;
+using Infrastructure.Rendering.Vulkan.Data;
+using Infrastructure.Rendering.Vulkan.Tasks;
 using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 using Vector3 = Core.Math.Vector3;
 
-namespace Infrastructure.Vulkan.Helpers;
+namespace Infrastructure.Rendering.Vulkan.Helpers;
 
 public static unsafe class VulkanBufferHelper
 {
@@ -189,6 +189,7 @@ public static unsafe class VulkanBufferHelper
             EnableGI = settings.EnableGi ? 1 : 0,
             GISamples = settings.GiSamples,
             GIStrength = settings.GiStrength,
+            EnableCaustics = settings.EnableCaustics ? 1 : 0,
             EnableHdr = config.EnableHdr10 ? 1 : 0,
             Exposure = config.Exposure,
             Gamma = config.Gamma,
