@@ -168,7 +168,7 @@ Hit intersectTriangle(Ray ray, Triangle tri) {
     vec3 pvec = cross(ray.direction, e2);
     float det = dot(e1, pvec);
 
-    if (abs(det) < BACKFACE_EPSILON) return h;
+    if (det < BACKFACE_EPSILON) return h;
 
     float invDet = 1.0 / det;
     vec3 tvec = ray.origin - tri.v0;
