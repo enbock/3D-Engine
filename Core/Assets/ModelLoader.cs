@@ -4,7 +4,7 @@ using Infrastructure.Assets;
 
 namespace Core.Assets;
 
-public interface IModelLoader
+public interface ModelLoader
 {
     ModelData LoadModel(string filePath);
 }

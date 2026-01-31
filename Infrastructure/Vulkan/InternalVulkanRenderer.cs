@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using Application;
 using Application.Window;
 using Core.Scene;
-using Infrastructure.Assets;
 using Infrastructure.Vulkan.Helpers;
 using Infrastructure.Vulkan.Tasks;
 using Silk.NET.Core.Native;
@@ -11,6 +10,7 @@ using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 using Buffer = Silk.NET.Vulkan.Buffer;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
+using TextureLoader = Core.Assets.TextureLoader;
 
 namespace Infrastructure.Vulkan;
 
@@ -111,7 +111,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
             DeviceTask.ComputeQueue);
         CreateStorageImage();
 
-        _textureLoader = new TextureLoader(_vk, DeviceTask.Device, DeviceTask, ImageTask, BufferTask);
+        _textureLoader = new Assets.TextureLoader(_vk, DeviceTask.Device, DeviceTask, ImageTask, BufferTask);
 
         _pipelineTask = new VulkanPipelineTask(_vk, DeviceTask.Device);
 

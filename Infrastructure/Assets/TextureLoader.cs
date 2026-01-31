@@ -5,30 +5,17 @@ using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace Infrastructure.Assets;
 
-public unsafe class TextureLoader : ITextureLoader, IDisposable
+public unsafe class TextureLoader(
+    Vk vk,
+    Device device,
+    VulkanDeviceTask deviceTask,
+    VulkanImageTask imageTask,
+    VulkanBufferTask bufferTask)
+    : Core.Assets.TextureLoader
 {
-    private readonly VulkanBufferTask _bufferTask;
-    private readonly Device _device;
-    private readonly VulkanDeviceTask _deviceTask;
-    private readonly VulkanImageTask _imageTask;
     private readonly Dictionary<int, Texture> _textures = new();
-    private readonly Vk _vk;
     private bool _disposed;
     private int _nextTextureId;
-
-    public TextureLoader(
-        Vk vk,
-        Device device,
-        VulkanDeviceTask deviceTask,
-        VulkanImageTask imageTask,
-        VulkanBufferTask bufferTask)
-    {
-        _vk = vk;
-        _device = device;
-        _deviceTask = deviceTask;
-        _imageTask = imageTask;
-        _bufferTask = bufferTask;
-    }
 
     public void Dispose()
     {
@@ -109,12 +96,17 @@ public unsafe class TextureLoader : ITextureLoader, IDisposable
         }
     }
 
+    public Texture? GetTexture(int id)
+    {
+        return _textures.GetValueOrDefault(id);
+    }
+
     private TextureHandle UploadTexture(byte[] pixelData, int width, int height, string name, bool isSrgb)
     {
         Format format = isSrgb ? Format.R8G8B8A8Srgb : Format.R8G8B8A8Unorm;
         ulong imageSize = (ulong)(width * height * 4);
 
-        _bufferTask.CreateBuffer(
+        bufferTask.CreateBuffer(
             imageSize,
             BufferUsageFlags.TransferSrcBit,
             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
@@ -122,15 +114,15 @@ public unsafe class TextureLoader : ITextureLoader, IDisposable
             out DeviceMemory stagingMemory);
 
         void* mappedData;
-        _vk.MapMemory(_device, stagingMemory, 0, imageSize, 0, &mappedData);
+        vk.MapMemory(device, stagingMemory, 0, imageSize, 0, &mappedData);
         fixed (byte* dataPtr = pixelData)
         {
             System.Buffer.MemoryCopy(dataPtr, mappedData, imageSize, imageSize);
         }
 
-        _vk.UnmapMemory(_device, stagingMemory);
+        vk.UnmapMemory(device, stagingMemory);
 
-        _imageTask.CreateImage(
+        imageTask.CreateImage(
             (uint)width,
             (uint)height,
             format,
@@ -144,13 +136,13 @@ public unsafe class TextureLoader : ITextureLoader, IDisposable
         CopyBufferToImage(stagingBuffer, textureImage, (uint)width, (uint)height);
         TransitionImageLayout(textureImage, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal);
 
-        _bufferTask.DestroyBuffer(stagingBuffer, stagingMemory);
+        bufferTask.DestroyBuffer(stagingBuffer, stagingMemory);
 
-        ImageView imageView = _imageTask.CreateImageView(textureImage, format, ImageAspectFlags.ColorBit);
+        ImageView imageView = imageTask.CreateImageView(textureImage, format, ImageAspectFlags.ColorBit);
         Sampler sampler = CreateSampler();
 
         int textureId = _nextTextureId++;
-        Texture texture = new(_vk, _device)
+        Texture texture = new(vk, device)
         {
             Id = textureId,
             Name = name,
@@ -225,7 +217,7 @@ public unsafe class TextureLoader : ITextureLoader, IDisposable
             throw new Exception($"Unsupported layout transition: {oldLayout} -> {newLayout}");
         }
 
-        _vk.CmdPipelineBarrier(cmdBuffer, sourceStage, destinationStage, 0, 0, null, 0, null, 1, &barrier);
+        vk.CmdPipelineBarrier(cmdBuffer, sourceStage, destinationStage, 0, 0, null, 0, null, 1, &barrier);
 
         EndSingleTimeCommands(cmdBuffer);
     }
@@ -250,7 +242,7 @@ public unsafe class TextureLoader : ITextureLoader, IDisposable
             ImageExtent = new Extent3D(width, height, 1)
         };
 
-        _vk.CmdCopyBufferToImage(cmdBuffer, buffer, image, ImageLayout.TransferDstOptimal, 1, &region);
+        vk.CmdCopyBufferToImage(cmdBuffer, buffer, image, ImageLayout.TransferDstOptimal, 1, &region);
 
         EndSingleTimeCommands(cmdBuffer);
     }
@@ -258,7 +250,7 @@ public unsafe class TextureLoader : ITextureLoader, IDisposable
     private Sampler CreateSampler()
     {
         PhysicalDeviceProperties properties;
-        _vk.GetPhysicalDeviceProperties(_deviceTask.PhysicalDevice, &properties);
+        vk.GetPhysicalDeviceProperties(deviceTask.PhysicalDevice, &properties);
 
         SamplerCreateInfo samplerInfo = new()
         {
@@ -280,7 +272,7 @@ public unsafe class TextureLoader : ITextureLoader, IDisposable
             MaxLod = 0
         };
 
-        if (_vk.CreateSampler(_device, &samplerInfo, null, out Sampler sampler) != Result.Success)
+        if (vk.CreateSampler(device, &samplerInfo, null, out Sampler sampler) != Result.Success)
             throw new Exception("Failed to create texture sampler");
 
         return sampler;
@@ -292,12 +284,12 @@ public unsafe class TextureLoader : ITextureLoader, IDisposable
         {
             SType = StructureType.CommandBufferAllocateInfo,
             Level = CommandBufferLevel.Primary,
-            CommandPool = _deviceTask.TransferCommandPool,
+            CommandPool = deviceTask.TransferCommandPool,
             CommandBufferCount = 1
         };
 
         CommandBuffer commandBuffer;
-        _vk.AllocateCommandBuffers(_device, &allocInfo, &commandBuffer);
+        vk.AllocateCommandBuffers(device, &allocInfo, &commandBuffer);
 
         CommandBufferBeginInfo beginInfo = new()
         {
@@ -305,14 +297,14 @@ public unsafe class TextureLoader : ITextureLoader, IDisposable
             Flags = CommandBufferUsageFlags.OneTimeSubmitBit
         };
 
-        _vk.BeginCommandBuffer(commandBuffer, &beginInfo);
+        vk.BeginCommandBuffer(commandBuffer, &beginInfo);
 
         return commandBuffer;
     }
 
     private void EndSingleTimeCommands(CommandBuffer commandBuffer)
     {
-        _vk.EndCommandBuffer(commandBuffer);
+        vk.EndCommandBuffer(commandBuffer);
 
         SubmitInfo submitInfo = new()
         {
@@ -321,14 +313,9 @@ public unsafe class TextureLoader : ITextureLoader, IDisposable
             PCommandBuffers = &commandBuffer
         };
 
-        _vk.QueueSubmit(_deviceTask.GraphicsQueue, 1, &submitInfo, default);
-        _vk.QueueWaitIdle(_deviceTask.GraphicsQueue);
+        vk.QueueSubmit(deviceTask.GraphicsQueue, 1, &submitInfo, default);
+        vk.QueueWaitIdle(deviceTask.GraphicsQueue);
 
-        _vk.FreeCommandBuffers(_device, _deviceTask.TransferCommandPool, 1, &commandBuffer);
-    }
-
-    public Texture? GetTexture(int id)
-    {
-        return _textures.GetValueOrDefault(id);
+        vk.FreeCommandBuffers(device, deviceTask.TransferCommandPool, 1, &commandBuffer);
     }
 }

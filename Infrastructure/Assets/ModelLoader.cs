@@ -9,20 +9,11 @@ using Vector3 = System.Numerics.Vector3;
 
 namespace Infrastructure.Assets;
 
-public class ModelLoader : IModelLoader
+public class ModelLoader(Core.Assets.TextureLoader textureLoader, string basePath = "") : Core.Assets.ModelLoader
 {
-    private readonly string _basePath;
-    private readonly TextureLoader _textureLoader;
-
-    public ModelLoader(TextureLoader textureLoader, string basePath = "")
-    {
-        _textureLoader = textureLoader;
-        _basePath = basePath;
-    }
-
     public ModelData LoadModel(string filePath)
     {
-        string fullPath = string.IsNullOrEmpty(_basePath) ? filePath : Path.Combine(_basePath, filePath);
+        string fullPath = string.IsNullOrEmpty(basePath) ? filePath : Path.Combine(basePath, filePath);
 
         if (!File.Exists(fullPath))
             throw new FileNotFoundException($"Model file not found: {fullPath}");
@@ -43,7 +34,7 @@ public class ModelLoader : IModelLoader
 
             foreach (MeshPrimitive primitive in node.Mesh.Primitives)
             {
-                MeshData meshData = ExtractMeshData(primitive, worldTransform, model, fullPath);
+                MeshData meshData = ExtractMeshData(primitive, worldTransform, fullPath);
                 meshData = meshData with
                 {
                     Name = $"{node.Name ?? modelName}_{modelData.Meshes.Count}"
@@ -56,7 +47,7 @@ public class ModelLoader : IModelLoader
         return modelData;
     }
 
-    private MeshData ExtractMeshData(MeshPrimitive primitive, Matrix4x4 transform, ModelRoot model, string modelPath)
+    private MeshData ExtractMeshData(MeshPrimitive primitive, Matrix4x4 transform, string modelPath)
     {
         MeshData meshData = new();
 
@@ -91,12 +82,12 @@ public class ModelLoader : IModelLoader
             meshData.Indices.Add(c);
         }
 
-        meshData.Material = ExtractMaterial(primitive.Material, model, modelPath);
+        meshData.Material = ExtractMaterial(primitive.Material, modelPath);
 
         return meshData;
     }
 
-    private MaterialData ExtractMaterial(Material? gltfMaterial, ModelRoot model, string modelPath)
+    private MaterialData ExtractMaterial(Material? gltfMaterial, string modelPath)
     {
         MaterialData material = new();
 
@@ -155,7 +146,7 @@ public class ModelLoader : IModelLoader
             if (!string.IsNullOrEmpty(sourceUri))
             {
                 string texturePath = Path.Combine(Path.GetDirectoryName(modelPath) ?? "", sourceUri);
-                return _textureLoader.LoadTexture(texturePath);
+                return textureLoader.LoadTexture(texturePath);
             }
 
             return null;
@@ -165,7 +156,7 @@ public class ModelLoader : IModelLoader
         string textureName = image.Name ?? $"texture_{texture.LogicalIndex}";
 
         return isSrgb
-            ? _textureLoader.LoadTextureFromBytes(imageData, textureName)
-            : _textureLoader.LoadNormalMapFromBytes(imageData, textureName);
+            ? textureLoader.LoadTextureFromBytes(imageData, textureName)
+            : textureLoader.LoadNormalMapFromBytes(imageData, textureName);
     }
 }

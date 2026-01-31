@@ -1,16 +1,16 @@
 using Application.Game;
 using Application.Game.Handler;
 using Application.Window;
-using Core.Assets;
 using Core.CameraControl;
 using Core.EngineRendering;
 using Core.Rendering;
+using Core.Scene;
 using Core.World;
-using Infrastructure.Assets;
 using Infrastructure.Rendering;
 using Infrastructure.Vulkan;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
+using ModelLoader = Core.Assets.ModelLoader;
 
 namespace Application.Container;
 
@@ -47,14 +47,14 @@ public class ServiceContainer : IDisposable
 
         RegisterInstance(new RenderEngineUseCase(Resolve<Renderer>()));
 
-
         RegisterInstance(new GameController(
             Resolve<WindowManager>(),
             Resolve<InputHandler>(),
             Resolve<Renderer>(),
             Resolve<RenderEngineUseCase>(),
             Resolve<CameraControlHandler>(),
-            Resolve<WorldUseCase>()
+            Resolve<WorldUseCase>(),
+            InitializeAssetLoaders
         ));
     }
 
@@ -70,10 +70,19 @@ public class ServiceContainer : IDisposable
     public void InitializeAssetLoaders()
     {
         InternalVulkanRenderer vulkanRenderer = Resolve<InternalVulkanRenderer>();
-        RegisterInstance<ITextureLoader>(vulkanRenderer.TextureLoader);
+
         RegisterInstance(vulkanRenderer.TextureLoader);
-        RegisterInstance<IModelLoader>(new ModelLoader(vulkanRenderer.TextureLoader, "assets/models"));
-        RegisterInstance(new ModelLoader(vulkanRenderer.TextureLoader, "assets/models"));
+        RegisterInstance(vulkanRenderer.TextureLoader);
+        Infrastructure.Assets.ModelLoader modelLoader = new(vulkanRenderer.TextureLoader, "assets/models");
+        RegisterInstance<ModelLoader>(modelLoader);
+        RegisterInstance(modelLoader);
+
+        SceneBuilderService sceneBuilder = new();
+        RegisterInstance(sceneBuilder);
+
+        WorldUseCase worldUseCase = Resolve<WorldUseCase>();
+        worldUseCase.SetSceneBuilder(sceneBuilder);
+        worldUseCase.SetModelLoader(modelLoader);
     }
 
     private void RegisterInstance<TInterface>(TInterface instance)

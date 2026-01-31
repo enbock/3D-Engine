@@ -1,6 +1,6 @@
 ﻿using Core.Assets;
 using Core.Scene;
-using Infrastructure.Assets;
+using ModelLoader = Infrastructure.Assets.ModelLoader;
 
 namespace Application.Assets;
 

@@ -14,7 +14,8 @@ public class GameController(
     Renderer renderer,
     RenderEngineUseCase renderUseCase,
     CameraControlHandler cameraControlHandler,
-    WorldUseCase worldUseCase
+    WorldUseCase worldUseCase,
+    Action initializeAssetLoaders
 ) : IDisposable
 {
     private bool isRunning;
@@ -39,9 +40,6 @@ public class GameController(
             isRunning = true;
             Console.WriteLine("Engine initialized.");
 
-            worldUseCase.Initialize();
-            Console.WriteLine("World initialized.");
-
             return true;
         }
         catch (Exception ex)
@@ -54,8 +52,13 @@ public class GameController(
     private void OnWindowLoad()
     {
         renderer.Initialize();
+        initializeAssetLoaders();
         inputHandler.Initialize(windowManager.GetInputContext());
         cameraControlHandler.Initialize();
+
+        worldUseCase.InitializeWithTeapot();
+
+        Console.WriteLine("World initialized with Teapot scene.");
     }
 
     public void Run()
