@@ -40,6 +40,7 @@ bld/
 
 ## Compiled Shaders
 *.spv
+shader
 
 ## OS
 .DS_Store

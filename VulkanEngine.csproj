@@ -22,6 +22,18 @@
 
     <ItemGroup>
         <Folder Include="Properties\"/>
+        <Folder Include="shader\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="shader\**\*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+        </Content>
+        <Content Include="assets\**\*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+        </Content>
     </ItemGroup>
 
 </Project>

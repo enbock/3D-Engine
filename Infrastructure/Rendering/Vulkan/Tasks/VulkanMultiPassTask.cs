@@ -195,7 +195,7 @@ public unsafe class VulkanMultiPassTask(
 
         pass1DescriptorLayout = pipelineTask.CreateDescriptorSetLayout(bindings);
 
-        byte[] shaderCode = LoadShaderCode("Infrastructure/Rendering/Vulkan/Shaders/pass1_primary.comp.spv");
+        byte[] shaderCode = LoadShaderCode("shader/pass1_primary.comp.spv");
         pass1Shader = pipelineTask.CreateShaderModule(shaderCode);
 
         pass1Layout = pipelineTask.CreatePipelineLayout(pass1DescriptorLayout);
@@ -280,7 +280,7 @@ public unsafe class VulkanMultiPassTask(
 
         pass2DescriptorLayout = pipelineTask.CreateDescriptorSetLayout(bindings);
 
-        byte[] shaderCode = LoadShaderCode("Infrastructure/Rendering/Vulkan/Shaders/pass2_lighting.comp.spv");
+        byte[] shaderCode = LoadShaderCode("shader/pass2_lighting.comp.spv");
         pass2Shader = pipelineTask.CreateShaderModule(shaderCode);
 
         pass2Layout = pipelineTask.CreatePipelineLayout(pass2DescriptorLayout);
@@ -365,7 +365,7 @@ public unsafe class VulkanMultiPassTask(
 
         pass2BDescriptorLayout = pipelineTask.CreateDescriptorSetLayout(bindings);
 
-        byte[] shaderCode = LoadShaderCode("Infrastructure/Rendering/Vulkan/Shaders/pass2b_indirect.comp.spv");
+        byte[] shaderCode = LoadShaderCode("shader/pass2b_indirect.comp.spv");
         pass2BShader = pipelineTask.CreateShaderModule(shaderCode);
 
         pass2BLayout = pipelineTask.CreatePipelineLayout(pass2BDescriptorLayout);
@@ -457,7 +457,7 @@ public unsafe class VulkanMultiPassTask(
 
         pass3DescriptorLayout = pipelineTask.CreateDescriptorSetLayout(bindings);
 
-        byte[] shaderCode = LoadShaderCode("Infrastructure/Rendering/Vulkan/Shaders/pass3_reflections.comp.spv");
+        byte[] shaderCode = LoadShaderCode("shader/pass3_reflections.comp.spv");
         pass3Shader = pipelineTask.CreateShaderModule(shaderCode);
 
         pass3Layout = pipelineTask.CreatePipelineLayout(pass3DescriptorLayout);
@@ -500,7 +500,7 @@ public unsafe class VulkanMultiPassTask(
 
         pass4DescriptorLayout = pipelineTask.CreateDescriptorSetLayout(bindings);
 
-        byte[] shaderCode = LoadShaderCode("Infrastructure/Rendering/Vulkan/Shaders/pass4_composite.comp.spv");
+        byte[] shaderCode = LoadShaderCode("shader/pass4_composite.comp.spv");
         pass4Shader = pipelineTask.CreateShaderModule(shaderCode);
 
         pass4Layout = pipelineTask.CreatePipelineLayout(pass4DescriptorLayout);

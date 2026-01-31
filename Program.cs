@@ -18,7 +18,7 @@ public static class Program
             Height = 1080,
             VSync = true,
             EnableValidation = true,
-            EnableHdr10 = false,
+            EnableHdr10 = true,
             HdrMinNits = 0.2f, // TODO einbauen
             HdrMaxNits = 400.0f,
             Exposure = 1f,
