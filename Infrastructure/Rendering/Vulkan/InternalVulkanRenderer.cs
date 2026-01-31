@@ -142,7 +142,38 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
             ApiVersion = Vk.Version12
         };
 
-        string[] extensions = windowManager.GetRequiredExtensions();
+        List<string> extensionsList = new(windowManager.GetRequiredExtensions());
+
+        if (config.EnableHdr10)
+        {
+            uint availableExtensionCount;
+            _vk.EnumerateInstanceExtensionProperties((byte*)null, &availableExtensionCount, null);
+            ExtensionProperties* availableExtensions = stackalloc ExtensionProperties[(int)availableExtensionCount];
+            _vk.EnumerateInstanceExtensionProperties((byte*)null, &availableExtensionCount, availableExtensions);
+
+            bool swapchainColorspaceAvailable = false;
+            for (int i = 0; i < availableExtensionCount; i++)
+            {
+                string extensionName = Marshal.PtrToStringAnsi((IntPtr)availableExtensions[i].ExtensionName) ?? string.Empty;
+                if (extensionName == "VK_EXT_swapchain_colorspace")
+                {
+                    swapchainColorspaceAvailable = true;
+                    break;
+                }
+            }
+
+            if (swapchainColorspaceAvailable)
+            {
+                extensionsList.Add("VK_EXT_swapchain_colorspace");
+                Console.WriteLine("VK_EXT_swapchain_colorspace enabled for HDR10 support");
+            }
+            else
+            {
+                Console.WriteLine("Warning: VK_EXT_swapchain_colorspace not available, HDR10 may not work correctly");
+            }
+        }
+
+        string[] extensions = extensionsList.ToArray();
         IntPtr extensionNames = SilkMarshal.StringArrayToPtr(extensions);
 
         InstanceCreateInfo createInfo = new()

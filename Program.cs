@@ -24,7 +24,7 @@ public static class Program
             Exposure = 1f,
             Gamma = 2.2f,
             ToneMapping = ToneMappingOperator.None,
-            RenderSettings = RenderSettings.Default
+            RenderSettings = RenderSettings.Quality
         };
 
         try
