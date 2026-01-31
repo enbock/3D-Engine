@@ -12,6 +12,82 @@
 
 ---
 
+## Letzte Änderungen
+
+### 2026-01-31: Stack Overflow Bugfix in Matrix4X4
+
+**Problem**: Stack Overflow beim Laden des Teapot-Modells mit Transformation
+
+**Ursache**:
+Der Konstruktor `Matrix4X4()` rief `Identity()` auf, aber `Identity()` erstellte eine neue Instanz mit `new()`, was
+wiederum den Konstruktor aufrief → Endlosrekursion.
+
+```csharp
+// VORHER (FEHLER):
+public Matrix4X4()
+{
+    _elements = new float[16];
+    Identity();  // ← Aufruf der statischen Methode
+}
+
+public static Matrix4X4 Identity()
+{
+    Matrix4X4 m = new();  // ← Ruft Konstruktor → REKURSION!
+    // ...
+}
+```
+
+**Lösung**:
+Der Konstruktor initialisiert die Identity-Matrix direkt, ohne `Identity()` aufzurufen:
+
+```csharp
+// NACHHER (KORREKT):
+public Matrix4X4()
+{
+    _elements = new float[16];
+    _elements[0] = 1;   // Diagonal-Elemente
+    _elements[5] = 1;
+    _elements[10] = 1;
+    _elements[15] = 1;
+}
+
+public static Matrix4X4 Identity()
+{
+    return new Matrix4X4();  // Nutzt den sicheren Konstruktor
+}
+```
+
+Alle anderen Factory-Methoden (`Translation`, `Scale`, `RotationX/Y/Z`) verwenden jetzt ebenfalls `new()`, das sicher
+ist.
+
+**Impact**: Der Teapot kann jetzt mit 90° Rotation auf der X-Achse geladen werden.
+
+---
+
+### 2026-01-31: Transform-System für TriangleEntity
+
+**Feature**: Vollständiges Transform-System implementiert
+
+Neue Komponenten:
+
+- `Matrix4X4` - 4x4 Transformationsmatrix mit TRS-Operationen
+- `TransformData` - Datenklasse für Position, Rotation, Skalierung
+- `TransformService` - Service zum Anwenden von Transformationen auf Triangles
+- `GeometryGenerator.AddCubeWithTransform()` - Transform-basierte Geometrie-Erstellung
+- `GeometryGenerator.AddSphereWithTransform()` - Transform-basierte Kugel-Erstellung
+- `SceneBuilderService.CreateTransformDemoScene()` - Demo-Szene für Transformationen
+
+**Technische Details**:
+
+- Reihenfolge: TRS (Translation-Rotation-Scale)
+- Rotation: Z-Y-X Euler-Winkel
+- Normale werden korrekt transformiert und normalisiert
+- Naming: Matrix4X4 (nicht Matrix4x4) für Konsistenz mit Aabb
+
+**Dokumentation**: Siehe [TRANSFORM_SYSTEM.md](TRANSFORM_SYSTEM.md)
+
+---
+
 ## Projektübersicht
 
 **Projekt**: Vulkan-basierte 3D-Raytracing-Engine in C#  

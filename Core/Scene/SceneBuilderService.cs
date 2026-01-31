@@ -1,8 +1,8 @@
-using Application.Scene;
 using Core.Assets;
 using Core.Math;
 using Core.Scene.Geometry;
 using Core.Scene.Light;
+using Core.Scene.Transform;
 using ModelLoader = Infrastructure.Assets.ModelLoader;
 
 namespace Core.Scene;
@@ -50,28 +50,6 @@ public class SceneBuilderService
         }
     }
 
-    public void CreateSceneWithModel(SceneEntity scene, ModelLoader modelLoader, string modelPath)
-    {
-        scene.AddLight(LightEntity.CreateDirectional(new Vector3(0.5f, -1.0f, 0.5f), Color.White, 0.5f, 0.1f));
-        scene.AddLight(LightEntity.CreatePoint(new Vector3(-3, 4, 2), new Color(1.0f, 0.9f, 0.8f), 1.0f, 0.005f, 0.25f));
-
-        AddModelToScene(scene, modelLoader, modelPath);
-
-        scene.AddTriangle(new TriangleEntity(
-            new Vector3(-10, 0, -10),
-            new Vector3(-10, 0, 10),
-            new Vector3(10, 0, 10),
-            new Color(0.8f, 0.8f, 0.8f)
-        ));
-
-        scene.AddTriangle(new TriangleEntity(
-            new Vector3(-10, 0, -10),
-            new Vector3(10, 0, 10),
-            new Vector3(10, 0, -10),
-            new Color(0.8f, 0.8f, 0.8f)
-        ));
-    }
-
     public void CreateTeapotScene(SceneEntity scene, ModelLoader modelLoader)
     {
         scene.AddLight(LightEntity.CreateDirectional(new Vector3(0.5f, -1.0f, 0.5f), Color.White, 0.8f, 0.1f));
@@ -96,7 +74,13 @@ public class SceneBuilderService
                     Roughness = 0.3f
                 };
 
-                float yOffset = 3.33f;
+
+                TransformService transformService = new();
+                TransformData teapotTransform = new(
+                    new Vector3(0, 0, 0),
+                    new Vector3(MathF.PI / 2.0f, 0, 0),
+                    Vector3.One
+                );
 
                 for (int i = 0; i < mesh.Indices.Count; i += 3)
                 {
@@ -104,18 +88,16 @@ public class SceneBuilderService
                     VertexData v1 = mesh.Vertices[mesh.Indices[i + 1]];
                     VertexData v2 = mesh.Vertices[mesh.Indices[i + 2]];
 
-                    Vector3 offsetPos0 = new(v0.Position.X, v0.Position.Y + yOffset, v0.Position.Z);
-                    Vector3 offsetPos1 = new(v1.Position.X, v1.Position.Y + yOffset, v1.Position.Z);
-                    Vector3 offsetPos2 = new(v2.Position.X, v2.Position.Y + yOffset, v2.Position.Z);
-
                     TriangleEntity triangle = new(
-                        offsetPos0, offsetPos1, offsetPos2,
+                        v0.Position, v1.Position, v2.Position,
                         metalMaterial,
                         v0.Normal, v1.Normal, v2.Normal,
                         v0.UV, v1.UV, v2.UV
                     );
 
-                    scene.Triangles.Add(triangle);
+                    TriangleEntity transformed = transformService.ApplyTransform(triangle, teapotTransform);
+
+                    scene.Triangles.Add(transformed);
                 }
             }
 

@@ -21,32 +21,6 @@ public class WorldUseCase(SceneBuilderService? sceneBuilder = null, ModelLoader?
         _modelLoader = modelLoader;
     }
 
-    public void Initialize()
-    {
-        scene.Camera = new CameraEntity(
-            new Vector3(0, 0, 10),
-            new Vector3()
-        );
-
-        _sceneBuilder.CreateSimpleScene(scene);
-    }
-
-
-    public void LoadModel(string modelPath)
-    {
-        _sceneBuilder.AddModelToScene(scene, _modelLoader, modelPath);
-    }
-
-    public void InitializeWithModel(string modelPath)
-    {
-        scene.Camera = new CameraEntity(
-            new Vector3(0, 2, 8),
-            new Vector3(0, 0, 0)
-        );
-
-        _sceneBuilder.CreateSceneWithModel(scene, _modelLoader, modelPath);
-    }
-
     public void InitializeWithTeapot()
     {
         scene.Camera = new CameraEntity(

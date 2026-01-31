@@ -1,8 +1,8 @@
-﻿using Core.Math;
-using Core.Scene;
+using Core.Math;
 using Core.Scene.Geometry;
+using Core.Scene.Transform;
 
-namespace Application.Scene;
+namespace Core.Scene;
 
 public enum ShadingMode
 {
@@ -19,13 +19,13 @@ public static class GeometryGenerator
 
         for (int i = 0; i < segments; i++)
         {
-            float angle1 = (float)(2.0 * Math.PI * i / segments);
-            float angle2 = (float)(2.0 * Math.PI * (i + 1) / segments);
+            float angle1 = (float)(2.0 * MathF.PI * i / segments);
+            float angle2 = (float)(2.0 * MathF.PI * (i + 1) / segments);
 
-            float x1 = (float)Math.Cos(angle1) * radius;
-            float z1 = (float)Math.Sin(angle1) * radius;
-            float x2 = (float)Math.Cos(angle2) * radius;
-            float z2 = (float)Math.Sin(angle2) * radius;
+            float x1 = MathF.Cos(angle1) * radius;
+            float z1 = MathF.Sin(angle1) * radius;
+            float x2 = MathF.Cos(angle2) * radius;
+            float z2 = MathF.Sin(angle2) * radius;
 
             Vector3 n1 = new Vector3(x1, 0, z1).Normalized;
             Vector3 n2 = new Vector3(x2, 0, z2).Normalized;
@@ -80,13 +80,13 @@ public static class GeometryGenerator
     {
         for (int ring = 0; ring < rings; ring++)
         {
-            float theta1 = (float)(Math.PI * ring / rings);
-            float theta2 = (float)(Math.PI * (ring + 1) / rings);
+            float theta1 = MathF.PI * ring / rings;
+            float theta2 = MathF.PI * (ring + 1) / rings;
 
             for (int segment = 0; segment < segments; segment++)
             {
-                float phi1 = (float)(2.0 * Math.PI * segment / segments);
-                float phi2 = (float)(2.0 * Math.PI * (segment + 1) / segments);
+                float phi1 = (float)(2.0 * MathF.PI * segment / segments);
+                float phi2 = (float)(2.0 * MathF.PI * (segment + 1) / segments);
 
                 Vector3 v1 = SphericalToCartesian(center, radius, theta1, phi1);
                 Vector3 v2 = SphericalToCartesian(center, radius, theta1, phi2);
@@ -151,10 +151,10 @@ public static class GeometryGenerator
 
     private static Vector3 SphericalToCartesian(Vector3 center, float radius, float theta, float phi)
     {
-        float sinTheta = (float)Math.Sin(theta);
-        float cosTheta = (float)Math.Cos(theta);
-        float sinPhi = (float)Math.Sin(phi);
-        float cosPhi = (float)Math.Cos(phi);
+        float sinTheta = MathF.Sin(theta);
+        float cosTheta = MathF.Cos(theta);
+        float sinPhi = MathF.Sin(phi);
+        float cosPhi = MathF.Cos(phi);
 
         return new Vector3(
             center.X + radius * sinTheta * cosPhi,
@@ -185,13 +185,13 @@ public static class GeometryGenerator
     {
         for (int ring = 0; ring < rings; ring++)
         {
-            float theta1 = (float)(Math.PI * ring / rings);
-            float theta2 = (float)(Math.PI * (ring + 1) / rings);
+            float theta1 = MathF.PI * ring / rings;
+            float theta2 = MathF.PI * (ring + 1) / rings;
 
             for (int segment = 0; segment < segments; segment++)
             {
-                float phi1 = (float)(2.0 * Math.PI * segment / segments);
-                float phi2 = (float)(2.0 * Math.PI * (segment + 1) / segments);
+                float phi1 = (float)(2.0 * MathF.PI * segment / segments);
+                float phi2 = (float)(2.0 * MathF.PI * (segment + 1) / segments);
 
                 Vector3 v1 = SphericalToCartesian(center, radius, theta1, phi1);
                 Vector3 v2 = SphericalToCartesian(center, radius, theta1, phi2);
@@ -213,6 +213,96 @@ public static class GeometryGenerator
                     scene.AddTriangle(new TriangleEntity(v2, v4, v3, material, n2, n4, n3));
                 }
             }
+        }
+    }
+
+    public static void AddCubeWithTransform(SceneEntity scene, TransformData transform, float size, Color color)
+    {
+        TransformService transformService = new();
+        List<TriangleEntity> triangles = [];
+
+        float half = size / 2.0f;
+        Vector3 center = Vector3.Zero;
+
+        Vector3 v000 = new(center.X - half, center.Y - half, center.Z - half);
+        Vector3 v001 = new(center.X - half, center.Y - half, center.Z + half);
+        Vector3 v010 = new(center.X - half, center.Y + half, center.Z - half);
+        Vector3 v011 = new(center.X - half, center.Y + half, center.Z + half);
+        Vector3 v100 = new(center.X + half, center.Y - half, center.Z - half);
+        Vector3 v101 = new(center.X + half, center.Y - half, center.Z + half);
+        Vector3 v110 = new(center.X + half, center.Y + half, center.Z - half);
+        Vector3 v111 = new(center.X + half, center.Y + half, center.Z + half);
+
+        triangles.Add(new TriangleEntity(v000, v001, v010, color));
+        triangles.Add(new TriangleEntity(v010, v001, v011, color));
+        triangles.Add(new TriangleEntity(v100, v110, v101, color));
+        triangles.Add(new TriangleEntity(v110, v111, v101, color));
+        triangles.Add(new TriangleEntity(v000, v100, v001, color));
+        triangles.Add(new TriangleEntity(v100, v101, v001, color));
+        triangles.Add(new TriangleEntity(v010, v011, v110, color));
+        triangles.Add(new TriangleEntity(v110, v011, v111, color));
+        triangles.Add(new TriangleEntity(v000, v010, v100, color));
+        triangles.Add(new TriangleEntity(v010, v110, v100, color));
+        triangles.Add(new TriangleEntity(v001, v101, v011, color));
+        triangles.Add(new TriangleEntity(v101, v111, v011, color));
+
+        List<TriangleEntity> transformedTriangles = transformService.ApplyTransform(triangles, transform);
+
+        foreach (TriangleEntity triangle in transformedTriangles)
+        {
+            scene.AddTriangle(triangle);
+        }
+    }
+
+    public static void AddSphereWithTransform(SceneEntity scene, TransformData transform, float radius, int rings, int segments, Color color, ShadingMode shading = ShadingMode.Flat)
+    {
+        TransformService transformService = new();
+        List<TriangleEntity> triangles = [];
+        Vector3 center = Vector3.Zero;
+
+        for (int ring = 0; ring < rings; ring++)
+        {
+            float theta1 = MathF.PI * ring / rings;
+            float theta2 = MathF.PI * (ring + 1) / rings;
+
+            for (int segment = 0; segment < segments; segment++)
+            {
+                float phi1 = (float)(2.0 * MathF.PI * segment / segments);
+                float phi2 = (float)(2.0 * MathF.PI * (segment + 1) / segments);
+
+                Vector3 v1 = SphericalToCartesian(center, radius, theta1, phi1);
+                Vector3 v2 = SphericalToCartesian(center, radius, theta1, phi2);
+                Vector3 v3 = SphericalToCartesian(center, radius, theta2, phi1);
+                Vector3 v4 = SphericalToCartesian(center, radius, theta2, phi2);
+
+                Vector3 n1 = (v1 - center).Normalized;
+                Vector3 n2 = (v2 - center).Normalized;
+                Vector3 n3 = (v3 - center).Normalized;
+                Vector3 n4 = (v4 - center).Normalized;
+
+                bool upperHalf = v1.Y >= center.Y || v2.Y >= center.Y || v3.Y >= center.Y;
+                bool useSmooth = shading == ShadingMode.Smooth ||
+                                 shading == ShadingMode.HalfSmooth && upperHalf;
+
+                if (ring > 0)
+                {
+                    triangles.Add(useSmooth ? new TriangleEntity(v1, v2, v3, color, n1, n2, n3) : new TriangleEntity(v1, v2, v3, color));
+                }
+
+                if (ring < rings - 1)
+                {
+                    bool lowerUseSmooth = shading == ShadingMode.Smooth ||
+                                          shading == ShadingMode.HalfSmooth && (v2.Y >= center.Y || v4.Y >= center.Y || v3.Y >= center.Y);
+                    triangles.Add(lowerUseSmooth ? new TriangleEntity(v2, v4, v3, color, n2, n4, n3) : new TriangleEntity(v2, v4, v3, color));
+                }
+            }
+        }
+
+        List<TriangleEntity> transformedTriangles = transformService.ApplyTransform(triangles, transform);
+
+        foreach (TriangleEntity triangle in transformedTriangles)
+        {
+            scene.AddTriangle(triangle);
         }
     }
 }
