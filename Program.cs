@@ -18,12 +18,12 @@ public static class Program
             Height = 1440,
             VSync = true,
             EnableValidation = true,
-            EnableHdr10 = true,
+            EnableHdr10 = false,
             HdrMinNits = 0.0f,
             HdrMaxNits = 400.0f,
-            Exposure = 1f,
+            Exposure = 0.65f,
             Gamma = 2.2f,
-            ToneMapping = ToneMappingOperator.None
+            ToneMapping = ToneMappingOperator.AcesFilmic
         };
 
         try

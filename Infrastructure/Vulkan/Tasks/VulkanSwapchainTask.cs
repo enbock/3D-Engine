@@ -83,12 +83,12 @@ public unsafe class VulkanSwapchainTask(
         if (!hdrFound)
         {
             for (int i = 0; i < formatCount; i++)
-                if (formats[i].Format == Format.B8G8R8A8Srgb &&
+                if (formats[i].Format == Format.B8G8R8A8Unorm &&
                     formats[i].ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
                 {
                     SwapchainFormat = formats[i].Format;
                     colorSpace = formats[i].ColorSpace;
-                    Console.WriteLine("Standard 8-bit sRGB enabled");
+                    Console.WriteLine("Standard 8-bit Linear enabled");
                     break;
                 }
         }

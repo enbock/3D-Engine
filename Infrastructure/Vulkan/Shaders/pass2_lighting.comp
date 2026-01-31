@@ -232,14 +232,17 @@ float traceSoftShadow(vec3 origin, vec3 lightDir, float maxDist, float softness,
 vec3 shade(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, ivec2 pixelCoords) {
     vec3 result = vec3(0.0);
 
+    const float LIGHT_SCALE = 0.5;
+
     int numLights = min(lighting.numLights, 8);
 
     for (int i = 0; i < numLights; i++) {
         Light light = lighting.lights[i];
         vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
+        float scaledIntensity = light.intensity * LIGHT_SCALE;
 
         if (light.type == 0) {
-            result += albedo * lightColor * light.intensity;
+            continue;
         }
         else if (light.type == 1) {
             vec3 lDir = normalize(- vec3(light.dirX, light.dirY, light.dirZ));
@@ -249,7 +252,7 @@ vec3 shade(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, ivec2 pixelCoo
             vec3 halfDir = normalize(lDir + viewDir);
             float spec = pow(max(dot(normal, halfDir), 0.0), SPECULAR_POWER);
 
-            result += (albedo * diff + vec3(spec)) * lightColor * light.intensity * shadow;
+            result += (albedo * diff + vec3(spec)) * lightColor * scaledIntensity * shadow;
         }
         else if (light.type == 2) {
             vec3 lightPos = vec3(light.posX, light.posY, light.posZ);
@@ -257,14 +260,14 @@ vec3 shade(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, ivec2 pixelCoo
             float dist = length(lightVec);
             vec3 lDir = lightVec / dist;
 
-            float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+            float attenuation = 1.0 / (1.0 + 0.3 * dist + 0.15 * dist * dist);
             float diff = max(dot(normal, lDir), 0.0);
             float shadow = traceSoftShadow(hitPoint + normal * SHADOW_BIAS, lDir, dist, light.shadowSoftness, pixelCoords);
 
             vec3 halfDir = normalize(lDir + viewDir);
             float spec = pow(max(dot(normal, halfDir), 0.0), SPECULAR_POWER);
 
-            result += (albedo * diff + vec3(spec)) * lightColor * light.intensity * attenuation * shadow;
+            result += (albedo * diff + vec3(spec)) * lightColor * scaledIntensity * attenuation * shadow;
         }
     }
 

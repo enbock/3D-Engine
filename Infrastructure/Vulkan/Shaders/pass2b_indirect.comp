@@ -234,18 +234,21 @@ HitFast traceBVHFast(Ray ray) {
 vec3 calculateSimpleLight(vec3 hitPoint, vec3 normal, vec3 albedo) {
     vec3 result = vec3(0.0);
 
+    const float LIGHT_SCALE = 0.5;
+
     int numLights = min(lighting.numLights, 3);
     for (int i = 0; i < numLights; i++) {
         Light light = lighting.lights[i];
         vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
+        float scaledIntensity = light.intensity * LIGHT_SCALE;
 
         if (light.type == 0) {
-            result += albedo * lightColor * light.intensity;
+            continue;
         }
         else if (light.type == 1) {
             vec3 lightDir = normalize(- vec3(light.dirX, light.dirY, light.dirZ));
             float diff = max(dot(normal, lightDir), 0.0);
-            result += albedo * lightColor * diff * light.intensity;
+            result += albedo * lightColor * diff * scaledIntensity;
         }
         else if (light.type == 2) {
             vec3 lightPos = vec3(light.posX, light.posY, light.posZ);
@@ -253,10 +256,10 @@ vec3 calculateSimpleLight(vec3 hitPoint, vec3 normal, vec3 albedo) {
             float dist = length(lightVec);
             vec3 lightDir = lightVec / dist;
 
-            float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+            float attenuation = 1.0 / (1.0 + 0.3 * dist + 0.15 * dist * dist);
             float diff = max(dot(normal, lightDir), 0.0);
 
-            result += albedo * lightColor * diff * light.intensity * attenuation;
+            result += albedo * lightColor * diff * scaledIntensity * attenuation;
         }
     }
 
@@ -264,7 +267,10 @@ vec3 calculateSimpleLight(vec3 hitPoint, vec3 normal, vec3 albedo) {
 }
 
 vec3 getSkyColor(vec3 rayDir) {
-    return mix(vec3(0.1, 0.1, 0.15), vec3(0.4, 0.6, 0.9), rayDir.y * 0.5 + 0.5) * 0.2;
+    vec3 horizonColor = vec3(0.001, 0.001, 0.01);
+    vec3 zenithColor = vec3(0.0, 0.0, 0.02);
+    float t = clamp(rayDir.y * 0.5 + 0.5, 0.0, 1.0);
+    return mix(horizonColor, zenithColor, t) * 0.2;
 }
 
 vec3 calculateIndirectLight(vec3 hitPoint, vec3 normal, vec3 albedo, ivec2 pixelCoords) {

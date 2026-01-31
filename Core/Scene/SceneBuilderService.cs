@@ -9,7 +9,7 @@ public static class SceneBuilderService
 {
     public static void CreateSimpleScene(SceneEntity scene)
     {
-        scene.AddLight(LightEntity.CreateAmbient(Color.White, 0f));
+        scene.AddLight(LightEntity.CreateAmbient(Color.White, 0.01f));
         scene.AddLight(LightEntity.CreateDirectional(new Vector3(0.5f, -1.0f, 0.5f), Color.White, 0.5f, 0.1f));
         scene.AddLight(LightEntity.CreatePoint(new Vector3(-3, 4, 2), new Color(1.0f, 0.9f, 0.8f), 2.0f, 0.005f));
 

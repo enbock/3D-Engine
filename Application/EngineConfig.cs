@@ -12,7 +12,7 @@ public class EngineConfig
     public float HdrMaxNits { get; init; } = 400.0f;
     public float Exposure { get; init; } = 1.0f;
     public float Gamma { get; init; } = 2.2f;
-    public ToneMappingOperator ToneMapping { get; init; } = ToneMappingOperator.AcesFilmic;
+    public ToneMappingOperator ToneMapping { get; init; } = ToneMappingOperator.None;
     public static int MaxFramesInFlight => 2;
     public static bool UseMultiPassRendering => true;
 }

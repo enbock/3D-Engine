@@ -121,11 +121,12 @@ void main() {
     vec3 color = colorData.xyz;
 
     color = applyToneMapping(color);
-    color = applyGammaCorrection(color);
 
     if (settings.enableHdr != 0) {
         color = linearToST2084(color);
+    } else {
+        color = applyGammaCorrection(color);
     }
 
-    imageStore(outputImage, pixelCoords, vec4(color.bgr, 1.0));
+    imageStore(outputImage, pixelCoords, vec4(color, 1.0));
 }
