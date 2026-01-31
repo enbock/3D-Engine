@@ -87,8 +87,8 @@ public class SceneBuilderService
                 MaterialEntity metalMaterial = new(
                     new Color(0.65f, 0.65f, 0.7f),
                     0.0f,
-                    1.5f,
-                    0.6f,
+                    1.0f,
+                    0.3f,
                     false
                 )
                 {
@@ -96,9 +96,7 @@ public class SceneBuilderService
                     Roughness = 0.3f
                 };
 
-                float angleRadians = 90.0f * MathF.PI / 180.0f;
-                float cosAngle = MathF.Cos(angleRadians);
-                float sinAngle = MathF.Sin(angleRadians);
+                float yOffset = 2f;
 
                 for (int i = 0; i < mesh.Indices.Count; i += 3)
                 {
@@ -106,18 +104,14 @@ public class SceneBuilderService
                     VertexData v1 = mesh.Vertices[mesh.Indices[i + 1]];
                     VertexData v2 = mesh.Vertices[mesh.Indices[i + 2]];
 
-                    Vector3 rotatedPos0 = new(v0.Position.X, v0.Position.Y * cosAngle - v0.Position.Z * sinAngle, v0.Position.Y * sinAngle + v0.Position.Z * cosAngle);
-                    Vector3 rotatedPos1 = new(v1.Position.X, v1.Position.Y * cosAngle - v1.Position.Z * sinAngle, v1.Position.Y * sinAngle + v1.Position.Z * cosAngle);
-                    Vector3 rotatedPos2 = new(v2.Position.X, v2.Position.Y * cosAngle - v2.Position.Z * sinAngle, v2.Position.Y * sinAngle + v2.Position.Z * cosAngle);
-
-                    Vector3 rotatedNorm0 = new(v0.Normal.X, v0.Normal.Y * cosAngle - v0.Normal.Z * sinAngle, v0.Normal.Y * sinAngle + v0.Normal.Z * cosAngle);
-                    Vector3 rotatedNorm1 = new(v1.Normal.X, v1.Normal.Y * cosAngle - v1.Normal.Z * sinAngle, v1.Normal.Y * sinAngle + v1.Normal.Z * cosAngle);
-                    Vector3 rotatedNorm2 = new(v2.Normal.X, v2.Normal.Y * cosAngle - v2.Normal.Z * sinAngle, v2.Normal.Y * sinAngle + v2.Normal.Z * cosAngle);
+                    Vector3 offsetPos0 = new(v0.Position.X, v0.Position.Y + yOffset, v0.Position.Z);
+                    Vector3 offsetPos1 = new(v1.Position.X, v1.Position.Y + yOffset, v1.Position.Z);
+                    Vector3 offsetPos2 = new(v2.Position.X, v2.Position.Y + yOffset, v2.Position.Z);
 
                     TriangleEntity triangle = new(
-                        rotatedPos0, rotatedPos1, rotatedPos2,
+                        offsetPos0, offsetPos1, offsetPos2,
                         metalMaterial,
-                        rotatedNorm0.Normalized, rotatedNorm1.Normalized, rotatedNorm2.Normalized,
+                        v0.Normal, v1.Normal, v2.Normal,
                         v0.UV, v1.UV, v2.UV
                     );
 
