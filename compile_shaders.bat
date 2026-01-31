@@ -18,6 +18,9 @@ if not exist "%VULKAN_SDK%\Bin\glslc.exe" (
 
 %GLSLC% %SHADER_DIR%\pass1_primary.comp -o %SHADER_TARGET_DIR%\pass1_primary.comp.spv
 %GLSLC% %SHADER_DIR%\pass2_lighting.comp -o %SHADER_TARGET_DIR%\pass2_lighting.comp.spv
+%GLSLC% %SHADER_DIR%\pass2b_shadow_downsample.comp -o %SHADER_TARGET_DIR%\pass2b_shadow_downsample.comp.spv
+%GLSLC% %SHADER_DIR%\pass2b_shadow_denoise.comp -o %SHADER_TARGET_DIR%\pass2b_shadow_denoise.comp.spv
+%GLSLC% %SHADER_DIR%\pass2b_shadow_upscale.comp -o %SHADER_TARGET_DIR%\pass2b_shadow_upscale.comp.spv
 %GLSLC% %SHADER_DIR%\pass2b_indirect_downsample.comp -o %SHADER_TARGET_DIR%\pass2b_indirect_downsample.comp.spv
 %GLSLC% %SHADER_DIR%\pass2b_indirect_upscale.comp -o %SHADER_TARGET_DIR%\pass2b_indirect_upscale.comp.spv
 %GLSLC% %SHADER_DIR%\pass3_reflections.comp -o %SHADER_TARGET_DIR%\pass3_reflections.comp.spv

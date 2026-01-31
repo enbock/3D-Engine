@@ -83,6 +83,8 @@ public struct RenderSettingsData
     public int GISamples;
     public float GIStrength;
     public int ResolutionScale;
+    public int GiResolutionScale;
+    public int ShadowResolutionScale;
     public int EnableCaustics;
     public int EnableHdr;
     public float Exposure;

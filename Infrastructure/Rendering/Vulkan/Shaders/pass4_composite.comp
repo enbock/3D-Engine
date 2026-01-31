@@ -25,6 +25,8 @@ layout (binding = 3) uniform RenderSettings {
     int giSamples;
     float giStrength;
     int resolutionScale;
+    int giResolutionScale;
+    int shadowResolutionScale;
     int enableCaustics;
     int enableHdr;
     float exposure;
@@ -32,8 +34,6 @@ layout (binding = 3) uniform RenderSettings {
     int toneMapping;
     float hdrMinNits;
     float hdrMaxNits;
-    float _pad0;
-    float _pad1;
 } settings;
 
 const int TONEMAP_NONE = 0;

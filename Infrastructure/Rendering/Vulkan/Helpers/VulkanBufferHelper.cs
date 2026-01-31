@@ -190,6 +190,8 @@ public static unsafe class VulkanBufferHelper
             GISamples = settings.GiSamples,
             GIStrength = settings.GiStrength,
             ResolutionScale = settings.ResolutionScale,
+            GiResolutionScale = settings.GiResolutionScale,
+            ShadowResolutionScale = settings.ShadowResolutionScale,
             EnableCaustics = settings.EnableCaustics ? 1 : 0,
             EnableHdr = config.EnableHdr10 ? 1 : 0,
             Exposure = config.Exposure,

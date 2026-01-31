@@ -20,6 +20,8 @@ public class RenderSettings
     public float GiStrength { get; private init; } = 0.5f;
     public bool EnableCaustics { get; private init; } = true;
     public int ResolutionScale { get; private init; } = 1;
+    public int GiResolutionScale { get; private init; } = 1;
+    public int ShadowResolutionScale { get; private init; } = 1;
 
     public static RenderSettings Default => new()
     {
@@ -27,12 +29,14 @@ public class RenderSettings
         EnableShadows = true,
         EnableReflections = true,
         ReflectionStrength = 0.5f,
-        ShadowSamples = 8,
+        ShadowSamples = 6,
         EnableGi = true,
         GiSamples = 2,
-        GiStrength = 0.5f,
+        GiStrength = 1f,
         EnableCaustics = true,
-        ResolutionScale = 32
+        ResolutionScale = 32,
+        GiResolutionScale = 32,
+        ShadowResolutionScale = 2
     };
 
     public static RenderSettings Performance => new()
@@ -44,9 +48,11 @@ public class RenderSettings
         ShadowSamples = 4,
         EnableGi = true,
         GiSamples = 1,
-        GiStrength = 0.5f,
+        GiStrength = 1f,
         EnableCaustics = true,
-        ResolutionScale = 64
+        ResolutionScale = 64,
+        GiResolutionScale = 64,
+        ShadowResolutionScale = 4
     };
 
     public static RenderSettings UltraPerformance => new()
@@ -60,20 +66,40 @@ public class RenderSettings
         GiSamples = 0,
         GiStrength = 0.0f,
         EnableCaustics = false,
-        ResolutionScale = 1
+        ResolutionScale = 1,
+        GiResolutionScale = 1,
+        ShadowResolutionScale = 1
     };
 
     public static RenderSettings Quality => new()
     {
         MaxBounces = 5,
-        EnableShadows = false,
+        EnableShadows = true,
+        EnableReflections = true,
+        ReflectionStrength = 0.5f,
+        ShadowSamples = 8,
+        EnableGi = true,
+        GiSamples = 8,
+        GiStrength = 1f,
+        EnableCaustics = true,
+        ResolutionScale = 16,
+        GiResolutionScale = 4,
+        ShadowResolutionScale = 2
+    };
+
+    public static RenderSettings UltraQuality => new()
+    {
+        MaxBounces = 8,
+        EnableShadows = true,
         EnableReflections = true,
         ReflectionStrength = 0.5f,
         ShadowSamples = 12,
         EnableGi = true,
         GiSamples = 8,
-        GiStrength = 0.5f,
+        GiStrength = 1f,
         EnableCaustics = true,
-        ResolutionScale = 16
+        ResolutionScale = 16,
+        GiResolutionScale = 4,
+        ShadowResolutionScale = 1
     };
 }

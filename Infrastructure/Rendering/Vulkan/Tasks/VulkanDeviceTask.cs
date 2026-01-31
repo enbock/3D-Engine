@@ -82,8 +82,52 @@ public unsafe class VulkanDeviceTask(Vk vk, KhrSurface khrSurface, SurfaceKHR su
 
         PhysicalDeviceFeatures deviceFeatures = new();
 
-        string[] extensions = ["VK_KHR_swapchain"];
-        IntPtr extensionNames = SilkMarshal.StringArrayToPtr(extensions);
+        // Query available device extensions and enable swapchain_colorspace if present
+        uint availableExtCount = 0;
+        vk.EnumerateDeviceExtensionProperties(PhysicalDevice, (byte*)null, &availableExtCount, null);
+        string[] desiredExtensions;
+
+        if (availableExtCount > 0)
+        {
+            ExtensionProperties* extProps = stackalloc ExtensionProperties[(int)availableExtCount];
+            vk.EnumerateDeviceExtensionProperties(PhysicalDevice, (byte*)null, &availableExtCount, extProps);
+
+            bool hasSwapchainColorSpace = false;
+            for (int i = 0; i < (int)availableExtCount; i++)
+            {
+                string? name = Marshal.PtrToStringAnsi((nint)extProps[i].ExtensionName);
+                if (name == "VK_EXT_swapchain_colorspace")
+                {
+                    hasSwapchainColorSpace = true;
+                    break;
+                }
+            }
+
+            if (hasSwapchainColorSpace)
+            {
+                desiredExtensions = new[]
+                {
+                    "VK_KHR_swapchain",
+                    "VK_EXT_swapchain_colorspace"
+                };
+            }
+            else
+            {
+                desiredExtensions = new[]
+                {
+                    "VK_KHR_swapchain"
+                };
+            }
+        }
+        else
+        {
+            desiredExtensions = new[]
+            {
+                "VK_KHR_swapchain"
+            };
+        }
+
+        IntPtr extensionNames = SilkMarshal.StringArrayToPtr(desiredExtensions);
 
         DeviceCreateInfo createInfo = new()
         {
@@ -91,7 +135,7 @@ public unsafe class VulkanDeviceTask(Vk vk, KhrSurface khrSurface, SurfaceKHR su
             QueueCreateInfoCount = 1,
             PQueueCreateInfos = &queueCreateInfo,
             PEnabledFeatures = &deviceFeatures,
-            EnabledExtensionCount = (uint)extensions.Length,
+            EnabledExtensionCount = (uint)desiredExtensions.Length,
             PpEnabledExtensionNames = (byte**)extensionNames
         };
 

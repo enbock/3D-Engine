@@ -1,0 +1,8 @@
+﻿<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="Publish VulkanEngine to folder" type="DotNetFolderPublish"
+                   factoryName="Publish to folder">
+        <riderPublish delete_existing_files="true" target_folder="$PROJECT_DIR$/bin/net10.0/publish"
+                      target_framework="net10.0" uuid_high="5128883511696984412" uuid_low="6706619833766053850"/>
+        <method v="2"/>
+    </configuration>
+</component>

@@ -2,25 +2,24 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
-layout (binding = 0, rgba32f) uniform readonly image2D downsampledIndirect;
-layout (binding = 1, rgba32f) uniform writeonly image2D indirectColor;
-layout (binding = 2, rgba32f) uniform readonly image2D litColor;
-
-layout (binding = 3) uniform CameraUBO { vec3 position; float _pad1; vec3 target; float _pad2; vec2 resolution; float time; float fov; } camera;
+layout (binding = 0, rgba32f) uniform readonly image2D downsampledShadow0;
+layout (binding = 1, rgba32f) uniform writeonly image2D shadowFullRes0;
+layout (binding = 2, rgba32f) uniform readonly image2D downsampledShadow1;
+layout (binding = 3, rgba32f) uniform writeonly image2D shadowFullRes1;
 layout (binding = 4) uniform RenderSettings { int maxBounces; int enableShadows; int enableReflections; float reflectionStrength; int shadowSamples; int enableGI; int giSamples; float giStrength; int resolutionScale; int giResolutionScale; int shadowResolutionScale; int enableCaustics; int enableHdr; float exposure; float gamma; int toneMapping; float hdrMinNits; float hdrMaxNits; } settings;
 
 void main() {
     ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 res = ivec2(camera.resolution);
+    ivec2 res = ivec2(imageSize(shadowFullRes0));
     if (pixel.x >= res.x || pixel.y >= res.y) return;
 
-    int scale = max(1, settings.giResolutionScale);
+    int scale = max(1, settings.shadowResolutionScale);
     ivec2 dsRes = (res + ivec2(scale - 1)) / scale;
 
     vec2 fcoord = vec2(pixel) / float(scale);
     ivec2 base = ivec2(floor(fcoord));
 
-    // 5x5 Gaussian kernel for stronger blur and noise reduction (matching shadows)
+    // 5x5 Gaussian kernel for stronger blur and noise reduction
     const float kernel[5][5] =   {
         { 0.003765, 0.015019, 0.023792, 0.015019, 0.003765 },
     { 0.015019, 0.059912, 0.094907, 0.059912, 0.015019 },
@@ -29,24 +28,25 @@ void main() {
     { 0.003765, 0.015019, 0.023792, 0.015019, 0.003765 }
     };
 
-    vec4 result = vec4(0.0);
+    vec4 result0 = vec4(0.0);
+    vec4 result1 = vec4(0.0);
     float weightSum = 0.0;
 
-    // Apply stronger Gaussian blur for smoother GI
+    // Apply stronger Gaussian blur for smoother shadows
     for (int dy = -2; dy <= 2; dy++) {
         for (int dx = -2; dx <= 2; dx++) {
             ivec2 samplePos = clamp(base + ivec2(dx, dy), ivec2(0), dsRes - ivec2(1));
             float weight = kernel[dy + 2][dx + 2];
 
-            result += imageLoad(downsampledIndirect, samplePos) * weight;
+            result0 += imageLoad(downsampledShadow0, samplePos) * weight;
+            result1 += imageLoad(downsampledShadow1, samplePos) * weight;
             weightSum += weight;
         }
     }
 
-    result /= weightSum;
+    result0 /= weightSum;
+    result1 /= weightSum;
 
-    vec3 baseColor = imageLoad(litColor, pixel).xyz;
-    vec3 finalColor = baseColor + result.xyz * result.w;
-
-    imageStore(indirectColor, pixel, vec4(finalColor, 1.0));
+    imageStore(shadowFullRes0, pixel, result0);
+    imageStore(shadowFullRes1, pixel, result1);
 }

@@ -36,6 +36,7 @@
 - [Transparency Refraction](TRANSPARENCY_REFRACTION.md)
 - [Triangle Data Alignment Fix](TRIANGLE_DATA_ALIGNMENT_FIX.md)
 - [Resolution Scale (GI)](RESOLUTION_SCALE.md)
+- [Shadow Resolution Scaling](SHADOW_RESOLUTION_SCALING.md)
 
 ## Archivierte Dokumente
 

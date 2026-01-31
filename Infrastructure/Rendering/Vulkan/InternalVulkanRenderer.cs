@@ -116,8 +116,11 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
         _pipelineTask = new VulkanPipelineTask(_vk, DeviceTask.Device);
 
         _multiPassTask = new VulkanMultiPassTask(_vk, DeviceTask.Device, ImageTask, _pipelineTask);
-        _multiPassTask.CreateGBufferImages(_swapchainTask.SwapchainExtent.Width,
-            _swapchainTask.SwapchainExtent.Height, config.RenderSettings.ResolutionScale);
+        _multiPassTask.CreateGBufferImages(
+            _swapchainTask.SwapchainExtent.Width,
+            _swapchainTask.SwapchainExtent.Height,
+            config.RenderSettings.GiResolutionScale,
+            config.RenderSettings.ShadowResolutionScale);
         Console.WriteLine("Multi-Pass Rendering enabled");
 
         _syncTask = new VulkanSyncTask(_vk, DeviceTask.Device);
@@ -306,7 +309,9 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
 
         _multiPassTask!.DestroyGBufferImages();
         _multiPassTask.CreateGBufferImages(_swapchainTask.SwapchainExtent.Width,
-            _swapchainTask.SwapchainExtent.Height, config.RenderSettings.ResolutionScale);
+            _swapchainTask.SwapchainExtent.Height,
+            config.RenderSettings.GiResolutionScale,
+            config.RenderSettings.ShadowResolutionScale);
         _multiPassTask.CreateDescriptorSets(_cameraBuffer, _triangleBuffer, _lightBuffer, _settingsBuffer, _bvhBuffer,
             _storageImageView);
 

@@ -7,6 +7,8 @@ layout (binding = 1, rgba32f) uniform readonly image2D gNormal;
 layout (binding = 2, rgba32f) uniform readonly image2D gAlbedo;
 layout (binding = 3, rgba32f) uniform readonly image2D gRayDir;
 layout (binding = 4, rgba32f) uniform writeonly image2D litColor;
+layout (binding = 5, rgba32f) uniform readonly image2D shadowFullRes0;
+layout (binding = 6, rgba32f) uniform readonly image2D shadowFullRes1;
 
 struct Light {
     int type;
@@ -27,7 +29,7 @@ struct Light {
     float pad4;
 };
 
-layout (std430, binding = 5) buffer LightUBO {
+layout (std430, binding = 7) buffer LightUBO {
     int numLights;
     int _pad1;
     int _pad2;
@@ -57,11 +59,11 @@ struct Triangle {
     int normalTextureId;
 };
 
-layout (std430, binding = 6) readonly buffer TriangleSSBO {
+layout (std430, binding = 8) readonly buffer TriangleSSBO {
     Triangle triangles[];
 };
 
-layout (binding = 7) uniform RenderSettings {
+layout (binding = 9) uniform RenderSettings {
     int maxBounces;
     int enableShadows;
     int enableReflections;
@@ -71,6 +73,8 @@ layout (binding = 7) uniform RenderSettings {
     int giSamples;
     float giStrength;
     int resolutionScale;
+    int giResolutionScale;
+    int shadowResolutionScale;
     int enableCaustics;
     int enableHdr;
     float exposure;
@@ -78,11 +82,9 @@ layout (binding = 7) uniform RenderSettings {
     int toneMapping;
     float hdrMinNits;
     float hdrMaxNits;
-    float _pad0;
-    float _pad1;
 } settings;
 
-layout (binding = 8) uniform CameraUBO {
+layout (binding = 10) uniform CameraUBO {
     vec3 position;
     float _pad1;
     vec3 target;
@@ -103,7 +105,7 @@ struct BvhNode {
     int pad1;
 };
 
-layout (std430, binding = 9) readonly buffer BvhSSBO {
+layout (std430, binding = 11) readonly buffer BvhSSBO {
     BvhNode bvhNodes[];
 };
 
@@ -236,6 +238,27 @@ float traceSoftShadow(vec3 origin, vec3 lightDir, float maxDist, float softness,
     return mix(SHADOW_AMBIENT, 1.0, 1.0 - shadowSum / float(numSamples));
 }
 
+float sampleShadowFactor(ivec2 pixelCoords, int lightIndex) {
+    ivec2 res = ivec2(camera.resolution);
+    if (pixelCoords.x < 0 || pixelCoords.y < 0 || pixelCoords.x >= res.x || pixelCoords.y >= res.y) return 1.0;
+
+    vec4 s0 = imageLoad(shadowFullRes0, pixelCoords);
+    vec4 s1 = imageLoad(shadowFullRes1, pixelCoords);
+
+    if (lightIndex < 4) {
+        if (lightIndex == 0) return s0.r;
+        if (lightIndex == 1) return s0.g;
+        if (lightIndex == 2) return s0.b;
+        return s0.a;
+    } else {
+        int idx = lightIndex - 4;
+        if (idx == 0) return s1.r;
+        if (idx == 1) return s1.g;
+        if (idx == 2) return s1.b;
+        return s1.a;
+    }
+}
+
 vec3 shade(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, ivec2 pixelCoords) {
     vec3 result = vec3(0.0);
 
@@ -248,13 +271,17 @@ vec3 shade(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, ivec2 pixelCoo
         vec3 lightColor = vec3(light.colorR, light.colorG, light.colorB);
         float scaledIntensity = light.intensity * LIGHT_SCALE;
 
+        float shadow = 1.0;
+        if (settings.enableShadows != 0) {
+            shadow = sampleShadowFactor(pixelCoords, i);
+        }
+
         if (light.type == 0) {
             continue;
         }
         else if (light.type == 1) {
             vec3 lDir = normalize(- vec3(light.dirX, light.dirY, light.dirZ));
             float diff = max(dot(normal, lDir), 0.0);
-            float shadow = traceSoftShadow(hitPoint + normal * SHADOW_BIAS, lDir, MAX_DIST, light.shadowSoftness, pixelCoords);
 
             vec3 halfDir = normalize(lDir + viewDir);
             float spec = pow(max(dot(normal, halfDir), 0.0), SPECULAR_POWER);
@@ -270,7 +297,6 @@ vec3 shade(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, ivec2 pixelCoo
             float attenFactor = light.attenuationFactor;
             float attenuation = 1.0 / (1.0 + 0.3 * attenFactor * dist + 0.15 * attenFactor * dist * dist);
             float diff = max(dot(normal, lDir), 0.0);
-            float shadow = traceSoftShadow(hitPoint + normal * SHADOW_BIAS, lDir, dist, light.shadowSoftness, pixelCoords);
 
             vec3 halfDir = normalize(lDir + viewDir);
             float spec = pow(max(dot(normal, halfDir), 0.0), SPECULAR_POWER);

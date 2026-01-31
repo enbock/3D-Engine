@@ -1,0 +1,104 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+layout (binding = 0, rgba32f) uniform readonly image2D inputShadow0;
+layout (binding = 1, rgba32f) uniform writeonly image2D outputShadow0;
+layout (binding = 2, rgba32f) uniform readonly image2D inputShadow1;
+layout (binding = 3, rgba32f) uniform writeonly image2D outputShadow1;
+layout (binding = 4, rgba32f) uniform readonly image2D gPosition;
+layout (binding = 5, rgba32f) uniform readonly image2D gNormal;
+layout (binding = 6) uniform RenderSettings { int maxBounces; int enableShadows; int enableReflections; float reflectionStrength; int shadowSamples; int enableGI; int giSamples; float giStrength; int resolutionScale; int giResolutionScale; int shadowResolutionScale; int enableCaustics; int enableHdr; float exposure; float gamma; int toneMapping; float hdrMinNits; float hdrMaxNits; } settings;
+
+const float DENOISE_SIGMA_SPATIAL = 4.0;
+const float DENOISE_SIGMA_RANGE = 10.0;
+const float DENOISE_SIGMA_NORMAL = 0.8;
+const float DENOISE_SIGMA_DEPTH = 0.05;
+
+void main() {
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 res = ivec2(imageSize(inputShadow0));
+    if (pixel.x >= res.x || pixel.y >= res.y) return;
+
+    int scale = max(1, settings.shadowResolutionScale);
+    ivec2 fullCoord = pixel * scale;
+    ivec2 fullRes = ivec2(imageSize(gPosition));
+
+    if (fullCoord.x >= fullRes.x || fullCoord.y >= fullRes.y) {
+        imageStore(outputShadow0, pixel, imageLoad(inputShadow0, pixel));
+        imageStore(outputShadow1, pixel, imageLoad(inputShadow1, pixel));
+        return;
+    }
+
+    vec4 centerShadow0 = imageLoad(inputShadow0, pixel);
+    vec4 centerShadow1 = imageLoad(inputShadow1, pixel);
+
+    vec4 posData = imageLoad(gPosition, fullCoord);
+    float isHit = posData.w;
+
+    if (isHit < 0.5) {
+        imageStore(outputShadow0, pixel, centerShadow0);
+        imageStore(outputShadow1, pixel, centerShadow1);
+        return;
+    }
+
+    vec3 centerPos = posData.xyz;
+    vec3 centerNormal = imageLoad(gNormal, fullCoord).xyz;
+    float centerDepth = length(centerPos);
+
+    vec4 sum0 = vec4(0.0);
+    vec4 sum1 = vec4(0.0);
+    float weightSum = 0.0;
+
+    const int radius = 5;
+    for (int dy = -radius; dy <= radius; dy++) {
+        for (int dx = -radius; dx <= radius; dx++) {
+            ivec2 samplePixel = clamp(pixel + ivec2(dx, dy), ivec2(0), res - ivec2(1));
+            ivec2 sampleFullCoord = samplePixel * scale;
+
+            if (sampleFullCoord.x >= fullRes.x || sampleFullCoord.y >= fullRes.y) continue;
+
+            vec4 sampleShadow0 = imageLoad(inputShadow0, samplePixel);
+            vec4 sampleShadow1 = imageLoad(inputShadow1, samplePixel);
+
+            vec4 samplePosData = imageLoad(gPosition, sampleFullCoord);
+            if (samplePosData.w < 0.5) continue;
+
+            vec3 samplePos = samplePosData.xyz;
+            vec3 sampleNormal = imageLoad(gNormal, sampleFullCoord).xyz;
+            float sampleDepth = length(samplePos);
+
+            float spatialDist = length(vec2(dx, dy));
+            float spatialWeight = exp(-(spatialDist * spatialDist) / (2.0 * DENOISE_SIGMA_SPATIAL * DENOISE_SIGMA_SPATIAL));
+
+            float rangeDist0 = length(centerShadow0 - sampleShadow0);
+            float rangeDist1 = length(centerShadow1 - sampleShadow1);
+            float rangeDist = max(rangeDist0, rangeDist1);
+            float rangeWeight = exp(-(rangeDist * rangeDist) / (2.0 * DENOISE_SIGMA_RANGE * DENOISE_SIGMA_RANGE));
+
+            float normalSimilarity = max(0.0, dot(centerNormal, sampleNormal));
+            float normalWeight = pow(normalSimilarity, 32.0);
+
+            float depthDiff = abs(centerDepth - sampleDepth) / max(centerDepth, 0.001);
+            float depthWeight = exp(-(depthDiff * depthDiff) / (2.0 * DENOISE_SIGMA_DEPTH * DENOISE_SIGMA_DEPTH));
+
+            float weight = spatialWeight * rangeWeight * normalWeight * depthWeight;
+            weight = max(weight, 0.0001);
+
+            sum0 += sampleShadow0 * weight;
+            sum1 += sampleShadow1 * weight;
+            weightSum += weight;
+        }
+    }
+
+    if (weightSum > 0.001) {
+        sum0 /= weightSum;
+        sum1 /= weightSum;
+    } else {
+        sum0 = centerShadow0;
+        sum1 = centerShadow1;
+    }
+
+    imageStore(outputShadow0, pixel, sum0);
+    imageStore(outputShadow1, pixel, sum1);
+}

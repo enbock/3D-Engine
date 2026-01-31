@@ -67,7 +67,7 @@ public class SceneBuilderService
             Console.WriteLine($"Fehler beim Laden des Teapots: {ex.Message}");
         }
 
-        float ringRadius = 4.5f;
+        float ringRadius = 4f;
 
         GeometryGenerator.AddCylinder(scene, new Vector3(-ringRadius, 1, 0), 0.4f, 2.0f, 16, new Color(1.0f, 0.0f, 0.0f), ShadingMode.HalfSmooth);
         GeometryGenerator.AddSphere(scene, new Vector3(0, 1, -ringRadius), 0.7f, 12, 16, new Color(0.0f, 1.0f, 0.0f), ShadingMode.HalfSmooth);
