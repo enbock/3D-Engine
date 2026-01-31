@@ -22,7 +22,7 @@ public static class Program
             HdrMinNits = 0.0f,
             HdrMaxNits = 400.0f,
             Exposure = 1f,
-            Gamma = 1f,
+            Gamma = 2.2f,
             ToneMapping = ToneMappingOperator.None
         };
 
