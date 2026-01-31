@@ -34,7 +34,7 @@ struct Light {
     int type;
     float intensity;
     float shadowSoftness;
-    float pad1;
+    float attenuationFactor;
     float posX;
     float posY;
     float posZ;
@@ -122,8 +122,8 @@ const float BACKFACE_EPSILON = 1e-6;
 const float MAX_DIST = 100.0;
 const float SHADOW_BIAS = EPSILON * 10.0;
 const float SPECULAR_POWER = 32.0;
-const float SHADOW_AMBIENT = 0.05;
-const float LIGHT_SCALE = 0.5;
+const float SHADOW_AMBIENT = 0.001;
+const float LIGHT_SCALE = 0.75;
 
 const float DISPERSION_STRENGTH = 0.02;
 const float CAUCHY_B = 0.004;
@@ -366,7 +366,8 @@ vec3 calculatePointLight(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, 
     float dist = length(lightVec);
     vec3 lDir = lightVec / dist;
 
-    float attenuation = 1.0 / (1.0 + 0.3 * dist + 0.15 * dist * dist);
+    float attenFactor = light.attenuationFactor;
+    float attenuation = 1.0 / (1.0 + 0.3 * attenFactor * dist + 0.15 * attenFactor * dist * dist);
     float diff = max(dot(normal, lDir), 0.0);
 
     bool inShadow = traceShadowBVH(hitPoint + normal * SHADOW_BIAS, lDir, dist);
@@ -432,8 +433,8 @@ vec3 calculateReflections(vec3 hitPoint, vec3 normal, vec3 rayDir) {
         if (reflHit.hit) {
             vec3 reflColor = shade(reflHit.color, reflHit.normal, reflDir, reflHit.point);
 
-            float fresnel = pow(1.0 - max(dot(-currentRayDir, currentNormal), 0.0), 5.0);
-            float reflectionFactor = settings.reflectionStrength * (0.2 + 0.8 * fresnel);
+            float fresnel = 1.0 - max(dot(-currentRayDir, currentNormal), 0.0);
+            float reflectionFactor = settings.reflectionStrength * fresnel;
             float bounceFalloff = pow(0.5, float(bounce + 1));
 
             reflectionColor += reflColor * reflectionFactor * bounceFalloff;

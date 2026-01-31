@@ -104,28 +104,14 @@ public static class GeometryGenerator
 
                 if (ring > 0)
                 {
-                    if (useSmooth)
-                    {
-                        scene.AddTriangle(new TriangleEntity(v1, v2, v3, color, n1, n2, n3));
-                    }
-                    else
-                    {
-                        scene.AddTriangle(new TriangleEntity(v1, v2, v3, color));
-                    }
+                    scene.AddTriangle(useSmooth ? new TriangleEntity(v1, v2, v3, color, n1, n2, n3) : new TriangleEntity(v1, v2, v3, color));
                 }
 
                 if (ring < rings - 1)
                 {
                     bool lowerUseSmooth = shading == ShadingMode.Smooth ||
                                           shading == ShadingMode.HalfSmooth && (v2.Y >= center.Y || v4.Y >= center.Y || v3.Y >= center.Y);
-                    if (lowerUseSmooth)
-                    {
-                        scene.AddTriangle(new TriangleEntity(v2, v4, v3, color, n2, n4, n3));
-                    }
-                    else
-                    {
-                        scene.AddTriangle(new TriangleEntity(v2, v4, v3, color));
-                    }
+                    scene.AddTriangle(lowerUseSmooth ? new TriangleEntity(v2, v4, v3, color, n2, n4, n3) : new TriangleEntity(v2, v4, v3, color));
                 }
             }
         }

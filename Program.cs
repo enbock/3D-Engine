@@ -14,16 +14,17 @@ public static class Program
         EngineConfig config = new()
         {
             Title = "Vulkan Raytracing Engine - C#",
-            Width = 2560,
-            Height = 1440,
+            Width = 1920,
+            Height = 1080,
             VSync = true,
             EnableValidation = true,
-            EnableHdr10 = false,
-            HdrMinNits = 0.0f,
+            EnableHdr10 = true,
+            HdrMinNits = 0.2f,
             HdrMaxNits = 400.0f,
-            Exposure = 0.65f,
-            Gamma = 2.2f,
-            ToneMapping = ToneMappingOperator.AcesFilmic
+            Exposure = 1f,
+            Gamma = 1f,
+            ToneMapping = ToneMappingOperator.None,
+            RenderSettings = RenderSettings.Quality
         };
 
         try

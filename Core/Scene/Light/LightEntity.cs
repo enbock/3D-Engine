@@ -17,20 +17,23 @@ public class LightEntity(LightType type, Color? color = null, float intensity = 
     public Color Color { get; set; } = color ?? Color.White;
     public float Intensity { get; set; } = intensity;
     public float ShadowSoftness { get; set; } = shadowSoftness;
+    public float AttenuationFactor { get; set; } = 1.0f;
 
-    public static LightEntity CreateDirectional(Vector3 direction, Color? color = null, float intensity = 1.0f, float shadowSoftness = 0.03f)
+    public static LightEntity CreateDirectional(Vector3 direction, Color? color = null, float intensity = 1.0f, float shadowSoftness = 0.03f, float attenuationFactor = 1.0f)
     {
         return new LightEntity(LightType.Directional, color, intensity, shadowSoftness)
         {
-            Direction = direction.Normalized
+            Direction = direction.Normalized,
+            AttenuationFactor = attenuationFactor
         };
     }
 
-    public static LightEntity CreatePoint(Vector3 position, Color? color = null, float intensity = 1.0f, float shadowSoftness = 0.03f)
+    public static LightEntity CreatePoint(Vector3 position, Color? color = null, float intensity = 1.0f, float shadowSoftness = 0.03f, float attenuationFactor = 1.0f)
     {
         return new LightEntity(LightType.Point, color, intensity, shadowSoftness)
         {
-            Position = position
+            Position = position,
+            AttenuationFactor = attenuationFactor
         };
     }
 

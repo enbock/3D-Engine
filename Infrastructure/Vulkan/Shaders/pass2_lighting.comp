@@ -12,7 +12,7 @@ struct Light {
     int type;
     float intensity;
     float shadowSoftness;
-    float pad1;
+    float attenuationFactor;
     float posX;
     float posY;
     float posZ;
@@ -109,7 +109,7 @@ const float EPSILON = 0.01;
 const float MAX_DIST = 100.0;
 const float SHADOW_BIAS = 0.1;
 const float SPECULAR_POWER = 32.0;
-const float SHADOW_AMBIENT = 0.15;
+const float SHADOW_AMBIENT = 0.001;
 const float PI = 3.14159265;
 
 const vec2 POISSON_DISK[8] = vec2[](
@@ -232,7 +232,7 @@ float traceSoftShadow(vec3 origin, vec3 lightDir, float maxDist, float softness,
 vec3 shade(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, ivec2 pixelCoords) {
     vec3 result = vec3(0.0);
 
-    const float LIGHT_SCALE = 0.5;
+    const float LIGHT_SCALE = 0.75;
 
     int numLights = min(lighting.numLights, 8);
 
@@ -260,7 +260,8 @@ vec3 shade(vec3 albedo, vec3 normal, vec3 viewDir, vec3 hitPoint, ivec2 pixelCoo
             float dist = length(lightVec);
             vec3 lDir = lightVec / dist;
 
-            float attenuation = 1.0 / (1.0 + 0.3 * dist + 0.15 * dist * dist);
+            float attenFactor = light.attenuationFactor;
+            float attenuation = 1.0 / (1.0 + 0.3 * attenFactor * dist + 0.15 * attenFactor * dist * dist);
             float diff = max(dot(normal, lDir), 0.0);
             float shadow = traceSoftShadow(hitPoint + normal * SHADOW_BIAS, lDir, dist, light.shadowSoftness, pixelCoords);
 

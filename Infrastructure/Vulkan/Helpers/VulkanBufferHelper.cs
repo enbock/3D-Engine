@@ -154,6 +154,7 @@ public static unsafe class VulkanBufferHelper
                 Type = (int)lights[i].Type,
                 Intensity = lights[i].Intensity,
                 ShadowSoftness = lights[i].ShadowSoftness,
+                AttenuationFactor = lights[i].AttenuationFactor,
                 PositionX = lights[i].Position.X,
                 PositionY = lights[i].Position.Y,
                 PositionZ = lights[i].Position.Z,
@@ -169,7 +170,7 @@ public static unsafe class VulkanBufferHelper
 
         bufferTask.CopyDataToBuffer(lightBufferMemory, lightData);
 
-        RenderSettings settings = RenderSettings.Quality;
+        RenderSettings settings = config.RenderSettings;
         RenderSettingsData settingsData = new()
         {
             MaxBounces = settings.MaxBounces,

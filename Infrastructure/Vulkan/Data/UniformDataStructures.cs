@@ -21,7 +21,7 @@ public struct LightData
     public int Type;
     public float Intensity;
     public float ShadowSoftness;
-    public float Pad1;
+    public float AttenuationFactor;
 
     public float PositionX;
     public float PositionY;

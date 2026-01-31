@@ -33,7 +33,7 @@ struct Light {
     int type;
     float intensity;
     float shadowSoftness;
-    float pad1;
+    float attenuationFactor;
     float posX;
     float posY;
     float posZ;
@@ -234,7 +234,7 @@ HitFast traceBVHFast(Ray ray) {
 vec3 calculateSimpleLight(vec3 hitPoint, vec3 normal, vec3 albedo) {
     vec3 result = vec3(0.0);
 
-    const float LIGHT_SCALE = 0.5;
+    const float LIGHT_SCALE = 0.75;
 
     int numLights = min(lighting.numLights, 3);
     for (int i = 0; i < numLights; i++) {
@@ -256,7 +256,8 @@ vec3 calculateSimpleLight(vec3 hitPoint, vec3 normal, vec3 albedo) {
             float dist = length(lightVec);
             vec3 lightDir = lightVec / dist;
 
-            float attenuation = 1.0 / (1.0 + 0.3 * dist + 0.15 * dist * dist);
+            float attenFactor = light.attenuationFactor;
+            float attenuation = 1.0 / (1.0 + 0.3 * attenFactor * dist + 0.15 * attenFactor * dist * dist);
             float diff = max(dot(normal, lightDir), 0.0);
 
             result += albedo * lightColor * diff * scaledIntensity * attenuation;
