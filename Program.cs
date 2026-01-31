@@ -19,10 +19,10 @@ public static class Program
             VSync = true,
             EnableValidation = true,
             EnableHdr10 = true,
-            HdrMinNits = 0.2f,
+            HdrMinNits = 0.2f, // TODO einbauen
             HdrMaxNits = 400.0f,
             Exposure = 1f,
-            Gamma = 1f,
+            Gamma = 2.2f,
             ToneMapping = ToneMappingOperator.None,
             RenderSettings = RenderSettings.Quality
         };
