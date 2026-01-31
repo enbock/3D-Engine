@@ -14,6 +14,9 @@ public class TriangleEntity
         N0 = faceNormal;
         N1 = faceNormal;
         N2 = faceNormal;
+        UV0 = TextureCoordinate.Zero;
+        UV1 = TextureCoordinate.Zero;
+        UV2 = TextureCoordinate.Zero;
     }
 
     public TriangleEntity(Vector3 v0, Vector3 v1, Vector3 v2, Color color, Vector3 n0, Vector3 n1, Vector3 n2)
@@ -25,6 +28,9 @@ public class TriangleEntity
         N0 = n0;
         N1 = n1;
         N2 = n2;
+        UV0 = TextureCoordinate.Zero;
+        UV1 = TextureCoordinate.Zero;
+        UV2 = TextureCoordinate.Zero;
     }
 
     public TriangleEntity(Vector3 v0, Vector3 v1, Vector3 v2, MaterialEntity material)
@@ -37,6 +43,9 @@ public class TriangleEntity
         N0 = faceNormal;
         N1 = faceNormal;
         N2 = faceNormal;
+        UV0 = TextureCoordinate.Zero;
+        UV1 = TextureCoordinate.Zero;
+        UV2 = TextureCoordinate.Zero;
     }
 
     public TriangleEntity(Vector3 v0, Vector3 v1, Vector3 v2, MaterialEntity material, Vector3 n0, Vector3 n1, Vector3 n2)
@@ -48,6 +57,27 @@ public class TriangleEntity
         N0 = n0;
         N1 = n1;
         N2 = n2;
+        UV0 = TextureCoordinate.Zero;
+        UV1 = TextureCoordinate.Zero;
+        UV2 = TextureCoordinate.Zero;
+    }
+
+    public TriangleEntity(
+        Vector3 v0, Vector3 v1, Vector3 v2,
+        MaterialEntity material,
+        Vector3 n0, Vector3 n1, Vector3 n2,
+        TextureCoordinate uv0, TextureCoordinate uv1, TextureCoordinate uv2)
+    {
+        V0 = v0;
+        V1 = v1;
+        V2 = v2;
+        Material = material;
+        N0 = n0;
+        N1 = n1;
+        N2 = n2;
+        UV0 = uv0;
+        UV1 = uv1;
+        UV2 = uv2;
     }
 
     public Vector3 V0 { get; set; }
@@ -58,6 +88,9 @@ public class TriangleEntity
     public Vector3 N0 { get; set; }
     public Vector3 N1 { get; set; }
     public Vector3 N2 { get; set; }
+    public TextureCoordinate UV0 { get; set; }
+    public TextureCoordinate UV1 { get; set; }
+    public TextureCoordinate UV2 { get; set; }
 
     public Vector3 FaceNormal
     {

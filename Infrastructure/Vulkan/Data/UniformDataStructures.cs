@@ -109,6 +109,11 @@ public struct TriangleData
     public float Reflectivity;
     public Vector3 N2;
     public float EnableSchlieren;
+    public Vector2 UV0;
+    public Vector2 UV1;
+    public Vector2 UV2;
+    public int BaseColorTextureId;
+    public int NormalTextureId;
 }
 
 [StructLayout(LayoutKind.Sequential)]

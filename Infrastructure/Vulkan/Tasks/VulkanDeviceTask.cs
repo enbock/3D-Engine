@@ -13,6 +13,8 @@ public unsafe class VulkanDeviceTask(Vk vk, KhrSurface khrSurface, SurfaceKHR su
     public uint QueueFamilyIndex { get; private set; }
     public Queue ComputeQueue { get; private set; }
     public Queue PresentQueue { get; private set; }
+    public Queue GraphicsQueue { get; private set; }
+    public CommandPool TransferCommandPool { get; private set; }
     public KhrSwapchain KhrSwapchain { get; private set; } = null!;
 
     public void SelectPhysicalDevice()
@@ -101,6 +103,7 @@ public unsafe class VulkanDeviceTask(Vk vk, KhrSurface khrSurface, SurfaceKHR su
         vk.GetDeviceQueue(Device, QueueFamilyIndex, 0, out Queue computeQueue);
         ComputeQueue = computeQueue;
         PresentQueue = computeQueue;
+        GraphicsQueue = computeQueue;
 
         SilkMarshal.Free(extensionNames);
 
@@ -108,6 +111,18 @@ public unsafe class VulkanDeviceTask(Vk vk, KhrSurface khrSurface, SurfaceKHR su
             throw new Exception("KHR_swapchain extension not available");
 
         KhrSwapchain = khrSwapchain;
+
+        CommandPoolCreateInfo poolInfo = new()
+        {
+            SType = StructureType.CommandPoolCreateInfo,
+            QueueFamilyIndex = QueueFamilyIndex,
+            Flags = CommandPoolCreateFlags.ResetCommandBufferBit
+        };
+
+        if (vk.CreateCommandPool(Device, &poolInfo, null, out CommandPool transferPool) != Result.Success)
+            throw new Exception("Failed to create transfer command pool");
+
+        TransferCommandPool = transferPool;
     }
 
     public uint FindMemoryType(uint typeFilter, MemoryPropertyFlags properties)
@@ -125,6 +140,7 @@ public unsafe class VulkanDeviceTask(Vk vk, KhrSurface khrSurface, SurfaceKHR su
 
     public void Dispose()
     {
+        if (TransferCommandPool.Handle != 0) vk.DestroyCommandPool(Device, TransferCommandPool, null);
         if (Device.Handle != 0) vk.DestroyDevice(Device, null);
     }
 }

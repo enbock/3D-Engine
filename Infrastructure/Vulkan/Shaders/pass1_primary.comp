@@ -32,9 +32,14 @@ struct Triangle {
     float reflectivity;
     vec3 n2;
     float enableSchlieren;
+    vec2 uv0;
+    vec2 uv1;
+    vec2 uv2;
+    int baseColorTextureId;
+    int normalTextureId;
 };
 
-layout (std140, binding = 5) readonly buffer TriangleSSBO {
+layout (std430, binding = 5) readonly buffer TriangleSSBO {
     Triangle triangles[];
 };
 

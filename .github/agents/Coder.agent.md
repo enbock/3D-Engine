@@ -31,3 +31,5 @@ tools: ['insert_edit_into_file', 'replace_string_in_file', 'create_file', 'run_i
 * Resolve isseues, warnings and take code suggesstion given by editors code checker
 * Write new files without BOM header
 * Check other classes to learn code style (like how to create constructor, initializing arrays, etc)
+* Use `compile_shaders.bat` for shadercompiling and redirect output to file and read output from file
+* Compile project with redirect output to file and read output from file

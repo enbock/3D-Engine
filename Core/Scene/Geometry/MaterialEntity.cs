@@ -9,8 +9,14 @@ public class MaterialEntity(Color color, float transparency = 0.0f, float ior = 
     public float IndexOfRefraction { get; set; } = System.Math.Max(1.0f, ior);
     public float Reflectivity { get; set; } = System.Math.Clamp(reflectivity, 0.0f, 1.0f);
     public bool EnableSchlieren { get; set; } = enableSchlieren;
+    public int BaseColorTextureId { get; set; } = -1;
+    public int NormalTextureId { get; set; } = -1;
+    public float Metallic { get; set; }
+    public float Roughness { get; set; } = 1.0f;
 
     public bool IsTransparent => Transparency > 0.01f;
+    public bool HasBaseColorTexture => BaseColorTextureId >= 0;
+    public bool HasNormalTexture => NormalTextureId >= 0;
 
     public static MaterialEntity Opaque(Color color)
     {

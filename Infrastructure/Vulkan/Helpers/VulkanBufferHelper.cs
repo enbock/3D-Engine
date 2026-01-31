@@ -82,7 +82,12 @@ public static unsafe class VulkanBufferHelper
                 N1 = new System.Numerics.Vector3(tri.N1.X, tri.N1.Y, tri.N1.Z),
                 Reflectivity = tri.Material.Reflectivity,
                 N2 = new System.Numerics.Vector3(tri.N2.X, tri.N2.Y, tri.N2.Z),
-                EnableSchlieren = tri.Material.EnableSchlieren ? 1.0f : 0.0f
+                EnableSchlieren = tri.Material.EnableSchlieren ? 1.0f : 0.0f,
+                UV0 = new Vector2(tri.UV0.U, tri.UV0.V),
+                UV1 = new Vector2(tri.UV1.U, tri.UV1.V),
+                UV2 = new Vector2(tri.UV2.U, tri.UV2.V),
+                BaseColorTextureId = tri.Material.BaseColorTextureId,
+                NormalTextureId = tri.Material.NormalTextureId
             };
         }
 
@@ -145,7 +150,10 @@ public static unsafe class VulkanBufferHelper
         bufferTask.CopyDataToBuffer(cameraBufferMemory, cameraData);
 
         LightEntity[] lights = scene.Lights.Take(8).ToArray();
-        LightUniformData lightData = new() { NumLights = lights.Length };
+        LightUniformData lightData = new()
+        {
+            NumLights = lights.Length
+        };
 
         for (int i = 0; i < lights.Length; i++)
         {

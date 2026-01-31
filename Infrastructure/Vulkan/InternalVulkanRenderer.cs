@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Application;
 using Application.Window;
 using Core.Scene;
+using Infrastructure.Assets;
 using Infrastructure.Vulkan.Helpers;
 using Infrastructure.Vulkan.Tasks;
 using Silk.NET.Core.Native;
@@ -17,7 +18,6 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
     : IDisposable
 {
     private bool _buffersCreated;
-    private VulkanBufferTask _bufferTask = null!;
     private Buffer _bvhBuffer;
     private DeviceMemory _bvhBufferMemory;
 
@@ -26,9 +26,6 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
     private VulkanCommandTask _commandTask = null!;
 
     private uint _currentFrame;
-
-    private VulkanDeviceTask _deviceTask = null!;
-    private VulkanImageTask _imageTask = null!;
 
     private Instance _instance;
     private bool _isInitialized;
@@ -46,17 +43,26 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
     private SurfaceKHR _surface;
     private VulkanSwapchainTask _swapchainTask = null!;
     private VulkanSyncTask _syncTask = null!;
+    private TextureLoader? _textureLoader;
     private float _time;
     private Buffer _triangleBuffer;
     private DeviceMemory _triangleBufferMemory;
     private Vk _vk = null!;
 
+    public TextureLoader TextureLoader => _textureLoader ?? throw new InvalidOperationException("Renderer not initialized");
+    public VulkanBufferTask BufferTask { get; private set; } = null!;
+
+    public VulkanDeviceTask DeviceTask { get; private set; } = null!;
+
+    public VulkanImageTask ImageTask { get; private set; } = null!;
+
     public void Dispose()
     {
         if (!_isInitialized) return;
 
-        _vk.DeviceWaitIdle(_deviceTask.Device);
+        _vk.DeviceWaitIdle(DeviceTask.Device);
 
+        _textureLoader?.Dispose();
         _syncTask.Dispose();
         _commandTask.Dispose();
 
@@ -65,15 +71,15 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
         _multiPassTask.DestroyGBufferImages();
 
 
-        _bufferTask.DestroyBuffer(_cameraBuffer, _cameraBufferMemory);
-        _bufferTask.DestroyBuffer(_lightBuffer, _lightBufferMemory);
-        _bufferTask.DestroyBuffer(_triangleBuffer, _triangleBufferMemory);
-        _bufferTask.DestroyBuffer(_settingsBuffer, _settingsBufferMemory);
-        _bufferTask.DestroyBuffer(_bvhBuffer, _bvhBufferMemory);
+        BufferTask.DestroyBuffer(_cameraBuffer, _cameraBufferMemory);
+        BufferTask.DestroyBuffer(_lightBuffer, _lightBufferMemory);
+        BufferTask.DestroyBuffer(_triangleBuffer, _triangleBufferMemory);
+        BufferTask.DestroyBuffer(_settingsBuffer, _settingsBufferMemory);
+        BufferTask.DestroyBuffer(_bvhBuffer, _bvhBufferMemory);
 
-        _imageTask.DestroyImage(_storageImage, _storageImageView, _storageImageMemory);
+        ImageTask.DestroyImage(_storageImage, _storageImageView, _storageImageMemory);
         _swapchainTask.Dispose();
-        _deviceTask.Dispose();
+        DeviceTask.Dispose();
 
         _khrSurface.DestroySurface(_instance, _surface, null);
         _vk.DestroyInstance(_instance, null);
@@ -87,32 +93,34 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
         CreateInstance();
         CreateSurface();
 
-        _deviceTask = new VulkanDeviceTask(_vk, _khrSurface, _surface);
-        _deviceTask.SelectPhysicalDevice();
-        _deviceTask.CreateLogicalDevice(_instance);
+        DeviceTask = new VulkanDeviceTask(_vk, _khrSurface, _surface);
+        DeviceTask.SelectPhysicalDevice();
+        DeviceTask.CreateLogicalDevice(_instance);
 
         _swapchainTask = new VulkanSwapchainTask(
-            _vk, _khrSurface, _deviceTask.KhrSwapchain,
-            _deviceTask.PhysicalDevice, _deviceTask.Device, _surface, config);
+            _vk, _khrSurface, DeviceTask.KhrSwapchain,
+            DeviceTask.PhysicalDevice, DeviceTask.Device, _surface, config);
         _swapchainTask.CreateSwapchain();
 
-        _commandTask = new VulkanCommandTask(_vk, _deviceTask.Device, _deviceTask.QueueFamilyIndex);
+        _commandTask = new VulkanCommandTask(_vk, DeviceTask.Device, DeviceTask.QueueFamilyIndex);
         _commandTask.CreateCommandPool();
 
-        _bufferTask = new VulkanBufferTask(_vk, _deviceTask.Device, _deviceTask);
+        BufferTask = new VulkanBufferTask(_vk, DeviceTask.Device, DeviceTask);
 
-        _imageTask = new VulkanImageTask(_vk, _deviceTask.Device, _deviceTask, _commandTask.CommandPool,
-            _deviceTask.ComputeQueue);
+        ImageTask = new VulkanImageTask(_vk, DeviceTask.Device, DeviceTask, _commandTask.CommandPool,
+            DeviceTask.ComputeQueue);
         CreateStorageImage();
 
-        _pipelineTask = new VulkanPipelineTask(_vk, _deviceTask.Device);
+        _textureLoader = new TextureLoader(_vk, DeviceTask.Device, DeviceTask, ImageTask, BufferTask);
 
-        _multiPassTask = new VulkanMultiPassTask(_vk, _deviceTask.Device, _imageTask, _pipelineTask);
+        _pipelineTask = new VulkanPipelineTask(_vk, DeviceTask.Device);
+
+        _multiPassTask = new VulkanMultiPassTask(_vk, DeviceTask.Device, ImageTask, _pipelineTask);
         _multiPassTask.CreateGBufferImages(_swapchainTask.SwapchainExtent.Width,
             _swapchainTask.SwapchainExtent.Height);
         Console.WriteLine("Multi-Pass Rendering enabled");
 
-        _syncTask = new VulkanSyncTask(_vk, _deviceTask.Device);
+        _syncTask = new VulkanSyncTask(_vk, DeviceTask.Device);
         _syncTask.CreateSyncObjects((uint)_swapchainTask.SwapchainImages.Length);
 
         _isInitialized = true;
@@ -172,7 +180,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
     {
         Format storageFormat = Format.R16G16B16A16Sfloat;
 
-        _imageTask.CreateImage(
+        ImageTask.CreateImage(
             _swapchainTask.SwapchainExtent.Width,
             _swapchainTask.SwapchainExtent.Height,
             storageFormat,
@@ -182,8 +190,8 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
             out _storageImage,
             out _storageImageMemory);
 
-        _storageImageView = _imageTask.CreateImageView(_storageImage, storageFormat, ImageAspectFlags.ColorBit);
-        _imageTask.TransitionImageLayout(_storageImage, ImageLayout.Undefined, ImageLayout.General);
+        _storageImageView = ImageTask.CreateImageView(_storageImage, storageFormat, ImageAspectFlags.ColorBit);
+        ImageTask.TransitionImageLayout(_storageImage, ImageLayout.Undefined, ImageLayout.General);
     }
 
     public void Render(SceneEntity scene, float deltaTime)
@@ -203,8 +211,8 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
         _syncTask.WaitForFence(_currentFrame);
 
         uint imageIndex;
-        Result result = _deviceTask.KhrSwapchain.AcquireNextImage(
-            _deviceTask.Device, _swapchainTask.Swapchain, ulong.MaxValue,
+        Result result = DeviceTask.KhrSwapchain.AcquireNextImage(
+            DeviceTask.Device, _swapchainTask.Swapchain, ulong.MaxValue,
             _syncTask.ImageAvailableSemaphores[_currentFrame], default, &imageIndex);
 
         if (result == Result.ErrorOutOfDateKhr || result == Result.SuboptimalKhr) return;
@@ -238,7 +246,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
             PSignalSemaphores = &signalSemaphore
         };
 
-        if (_vk.QueueSubmit(_deviceTask.ComputeQueue, 1, &submitInfo, _syncTask.InFlightFences[_currentFrame]) !=
+        if (_vk.QueueSubmit(DeviceTask.ComputeQueue, 1, &submitInfo, _syncTask.InFlightFences[_currentFrame]) !=
             Result.Success) throw new Exception("Failed to submit command buffer");
 
         SwapchainKHR swapchains = _swapchainTask.Swapchain;
@@ -252,7 +260,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
             PImageIndices = &imageIndex
         };
 
-        _deviceTask.KhrSwapchain.QueuePresent(_deviceTask.PresentQueue, &presentInfo);
+        DeviceTask.KhrSwapchain.QueuePresent(DeviceTask.PresentQueue, &presentInfo);
 
         _currentFrame = (_currentFrame + 1) % (uint)EngineConfig.MaxFramesInFlight;
     }
@@ -260,7 +268,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
     private void CreateBuffers(SceneEntity scene)
     {
         VulkanBufferHelper.CreateAndFillSceneBuffers(
-            _bufferTask, scene,
+            BufferTask, scene,
             out _cameraBuffer, out _cameraBufferMemory,
             out _triangleBuffer, out _triangleBufferMemory,
             out _lightBuffer, out _lightBufferMemory,
@@ -277,7 +285,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
     {
         Vector2 resolution = new(_swapchainTask.SwapchainExtent.Width, _swapchainTask.SwapchainExtent.Height);
         VulkanBufferHelper.UpdateSceneBuffers(
-            _bufferTask, scene, config,
+            BufferTask, scene, config,
             _cameraBufferMemory, _lightBufferMemory, _settingsBufferMemory,
             resolution, _time);
     }
@@ -286,14 +294,14 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
     {
         if (!_isInitialized) return;
 
-        _vk.DeviceWaitIdle(_deviceTask.Device);
+        _vk.DeviceWaitIdle(DeviceTask.Device);
 
         _swapchainTask.Cleanup();
         config.Width = width;
         config.Height = height;
         _swapchainTask.CreateSwapchain();
 
-        _imageTask.DestroyImage(_storageImage, _storageImageView, _storageImageMemory);
+        ImageTask.DestroyImage(_storageImage, _storageImageView, _storageImageMemory);
         CreateStorageImage();
 
         _multiPassTask!.DestroyGBufferImages();

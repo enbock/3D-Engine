@@ -660,6 +660,88 @@ public class WorldUseCase
 - Q/E: Hoch/Runter (weltkoordinaten-basiert)
 - Maus: Pitch/Yaw Rotation
 
+#### 10.5 Bugfix: Triangle Data Alignment nach Model-Loading (2026-01-31)
+
+**Problem**: Nach der Implementierung von Model- und Texture-Loading waren die Dreiecke in der Szene völlig
+durcheinander.
+
+**Ursache**: **std140 statt std430** für Storage Buffers + Memory-Layout-Mismatch
+
+Die Shader verwendeten fälschlicherweise `std140` Layout für Storage Buffers. **std140 ist NUR für Uniform Buffers
+geeignet!**
+
+**Kritischer Unterschied**:
+
+- **std140**: `vec3` wird wie `vec4` behandelt → 16 bytes alignment
+- **std430**: `vec3` ist tatsächlich 12 bytes → 4 bytes alignment
+
+**Alte (FALSCHE) Shader-Definition**:
+
+```glsl
+layout (std140, binding = 5) readonly buffer TriangleSSBO {  // ❌ FALSCH!
+    Triangle triangles[];
+};
+```
+
+**Neue (RICHTIGE) Shader-Definition**:
+
+```glsl
+layout (std430, binding = 5) readonly buffer TriangleSSBO {  // ✅ RICHTIG!
+    Triangle triangles[];
+};
+
+struct Triangle {
+    vec3 v0; float pad0;
+    vec3 v1; float pad1;
+    vec3 v2; float pad2;
+    vec3 color; float transparency;
+    vec3 n0; float ior;
+    vec3 n1; float reflectivity;
+    vec3 n2; float enableSchlieren;
+    vec2 uv0; vec2 uv1; vec2 uv2;
+    int baseColorTextureId;
+    int normalTextureId;
+};
+// Mit std430: 144 bytes (ohne unnötiges Padding)
+```
+
+**Betroffene Shader**:
+
+- `pass1_primary.comp` - Primary Ray Pass
+- `pass2_lighting.comp` - Lighting Pass
+- `pass2b_indirect.comp` - Indirect Lighting Pass
+- `pass3_reflections.comp` - Reflection Pass
+
+**Warum std140 alles kaputt machte**:
+
+std140 fügt nach jedem `vec3` automatisch 4 bytes Padding ein (behandelt vec3 wie vec4):
+
+```
+std140: vec3 v0 (16 bytes!) → Offset 0-15
+std430: vec3 v0 (12 bytes)  → Offset 0-11
+```
+
+Nach 12 solchen vec3-Feldern ist der Offset-Unterschied 48 bytes! Deshalb waren alle Daten ab dem 4. oder 5. Feld völlig
+durcheinander.
+
+**Lösung**:
+
+1. Alle 4 Shader: `std140` → `std430` für TriangleSSBO
+2. C#-Struktur: Unnötiges Padding nach UV-Koordinaten entfernt (std430 braucht es nicht)
+3. Shader neu kompiliert
+4. Größe reduziert: 152 → 144 bytes pro Triangle
+
+**Test**: Engine läuft wieder korrekt mit allen Dreiecken sichtbar und korrekt positioniert.
+
+**Lesson Learned**:
+
+- **Storage Buffers MÜSSEN std430 verwenden!**
+- std140 ist ausschließlich für Uniform Buffers gedacht
+- vec3 in std140 = 16 bytes, in std430 = 12 bytes
+- Bei jeder Änderung an GPU-Strukturen MÜSSEN C# UND ALLE Shader synchronisiert werden
+
+**Dokumentation**: `doc/TRIANGLE_DATA_ALIGNMENT_FIX.md` - Quick Reference für Alignment-Regeln
+
 ---
 
 ## Debugging-Sessions
@@ -1145,15 +1227,27 @@ Dieses Projekt demonstriert eine vollständige Vulkan-basierte Raytracing-Engine
 Das Entwicklertagebuch zeigt den kompletten Weg von der ersten Idee bis zur funktionierenden Engine, einschließlich
 aller Fehler, Debugging-Sessions und gelernten Lektionen.
 
-**Nächste Phase**: GPU-BVH Integration für Skalierung auf 100k+ Triangles
-
 ---
 
-**Letzte Aktualisierung**: 2026-01-30  
+**Letzte Aktualisierung**: 2026-01-31  
 **Status**: Production Ready ✅  
-**Version**: 1.0.0
+**Version**: 1.1.0
 
 ### Zusätzliche Dokumentation
+
+- **[MODEL_TEXTURE_LOADING_IMPL.md](./MODEL_TEXTURE_LOADING_IMPL.md)** - Model & Texture Loading (NEU):
+    - glTF/GLB Model Loading mit SharpGLTF
+    - Texture Loading mit StbImageSharp
+    - BaseColor und Normal Map Unterstützung
+    - UV-Koordinaten und Texture-IDs in TriangleData
+    - Vulkan Texture Upload Pipeline
+    - Fallback-Texturen und Error Handling
+
+- **[TRIANGLE_DATA_ALIGNMENT_FIX.md](./TRIANGLE_DATA_ALIGNMENT_FIX.md)** - Triangle Data Alignment Fix (NEU):
+    - std430 Alignment-Regeln für GPU-Strukturen
+    - C# ↔ GLSL Struct Synchronisation
+    - Padding-Kalkulation und Best Practices
+    - Quick Reference für Struktur-Änderungen
 
 - **[BILDAUSGABE_PIPELINE.md](./BILDAUSGABE_PIPELINE.md)** - Vollständige Erklärung der Vulkan Render-Pipeline:
     - Detaillierte Schritt-für-Schritt Beschreibung der Bildausgabe

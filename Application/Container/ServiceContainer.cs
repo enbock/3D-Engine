@@ -1,10 +1,12 @@
 using Application.Game;
 using Application.Game.Handler;
 using Application.Window;
+using Core.Assets;
 using Core.CameraControl;
 using Core.EngineRendering;
 using Core.Rendering;
 using Core.World;
+using Infrastructure.Assets;
 using Infrastructure.Rendering;
 using Infrastructure.Vulkan;
 using Silk.NET.Maths;
@@ -31,8 +33,10 @@ public class ServiceContainer : IDisposable
         RegisterInstance(new WindowManager(Resolve<IWindow>()));
         RegisterInstance(new InputHandler());
 
-        RegisterInstance(new InternalVulkanRenderer(Resolve<WindowManager>(), config));
-        RegisterInstance<Renderer>(new VulkanRenderer(Resolve<InternalVulkanRenderer>()));
+        InternalVulkanRenderer vulkanRenderer = new(Resolve<WindowManager>(), config);
+        RegisterInstance(vulkanRenderer);
+        RegisterInstance<Renderer>(new VulkanRenderer(vulkanRenderer));
+
         RegisterInstance(new WorldUseCase());
         RegisterInstance(new CameraControlUseCase());
         RegisterInstance(new CameraControlHandler(
@@ -61,6 +65,15 @@ public class ServiceContainer : IDisposable
                 disposable.Dispose();
 
         _services.Clear();
+    }
+
+    public void InitializeAssetLoaders()
+    {
+        InternalVulkanRenderer vulkanRenderer = Resolve<InternalVulkanRenderer>();
+        RegisterInstance<ITextureLoader>(vulkanRenderer.TextureLoader);
+        RegisterInstance(vulkanRenderer.TextureLoader);
+        RegisterInstance<IModelLoader>(new ModelLoader(vulkanRenderer.TextureLoader, "assets/models"));
+        RegisterInstance(new ModelLoader(vulkanRenderer.TextureLoader, "assets/models"));
     }
 
     private void RegisterInstance<TInterface>(TInterface instance)
