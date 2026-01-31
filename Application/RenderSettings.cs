@@ -16,11 +16,11 @@ public class RenderSettings
         MaxBounces = 3,
         EnableShadows = true,
         EnableReflections = true,
-        ReflectionStrength = 0.5f,
+        ReflectionStrength = 1.0f,
         ShadowSamples = 12,
         EnableGi = true,
         GiSamples = 4,
-        GiStrength = 0.5f
+        GiStrength = 0.6f
     };
 
     public static RenderSettings Performance => new()
@@ -28,11 +28,11 @@ public class RenderSettings
         MaxBounces = 2,
         EnableShadows = true,
         EnableReflections = true,
-        ReflectionStrength = 0.4f,
+        ReflectionStrength = 1.0f,
         ShadowSamples = 8,
         EnableGi = true,
         GiSamples = 2,
-        GiStrength = 0.3f
+        GiStrength = 0.6f
     };
 
     public static RenderSettings UltraPerformance => new()
@@ -52,10 +52,10 @@ public class RenderSettings
         MaxBounces = 5,
         EnableShadows = true,
         EnableReflections = true,
-        ReflectionStrength = 0.7f,
-        ShadowSamples = 8,
+        ReflectionStrength = 1.0f,
+        ShadowSamples = 16,
         EnableGi = true,
-        GiSamples = 4,
+        GiSamples = 8,
         GiStrength = 0.6f
     };
 }
