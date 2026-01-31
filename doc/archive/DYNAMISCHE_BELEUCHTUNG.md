@@ -26,7 +26,7 @@ werden `vec3` auf 16 Bytes aligned.
 
 ### Geänderte Dateien
 
-- `Infrastructure/Vulkan/Shaders/raytracing.comp` - std430 + explizite floats
+- `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp` - std430 + explizite floats
 - `Infrastructure/Vulkan/InternalVulkanRenderer.cs` - StorageBuffer statt UniformBuffer
 
 ## Lichtquellen-System
@@ -187,12 +187,12 @@ return normal * 0.5 + 0.5;
 
 ## Geänderte Dateien
 
-| Datei                                             | Änderung                                                      |
-|---------------------------------------------------|---------------------------------------------------------------|
-| `Core/Scene/Light/LightEntity.cs`                 | LightType Enum korrigiert (0=Ambient, 1=Directional, 2=Point) |
-| `Infrastructure/Vulkan/Shaders/raytracing.comp`   | std430 + explizite floats                                     |
-| `Infrastructure/Vulkan/InternalVulkanRenderer.cs` | StorageBuffer, neue LightUniformData                          |
-| `Application/Scene/SceneBuilderService.cs`        | Optimierte Lichtintensitäten                                  |
+| Datei                                                     | Änderung                                                      |
+|-----------------------------------------------------------|---------------------------------------------------------------|
+| `Core/Scene/Light/LightEntity.cs`                         | LightType Enum korrigiert (0=Ambient, 1=Directional, 2=Point) |
+| `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp` | std430 + explizite floats                                     |
+| `Infrastructure/Vulkan/InternalVulkanRenderer.cs`         | StorageBuffer, neue LightUniformData                          |
+| `Application/Scene/SceneBuilderService.cs`                | Optimierte Lichtintensitäten                                  |
 
 ### Szenen-Konfiguration (SceneBuilderService.cs)
 
@@ -317,7 +317,7 @@ for (int i = 0; i < lights.Length; i++)
 
 ## Dateien
 
-- `Infrastructure/Vulkan/Shaders/raytracing.comp` - Shader mit dynamischer Beleuchtung
+- `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp` - Shader mit dynamischer Beleuchtung
 - `Infrastructure/Vulkan/InternalVulkanRenderer.cs` - Light-Daten-Transfer
 - `Application/Scene/SceneBuilderService.cs` - Lichtquellen-Definition
 - `Core/Scene/Light/LightEntity.cs` - Light-Entity mit Factory-Methoden

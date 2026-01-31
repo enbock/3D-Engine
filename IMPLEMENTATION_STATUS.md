@@ -79,7 +79,7 @@
     - [x] Storage Image & Image Barriers
     - [x] Buffer Management (Uniform, Storage)
     - [x] Memory Allocation
-- [x] `Infrastructure/Vulkan/Shaders/raytracing.comp` - **VOLLSTÄNDIGER GLSL COMPUTE SHADER**
+- [x] `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp` - **VOLLSTÄNDIGER GLSL COMPUTE SHADER**
     - [x] Ray-Triangle Intersection (Möller-Trumbore)
     - [x] BVH Traversal (CPU-side, GPU-ready)
     - [x] Multi-Bounce Reflections (1-5 Bounces)

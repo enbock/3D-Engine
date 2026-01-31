@@ -172,9 +172,9 @@ new Vector3(5, 0, -5),   // v2: hinten-rechts
 
 ## Geänderte Dateien
 
-| Datei                                             | Änderung                                           |
-|---------------------------------------------------|----------------------------------------------------|
-| `Core/Scene/Light/LightEntity.cs`                 | LightType Enum (0=Ambient, 1=Directional, 2=Point) |
-| `Infrastructure/Vulkan/Shaders/raytracing.comp`   | std430, Backface Culling, Shadow-Culling, Gamma    |
-| `Infrastructure/Vulkan/InternalVulkanRenderer.cs` | StorageBuffer, LightUniformData                    |
-| `Application/Scene/SceneBuilderService.cs`        | Optimierte Licht- und Dreieck-Konfiguration        |
+| Datei                                                     | Änderung                                           |
+|-----------------------------------------------------------|----------------------------------------------------|
+| `Core/Scene/Light/LightEntity.cs`                         | LightType Enum (0=Ambient, 1=Directional, 2=Point) |
+| `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp` | std430, Backface Culling, Shadow-Culling, Gamma    |
+| `Infrastructure/Vulkan/InternalVulkanRenderer.cs`         | StorageBuffer, LightUniformData                    |
+| `Application/Scene/SceneBuilderService.cs`                | Optimierte Licht- und Dreieck-Konfiguration        |

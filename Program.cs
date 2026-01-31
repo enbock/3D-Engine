@@ -18,13 +18,13 @@ public static class Program
             Height = 1080,
             VSync = true,
             EnableValidation = true,
-            EnableHdr10 = true,
+            EnableHdr10 = false,
             HdrMinNits = 0.2f, // TODO einbauen
             HdrMaxNits = 400.0f,
             Exposure = 1f,
             Gamma = 2.2f,
             ToneMapping = ToneMappingOperator.None,
-            RenderSettings = RenderSettings.Quality
+            RenderSettings = RenderSettings.Default
         };
 
         try

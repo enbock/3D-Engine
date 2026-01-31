@@ -116,10 +116,10 @@ struct Triangle {
 
 ### Shader (ALLE müssen std430 verwenden!)
 
-- `Infrastructure/Vulkan/Shaders/pass1_primary.comp`
-- `Infrastructure/Vulkan/Shaders/pass2_lighting.comp`
-- `Infrastructure/Vulkan/Shaders/pass2b_indirect.comp`
-- `Infrastructure/Vulkan/Shaders/pass3_reflections.comp`
+- `Infrastructure/Rendering/Vulkan/Shaders/pass1_primary.comp`
+- `Infrastructure/Rendering/Vulkan/Shaders/pass2_lighting.comp`
+- `Infrastructure/Rendering/Vulkan/Shaders/pass2b_indirect.comp`
+- `Infrastructure/Rendering/Vulkan/Shaders/pass3_reflections.comp`
 
 ## Workflow bei Struktur-Änderungen
 

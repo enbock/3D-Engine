@@ -103,7 +103,7 @@ public unsafe struct LightUniformData
 
 ### 4. Shader - Beleuchtungsberechnung
 
-**Datei**: `Infrastructure/Vulkan/Shaders/raytracing.comp`
+**Datei**: `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp`
 
 #### Datenstrukturen (GLSL)
 

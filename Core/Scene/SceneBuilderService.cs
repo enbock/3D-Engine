@@ -96,7 +96,7 @@ public class SceneBuilderService
                     Roughness = 0.3f
                 };
 
-                float yOffset = 2f;
+                float yOffset = 3.33f;
 
                 for (int i = 0; i < mesh.Indices.Count; i += 3)
                 {

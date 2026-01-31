@@ -62,7 +62,7 @@ const float GAMMA = 1.5;
 ### 1. Kompilierung
 
 ```bash
-glslc Infrastructure/Vulkan/Shaders/raytracing.comp -o Infrastructure/Vulkan/Shaders/raytracing.comp.spv
+glslc Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp -o Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp.spv
 # ✅ Erfolgreich, keine Fehler
 ```
 

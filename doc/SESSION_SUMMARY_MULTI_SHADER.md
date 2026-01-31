@@ -45,7 +45,7 @@
 
 ## Erstellte Dateien
 
-1. **Infrastructure/Vulkan/Shaders/**
+1. **Infrastructure/Rendering/Vulkan/Shaders/**
     - `primary_rays.comp` - G-Buffer Pass
     - `lighting.comp` - Lighting Pass
     - `reflections.comp` - Reflection Pass
@@ -112,12 +112,12 @@ void main() {
 
 Die Multi-Shader sind vorbereitet, aber nicht aktiv:
 
-- `Infrastructure/Vulkan/Shaders/primary_rays.comp`
-- `Infrastructure/Vulkan/Shaders/lighting.comp`
-- `Infrastructure/Vulkan/Shaders/reflections.comp`
-- `Infrastructure/Vulkan/Shaders/composite.comp`
-- `Infrastructure/Vulkan/Shaders/common.glsl`
-- `Infrastructure/Vulkan/Shaders/intersection.glsl`
+- `Infrastructure/Rendering/Vulkan/Shaders/primary_rays.comp`
+- `Infrastructure/Rendering/Vulkan/Shaders/lighting.comp`
+- `Infrastructure/Rendering/Vulkan/Shaders/reflections.comp`
+- `Infrastructure/Rendering/Vulkan/Shaders/composite.comp`
+- `Infrastructure/Rendering/Vulkan/Shaders/common.glsl`
+- `Infrastructure/Rendering/Vulkan/Shaders/intersection.glsl`
 
 **Empfehlung**: Behalten als **Referenz** für zukünftige Multi-Pass Implementierung.
 

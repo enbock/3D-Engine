@@ -1,5 +1,3 @@
-using Core.Rendering;
-
 namespace Core.EngineRendering;
 
 public class RenderEngineUseCase(Renderer renderer)

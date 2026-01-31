@@ -132,8 +132,8 @@ h.normal = normalize(cross(e1, e2));
 ## 🔗 Betroffene Dateien
 
 - `Application/Services/SceneBuilder.cs` - Zeile 24-47 (Dreiecks-Geometrie)
-- `Infrastructure/Vulkan/Shaders/raytracing.comp` - Zeile 99-105 (Normalen)
-- `Infrastructure/Vulkan/Shaders/raytracing.comp` - Zeile 181-197 (Beleuchtung)
+- `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp` - Zeile 99-105 (Normalen)
+- `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp` - Zeile 181-197 (Beleuchtung)
 - `Infrastructure/Vulkan/VulkanRenderer.cs` - Zeile 1380-1401 (LightData)
 - `README.md` - Editor-Konfiguration Warnung
 

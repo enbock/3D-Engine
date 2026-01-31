@@ -154,7 +154,7 @@ HitFast intersectTriangleFast(Ray ray, Triangle tri) {
     vec3 pvec = cross(ray.direction, e2);
     float det = dot(e1, pvec);
 
-    if (det < 1e-6) return h;
+    if (abs(det) < 1e-6) return h;
 
     float invDet = 1.0 / det;
     vec3 tvec = ray.origin - tri.v0;

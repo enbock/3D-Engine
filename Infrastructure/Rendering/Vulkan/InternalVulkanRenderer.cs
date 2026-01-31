@@ -10,7 +10,7 @@ using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 using Buffer = Silk.NET.Vulkan.Buffer;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
-using TextureLoader = Core.Assets.TextureLoader;
+using InfraTextureLoader = Infrastructure.Assets.TextureLoader;
 
 namespace Infrastructure.Vulkan;
 
@@ -43,13 +43,13 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
     private SurfaceKHR _surface;
     private VulkanSwapchainTask _swapchainTask = null!;
     private VulkanSyncTask _syncTask = null!;
-    private TextureLoader? _textureLoader;
+    private InfraTextureLoader? _textureLoader;
     private float _time;
     private Buffer _triangleBuffer;
     private DeviceMemory _triangleBufferMemory;
     private Vk _vk = null!;
 
-    public TextureLoader TextureLoader => _textureLoader ?? throw new InvalidOperationException("Renderer not initialized");
+    public InfraTextureLoader TextureLoader => _textureLoader ?? throw new InvalidOperationException("Renderer not initialized");
     public VulkanBufferTask BufferTask { get; private set; } = null!;
 
     public VulkanDeviceTask DeviceTask { get; private set; } = null!;
@@ -111,7 +111,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
             DeviceTask.ComputeQueue);
         CreateStorageImage();
 
-        _textureLoader = new Assets.TextureLoader(_vk, DeviceTask.Device, DeviceTask, ImageTask, BufferTask);
+        _textureLoader = new InfraTextureLoader(_vk, DeviceTask.Device, DeviceTask, ImageTask, BufferTask);
 
         _pipelineTask = new VulkanPipelineTask(_vk, DeviceTask.Device);
 

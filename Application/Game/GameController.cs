@@ -1,7 +1,6 @@
 using Application.Game.Handler;
 using Application.Window;
 using Core.EngineRendering;
-using Core.Rendering;
 using Core.Scene;
 using Core.World;
 using Silk.NET.Input;

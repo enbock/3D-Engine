@@ -1,7 +1,7 @@
 @echo off
 echo Compiling GLSL shaders to SPIR-V...
 
-set SHADER_DIR=Infrastructure\Vulkan\Shaders
+set SHADER_DIR=Infrastructure\Rendering\Vulkan\Shaders
 
 if not exist "%VULKAN_SDK%\Bin\glslc.exe" (
     if exist "C:\VulkanSDK\1.4.335.0\Bin\glslc.exe" (

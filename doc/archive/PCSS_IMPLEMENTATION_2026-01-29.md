@@ -153,7 +153,7 @@ PCSS approximiert **geometrische Penumbra** basierend auf:
 
 ## Dateien geändert
 
-- `Infrastructure/Vulkan/Shaders/raytracing.comp`
+- `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp`
     - Hinzugefügt: `findBlockerDistance()` - Blocker Search
     - Geändert: `traceShadow()` - PCSS 3-Schritt Algorithmus
     - Verwendet: Poisson Disk Samples für beide Phasen

@@ -158,10 +158,10 @@ Buffers created successfully
 
 ### Neu erstellt (10 Dateien)
 
-- `Infrastructure/Vulkan/Shaders/pass1_primary.comp` + .spv
-- `Infrastructure/Vulkan/Shaders/pass2_lighting.comp` + .spv
-- `Infrastructure/Vulkan/Shaders/pass3_reflections.comp` + .spv
-- `Infrastructure/Vulkan/Shaders/pass4_composite.comp` + .spv
+- `Infrastructure/Rendering/Vulkan/Shaders/pass1_primary.comp` + .spv
+- `Infrastructure/Rendering/Vulkan/Shaders/pass2_lighting.comp` + .spv
+- `Infrastructure/Rendering/Vulkan/Shaders/pass3_reflections.comp` + .spv
+- `Infrastructure/Rendering/Vulkan/Shaders/pass4_composite.comp` + .spv
 - `Infrastructure/Vulkan/Tasks/VulkanMultiPassTask.cs`
 - `doc/MULTI_PASS_IMPLEMENTATION_COMPLETE.md`
 

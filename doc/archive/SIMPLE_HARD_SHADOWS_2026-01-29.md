@@ -76,7 +76,7 @@ Falls weiche Schatten gewünscht:
 
 ## Dateien geändert
 
-- `Infrastructure/Vulkan/Shaders/raytracing.comp`
+- `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp`
     - Entfernt: Poisson Disk Array, findBlockerDistance(), komplexes traceShadow()
     - Vereinfacht: Neues traceShadow() gibt bool zurück
     - Angepasst: shade() verwendet shadowFactor statt direkten float-Wert

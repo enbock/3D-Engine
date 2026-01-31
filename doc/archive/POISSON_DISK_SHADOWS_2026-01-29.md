@@ -80,7 +80,7 @@ for (int i = 0; i < numSamples; i++) {
 
 ## Dateien geändert
 
-- `Infrastructure/Vulkan/Shaders/raytracing.comp`
+- `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp`
     - Entfernt: `random()` und `randomInUnitDisk()`
     - Hinzugefügt: `poissonDisk[64]` Array
     - Geändert: `traceShadow()` verwendet jetzt Poisson Disk Samples

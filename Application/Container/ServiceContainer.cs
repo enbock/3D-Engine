@@ -3,7 +3,6 @@ using Application.Game.Handler;
 using Application.Window;
 using Core.CameraControl;
 using Core.EngineRendering;
-using Core.Rendering;
 using Core.Scene;
 using Core.World;
 using Infrastructure.Rendering;
@@ -71,7 +70,6 @@ public class ServiceContainer : IDisposable
     {
         InternalVulkanRenderer vulkanRenderer = Resolve<InternalVulkanRenderer>();
 
-        RegisterInstance(vulkanRenderer.TextureLoader);
         RegisterInstance(vulkanRenderer.TextureLoader);
         Infrastructure.Assets.ModelLoader modelLoader = new(vulkanRenderer.TextureLoader, "assets/models");
         RegisterInstance<ModelLoader>(modelLoader);

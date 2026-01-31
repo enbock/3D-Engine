@@ -24,7 +24,7 @@
 
 **Dateien**:
 
-- `Infrastructure/Vulkan/Shaders/raytracing.comp` - Refactored
+- `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp` - Refactored
 - `doc/SHADER_REFACTORING_COMPLETE.md` - Dokumentation
 - `doc/SHADER_CODE_COMPARISON.md` - Vorher/Nachher Vergleich
 
@@ -218,7 +218,7 @@ VulkanSyncTask (80 Zeilen)
 
 ```bash
 # Shader-Kompilierung: ✅
-glslc Infrastructure/Vulkan/Shaders/raytracing.comp -o raytracing.comp.spv
+glslc Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp -o raytracing.comp.spv
 # Erfolgreich, keine Fehler
 
 # Engine Build: ✅

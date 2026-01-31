@@ -92,6 +92,41 @@ Edge‑Cases & Risiken
 - Große Texturen / OOM → späteres Streaming/LOD nötig.
 - Async‑Laden: Texturen in Hintergrund laden und Platzhalter‑Texture verwenden.
 
+## Smooth Normals Optimization
+
+### Hintergrund
+
+Die Berechnung von glatten Normalen (Smooth Normals) ist ein wesentlicher Bestandteil des Model Loadings, um eine
+realistische Darstellung von 3D-Modellen zu gewährleisten. Dabei werden die Normalen von benachbarten Flächen gemittelt,
+um weiche Übergänge zwischen den Flächen zu erzeugen.
+
+### Optimierung
+
+Die Methode `CalculateSmoothNormals` wurde optimiert, um die Performance zu verbessern und visuelle Artefakte zu
+vermeiden. Die wichtigsten Änderungen sind:
+
+1. **Smoothing-Angle-Threshold**: Der Schwellenwert wurde auf **0.9475f** gesetzt, was einem maximalen Winkel von ca. *
+   *18°** zwischen den Flächennormalen entspricht. Dies sorgt für eine ausgewogene Glättung, bei der scharfe Kanten
+   erhalten bleiben.
+
+2. **HashMap für Position-Lookups**: Eine HashMap (`positionToTriangles`) wurde eingeführt, um die Dreiecke, die sich
+   eine Position teilen, effizient zu finden. Dies reduziert die Komplexität der Methode von O(n²) auf O(n).
+
+3. **Entfernung des automatischen Normalen-Flippens**: Die automatische Umkehrung der Normalen im Shader wurde entfernt,
+   da sie zu falschen Darstellungen an konkaven Bereichen führte. Stattdessen werden die Normalen direkt aus der
+   `ModelLoader`-Berechnung verwendet.
+
+### Ergebnisse
+
+- Die Performance der Methode wurde erheblich verbessert, sodass auch komplexe Modelle wie der Teapot ohne Einfrieren
+  geladen werden können.
+- Die Darstellung des Teapots ist nun korrekt, mit glatten Oberflächen und scharfen Kanten an den richtigen Stellen.
+
+### Code-Referenz
+
+Die optimierte Methode `CalculateSmoothNormals` befindet sich in der Klasse `ModelLoader` im Verzeichnis
+`Infrastructure/Assets/ModelLoader.cs`.
+
 Nächste Schritte (Optionen zum Start)
 
 A) ✅ **IMPLEMENTIERT** - Minimale TextureLoader + ModelLoader‑Integration (C# Vulkan):

@@ -154,7 +154,7 @@ vec3 v3 = normalize(cross(v2, v1));
 
 ### 1. raytracing.comp (Single-Pass Shader)
 
-**Datei**: `Infrastructure/Vulkan/Shaders/raytracing.comp`  
+**Datei**: `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp`  
 **Zeile**: 267-282
 
 **Änderung**:
@@ -169,7 +169,7 @@ vec3 v3 = normalize(cross(v2, v1));
 
 ### 2. pass1_primary.comp (Multi-Pass Shader)
 
-**Datei**: `Infrastructure/Vulkan/Shaders/pass1_primary.comp`  
+**Datei**: `Infrastructure/Rendering/Vulkan/Shaders/pass1_primary.comp`  
 **Zeile**: 101-116
 
 **Änderung**: Identisch zum Single-Pass Shader
@@ -320,8 +320,8 @@ cross(forward, right) → -up  // ❌ Falsche Reihenfolge!
 
 ### Aktualisierte Dateien
 
-1. `Infrastructure/Vulkan/Shaders/raytracing.comp` - Single-Pass Fix
-2. `Infrastructure/Vulkan/Shaders/pass1_primary.comp` - Multi-Pass Fix
+1. `Infrastructure/Rendering/Vulkan/Shaders/raytracing.comp` - Single-Pass Fix
+2. `Infrastructure/Rendering/Vulkan/Shaders/pass1_primary.comp` - Multi-Pass Fix
 3. `doc/BUGFIX_CAMERA_DISTORTION.md` - Diese Dokumentation
 
 ### Nächste Schritte

@@ -1,6 +1,6 @@
 using Core.Scene;
 
-namespace Core.Rendering;
+namespace Core.EngineRendering;
 
 public interface Renderer : IDisposable
 {

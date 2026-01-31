@@ -168,7 +168,7 @@ Hit intersectTriangle(Ray ray, Triangle tri) {
     vec3 pvec = cross(ray.direction, e2);
     float det = dot(e1, pvec);
 
-    if (det < BACKFACE_EPSILON) return h;
+    if (abs(det) < BACKFACE_EPSILON) return h;
 
     float invDet = 1.0 / det;
     vec3 tvec = ray.origin - tri.v0;
@@ -188,8 +188,7 @@ Hit intersectTriangle(Ray ray, Triangle tri) {
         h.dist = t;
         h.point = ray.origin + ray.direction * t;
         float w = 1.0 - u - v;
-        vec3 interpolatedNormal = normalize(w * tri.n0 + u * tri.n1 + v * tri.n2);
-        h.normal = interpolatedNormal;
+        h.normal = normalize(w * tri.n0 + u * tri.n1 + v * tri.n2);
         h.color = tri.color;
         h.transparency = tri.transparency;
         h.ior = tri.ior;
