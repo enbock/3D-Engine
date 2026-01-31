@@ -35,6 +35,7 @@
 - [Teapot Normal Debug](TEAPOT_NORMAL_DEBUG.md)
 - [Transparency Refraction](TRANSPARENCY_REFRACTION.md)
 - [Triangle Data Alignment Fix](TRIANGLE_DATA_ALIGNMENT_FIX.md)
+- [Resolution Scale (GI)](RESOLUTION_SCALE.md)
 
 ## Archivierte Dokumente
 

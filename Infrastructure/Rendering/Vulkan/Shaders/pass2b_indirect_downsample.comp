@@ -1,0 +1,81 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+layout (binding = 0, rgba32f) uniform readonly image2D gPosition;
+layout (binding = 1, rgba32f) uniform readonly image2D gNormal;
+layout (binding = 2, rgba32f) uniform readonly image2D gAlbedo;
+layout (binding = 3, rgba32f) uniform readonly image2D litColor;
+layout (binding = 4, rgba32f) uniform writeonly image2D downsampledIndirect;
+
+layout (binding = 7) uniform RenderSettings {
+    int maxBounces;
+    int enableShadows;
+    int enableReflections;
+    float reflectionStrength;
+    int shadowSamples;
+    int enableGI;
+    int giSamples;
+    float giStrength;
+    int resolutionScale;
+    int enableCaustics;
+    int enableHdr;
+    float exposure;
+    float gamma;
+    int toneMapping;
+    float hdrMinNits;
+    float hdrMaxNits;
+    float _pad0;
+    float _pad1;
+} settings;
+
+layout (binding = 8) uniform CameraUBO { vec3 position; float _pad1; vec3 target; float _pad2; vec2 resolution; float time; float fov; } camera;
+
+struct Ray { vec3 origin; vec3 direction; };
+
+const float EPSILON = 0.01;
+const float GI_BIAS = 0.05;
+const float PI = 3.14159265359;
+const float GI_MAX_DIST = 15.0;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
+vec3 randomCosineDirection(vec3 normal, vec2 seed) { float u1 = hash(seed); float u2 = hash(seed + vec2(17.0, 31.0)); float r = sqrt(u1); float theta = 2.0 * PI * u2; float x = r * cos(theta); float y = r * sin(theta); float z = sqrt(max(0.0, 1.0 - u1)); vec3 tangent = abs(normal.y) < 0.999 ? normalize(cross(vec3(0.0, 1.0, 0.0), normal)) : normalize(cross(vec3(1.0, 0.0, 0.0), normal)); vec3 bitangent = cross(normal, tangent); return tangent * x + bitangent * y + normal * z; }
+
+vec3 getSkyColor(vec3 rayDir) { vec3 horizonColor = vec3(0.001, 0.001, 0.01); vec3 zenithColor = vec3(0.0, 0.0, 0.3); float t = clamp(rayDir.y * 0.5, 0.0, 1.0); return mix(horizonColor, zenithColor, t) * 0.1; }
+
+vec3 calculateIndirectLight(vec3 hitPoint, vec3 normal, vec3 albedo, ivec2 pixelCoords) {
+    int numSamples = clamp(settings.giSamples, 1, 8);
+    vec3 indirectSum = vec3(0.0);
+    vec2 baseSeed = vec2(pixelCoords) + vec2(camera.time * 0.01);
+    for (int i = 0; i < numSamples; i++) {
+        vec2 seed = baseSeed + vec2(float(i) * 17.3, float(i) * 31.7);
+        vec3 bounceDir = randomCosineDirection(normal, seed);
+        indirectSum += getSkyColor(bounceDir) * albedo;
+    }
+    return (indirectSum / float(numSamples)) * settings.giStrength;
+}
+
+void main() {
+    ivec2 global = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 res = ivec2(camera.resolution);
+    if (global.x >= res.x || global.y >= res.y) return;
+
+    int scale = max(1, settings.resolutionScale);
+    ivec2 dsCoord = ivec2(global.x / scale, global.y / scale);
+
+    // We only compute one thread per downsample texel: check if this invocation corresponds to top-left of a scale block
+    if ((global.x % scale) != 0 || (global.y % scale) != 0) return;
+
+    vec4 posData = imageLoad(gPosition, global);
+    float isHit = posData.w;
+    vec3 color = imageLoad(litColor, global).xyz;
+
+    if (isHit > 0.5 && settings.enableGI != 0) {
+        vec3 normal = imageLoad(gNormal, global).xyz;
+        vec3 albedo = imageLoad(gAlbedo, global).xyz;
+        vec3 indirect = calculateIndirectLight(posData.xyz, normal, albedo, global);
+        imageStore(downsampledIndirect, dsCoord, vec4(indirect, 1.0));
+    } else {
+        imageStore(downsampledIndirect, dsCoord, vec4(0.0));
+    }
+}

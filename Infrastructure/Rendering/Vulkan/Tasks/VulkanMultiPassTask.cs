@@ -11,6 +11,11 @@ public unsafe class VulkanMultiPassTask(
 {
     private DescriptorPool descriptorPool;
 
+    // New: downsampled indirect image (small) and upscale pipeline resources
+    private Image downsampledIndirectImage;
+    private DeviceMemory downsampledIndirectMemory;
+    private ImageView downsampledIndirectView;
+
     private Image gAlbedoImage;
     private DeviceMemory gAlbedoMemory;
     private ImageView gAlbedoView;
@@ -48,6 +53,12 @@ public unsafe class VulkanMultiPassTask(
     private PipelineLayout pass2BLayout;
     private Pipeline pass2BPipeline;
     private ShaderModule pass2BShader;
+
+    private DescriptorSetLayout pass2BUpDescriptorLayout;
+    private DescriptorSet pass2BUpDescriptorSet;
+    private PipelineLayout pass2BUpLayout;
+    private Pipeline pass2BUpPipeline;
+    private ShaderModule pass2BUpShader;
     private DescriptorSetLayout pass2DescriptorLayout;
     private DescriptorSet pass2DescriptorSet;
     private PipelineLayout pass2Layout;
@@ -68,7 +79,7 @@ public unsafe class VulkanMultiPassTask(
     private DeviceMemory reflectedColorMemory;
     private ImageView reflectedColorView;
 
-    public void CreateGBufferImages(uint width, uint height)
+    public void CreateGBufferImages(uint width, uint height, int initialResolutionScale)
     {
         Format format = Format.R32G32B32A32Sfloat;
 
@@ -120,6 +131,19 @@ public unsafe class VulkanMultiPassTask(
         indirectColorView = imageTask.CreateImageView(indirectColorImage, format, ImageAspectFlags.ColorBit);
         imageTask.TransitionImageLayout(indirectColorImage, ImageLayout.Undefined, ImageLayout.General);
 
+        // Create downsampled indirect image according to initialResolutionScale
+        int scale = Math.Max(1, initialResolutionScale);
+        uint dsWidth = (width + (uint)scale - 1) / (uint)scale;
+        uint dsHeight = (height + (uint)scale - 1) / (uint)scale;
+
+        imageTask.CreateImage(dsWidth, dsHeight, format,
+            ImageTiling.Optimal,
+            ImageUsageFlags.StorageBit | ImageUsageFlags.SampledBit,
+            MemoryPropertyFlags.DeviceLocalBit,
+            out downsampledIndirectImage, out downsampledIndirectMemory);
+        downsampledIndirectView = imageTask.CreateImageView(downsampledIndirectImage, format, ImageAspectFlags.ColorBit);
+        imageTask.TransitionImageLayout(downsampledIndirectImage, ImageLayout.Undefined, ImageLayout.General);
+
         imageTask.CreateImage(width, height, format,
             ImageTiling.Optimal,
             ImageUsageFlags.StorageBit | ImageUsageFlags.SampledBit,
@@ -134,6 +158,7 @@ public unsafe class VulkanMultiPassTask(
         CreatePass1Pipeline();
         CreatePass2Pipeline();
         CreatePass2BPipeline();
+        CreatePass2BUpscalePipeline();
         CreatePass3Pipeline();
         CreatePass4Pipeline();
     }
@@ -365,11 +390,61 @@ public unsafe class VulkanMultiPassTask(
 
         pass2BDescriptorLayout = pipelineTask.CreateDescriptorSetLayout(bindings);
 
-        byte[] shaderCode = LoadShaderCode("shader/pass2b_indirect.comp.spv");
+        byte[] shaderCode = LoadShaderCode("shader/pass2b_indirect_downsample.comp.spv");
         pass2BShader = pipelineTask.CreateShaderModule(shaderCode);
 
         pass2BLayout = pipelineTask.CreatePipelineLayout(pass2BDescriptorLayout);
         pass2BPipeline = pipelineTask.CreateComputePipeline(pass2BShader, pass2BLayout);
+    }
+
+    private void CreatePass2BUpscalePipeline()
+    {
+        DescriptorSetLayoutBinding[] bindings =
+        [
+            new()
+            {
+                Binding = 0,
+                DescriptorType = DescriptorType.StorageImage,
+                DescriptorCount = 1,
+                StageFlags = ShaderStageFlags.ComputeBit
+            },
+            new()
+            {
+                Binding = 1,
+                DescriptorType = DescriptorType.StorageImage,
+                DescriptorCount = 1,
+                StageFlags = ShaderStageFlags.ComputeBit
+            },
+            new()
+            {
+                Binding = 2,
+                DescriptorType = DescriptorType.StorageImage,
+                DescriptorCount = 1,
+                StageFlags = ShaderStageFlags.ComputeBit
+            },
+            new()
+            {
+                Binding = 3,
+                DescriptorType = DescriptorType.UniformBuffer,
+                DescriptorCount = 1,
+                StageFlags = ShaderStageFlags.ComputeBit
+            },
+            new()
+            {
+                Binding = 4,
+                DescriptorType = DescriptorType.UniformBuffer,
+                DescriptorCount = 1,
+                StageFlags = ShaderStageFlags.ComputeBit
+            }
+        ];
+
+        pass2BUpDescriptorLayout = pipelineTask.CreateDescriptorSetLayout(bindings);
+
+        byte[] shaderCode = LoadShaderCode("shader/pass2b_indirect_upscale.comp.spv");
+        pass2BUpShader = pipelineTask.CreateShaderModule(shaderCode);
+
+        pass2BUpLayout = pipelineTask.CreatePipelineLayout(pass2BUpDescriptorLayout);
+        pass2BUpPipeline = pipelineTask.CreateComputePipeline(pass2BUpShader, pass2BUpLayout);
     }
 
     private void CreatePass3Pipeline()
@@ -520,17 +595,17 @@ public unsafe class VulkanMultiPassTask(
             new()
             {
                 Type = DescriptorType.StorageImage,
-                DescriptorCount = 30
+                DescriptorCount = 40
             },
             new()
             {
                 Type = DescriptorType.StorageBuffer,
-                DescriptorCount = 20
+                DescriptorCount = 30
             },
             new()
             {
                 Type = DescriptorType.UniformBuffer,
-                DescriptorCount = 15
+                DescriptorCount = 20
             }
         ];
 
@@ -541,7 +616,7 @@ public unsafe class VulkanMultiPassTask(
                 SType = StructureType.DescriptorPoolCreateInfo,
                 PoolSizeCount = (uint)poolSizes.Length,
                 PPoolSizes = pPoolSizes,
-                MaxSets = 5
+                MaxSets = 6
             };
 
             if (vk.CreateDescriptorPool(device, &poolInfo, null, out descriptorPool) != Result.Success)
@@ -551,12 +626,14 @@ public unsafe class VulkanMultiPassTask(
         AllocateDescriptorSet(pass1DescriptorLayout, out pass1DescriptorSet);
         AllocateDescriptorSet(pass2DescriptorLayout, out pass2DescriptorSet);
         AllocateDescriptorSet(pass2BDescriptorLayout, out pass2BDescriptorSet);
+        AllocateDescriptorSet(pass2BUpDescriptorLayout, out pass2BUpDescriptorSet);
         AllocateDescriptorSet(pass3DescriptorLayout, out pass3DescriptorSet);
         AllocateDescriptorSet(pass4DescriptorLayout, out pass4DescriptorSet);
 
         UpdatePass1DescriptorSet(cameraBuffer, triangleBuffer, bvhBuffer);
         UpdatePass2DescriptorSet(cameraBuffer, triangleBuffer, lightBuffer, settingsBuffer, bvhBuffer);
         UpdatePass2BDescriptorSet(cameraBuffer, triangleBuffer, lightBuffer, settingsBuffer, bvhBuffer);
+        UpdatePass2BUpDescriptorSet(cameraBuffer, settingsBuffer);
         UpdatePass3DescriptorSet(cameraBuffer, triangleBuffer, lightBuffer, settingsBuffer, bvhBuffer);
         UpdatePass4DescriptorSet(cameraBuffer, settingsBuffer, storageImageView);
     }
@@ -631,53 +708,56 @@ public unsafe class VulkanMultiPassTask(
         DescriptorBufferInfo* pTriangleInfo = &triangleBufferInfo;
         DescriptorBufferInfo* pBvhInfo = &bvhBufferInfo;
 
-        fixed (DescriptorImageInfo* pImageInfos = imageInfos)
+        DescriptorImageInfo* pImageInfos = stackalloc DescriptorImageInfo[4];
+        pImageInfos[0] = imageInfos[0];
+        pImageInfos[1] = imageInfos[1];
+        pImageInfos[2] = imageInfos[2];
+        pImageInfos[3] = imageInfos[3];
+
+        for (uint i = 0; i < 4; i++)
+            writes[i] = new WriteDescriptorSet
+            {
+                SType = StructureType.WriteDescriptorSet,
+                DstSet = pass1DescriptorSet,
+                DstBinding = i,
+                DstArrayElement = 0,
+                DescriptorType = DescriptorType.StorageImage,
+                DescriptorCount = 1,
+                PImageInfo = &pImageInfos[i]
+            };
+
+        writes[4] = new WriteDescriptorSet
         {
-            for (uint i = 0; i < 4; i++)
-                writes[i] = new WriteDescriptorSet
-                {
-                    SType = StructureType.WriteDescriptorSet,
-                    DstSet = pass1DescriptorSet,
-                    DstBinding = i,
-                    DstArrayElement = 0,
-                    DescriptorType = DescriptorType.StorageImage,
-                    DescriptorCount = 1,
-                    PImageInfo = &pImageInfos[i]
-                };
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass1DescriptorSet,
+            DstBinding = 4,
+            DstArrayElement = 0,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pCameraInfo
+        };
 
-            writes[4] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass1DescriptorSet,
-                DstBinding = 4,
-                DstArrayElement = 0,
-                DescriptorType = DescriptorType.UniformBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pCameraInfo
-            };
+        writes[5] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass1DescriptorSet,
+            DstBinding = 5,
+            DstArrayElement = 0,
+            DescriptorType = DescriptorType.StorageBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pTriangleInfo
+        };
 
-            writes[5] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass1DescriptorSet,
-                DstBinding = 5,
-                DstArrayElement = 0,
-                DescriptorType = DescriptorType.StorageBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pTriangleInfo
-            };
-
-            writes[6] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass1DescriptorSet,
-                DstBinding = 6,
-                DstArrayElement = 0,
-                DescriptorType = DescriptorType.StorageBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pBvhInfo
-            };
-        }
+        writes[6] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass1DescriptorSet,
+            DstBinding = 6,
+            DstArrayElement = 0,
+            DescriptorType = DescriptorType.StorageBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pBvhInfo
+        };
 
         fixed (WriteDescriptorSet* pWrites = writes)
         {
@@ -760,69 +840,73 @@ public unsafe class VulkanMultiPassTask(
         DescriptorBufferInfo* pCameraInfo = &cameraBufferInfo;
         DescriptorBufferInfo* pBvhInfo = &bvhBufferInfo;
 
-        fixed (DescriptorImageInfo* pImageInfos = imageInfos)
+        DescriptorImageInfo* pImageInfos = stackalloc DescriptorImageInfo[5];
+        pImageInfos[0] = imageInfos[0];
+        pImageInfos[1] = imageInfos[1];
+        pImageInfos[2] = imageInfos[2];
+        pImageInfos[3] = imageInfos[3];
+        pImageInfos[4] = imageInfos[4];
+
+        for (uint i = 0; i < 5; i++)
+            writes[i] = new WriteDescriptorSet
+            {
+                SType = StructureType.WriteDescriptorSet,
+                DstSet = pass2DescriptorSet,
+                DstBinding = i,
+                DescriptorType = DescriptorType.StorageImage,
+                DescriptorCount = 1,
+                PImageInfo = &pImageInfos[i]
+            };
+
+        writes[5] = new WriteDescriptorSet
         {
-            for (uint i = 0; i < 5; i++)
-                writes[i] = new WriteDescriptorSet
-                {
-                    SType = StructureType.WriteDescriptorSet,
-                    DstSet = pass2DescriptorSet,
-                    DstBinding = i,
-                    DescriptorType = DescriptorType.StorageImage,
-                    DescriptorCount = 1,
-                    PImageInfo = &pImageInfos[i]
-                };
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2DescriptorSet,
+            DstBinding = 5,
+            DescriptorType = DescriptorType.StorageBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pLightInfo
+        };
 
-            writes[5] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass2DescriptorSet,
-                DstBinding = 5,
-                DescriptorType = DescriptorType.StorageBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pLightInfo
-            };
+        writes[6] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2DescriptorSet,
+            DstBinding = 6,
+            DescriptorType = DescriptorType.StorageBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pTriangleInfo
+        };
 
-            writes[6] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass2DescriptorSet,
-                DstBinding = 6,
-                DescriptorType = DescriptorType.StorageBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pTriangleInfo
-            };
+        writes[7] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2DescriptorSet,
+            DstBinding = 7,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pSettingsInfo
+        };
 
-            writes[7] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass2DescriptorSet,
-                DstBinding = 7,
-                DescriptorType = DescriptorType.UniformBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pSettingsInfo
-            };
+        writes[8] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2DescriptorSet,
+            DstBinding = 8,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pCameraInfo
+        };
 
-            writes[8] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass2DescriptorSet,
-                DstBinding = 8,
-                DescriptorType = DescriptorType.UniformBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pCameraInfo
-            };
-
-            writes[9] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass2DescriptorSet,
-                DstBinding = 9,
-                DescriptorType = DescriptorType.StorageBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pBvhInfo
-            };
-        }
+        writes[9] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2DescriptorSet,
+            DstBinding = 9,
+            DescriptorType = DescriptorType.StorageBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pBvhInfo
+        };
 
         fixed (WriteDescriptorSet* pWrites = writes)
         {
@@ -861,7 +945,7 @@ public unsafe class VulkanMultiPassTask(
             },
             new()
             {
-                ImageView = indirectColorView,
+                ImageView = downsampledIndirectView,
                 ImageLayout = ImageLayout.General
             }
         ];
@@ -905,69 +989,177 @@ public unsafe class VulkanMultiPassTask(
         DescriptorBufferInfo* pCameraInfo = &cameraBufferInfo;
         DescriptorBufferInfo* pBvhInfo = &bvhBufferInfo;
 
-        fixed (DescriptorImageInfo* pImageInfos = imageInfos)
+        DescriptorImageInfo* pImageInfos = stackalloc DescriptorImageInfo[5];
+        pImageInfos[0] = imageInfos[0];
+        pImageInfos[1] = imageInfos[1];
+        pImageInfos[2] = imageInfos[2];
+        pImageInfos[3] = imageInfos[3];
+        pImageInfos[4] = imageInfos[4];
+
+        for (uint i = 0; i < 5; i++)
+            writes[i] = new WriteDescriptorSet
+            {
+                SType = StructureType.WriteDescriptorSet,
+                DstSet = pass2BDescriptorSet,
+                DstBinding = i,
+                DescriptorType = DescriptorType.StorageImage,
+                DescriptorCount = 1,
+                PImageInfo = &pImageInfos[i]
+            };
+
+        writes[5] = new WriteDescriptorSet
         {
-            for (uint i = 0; i < 5; i++)
-                writes[i] = new WriteDescriptorSet
-                {
-                    SType = StructureType.WriteDescriptorSet,
-                    DstSet = pass2BDescriptorSet,
-                    DstBinding = i,
-                    DescriptorType = DescriptorType.StorageImage,
-                    DescriptorCount = 1,
-                    PImageInfo = &pImageInfos[i]
-                };
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2BDescriptorSet,
+            DstBinding = 5,
+            DescriptorType = DescriptorType.StorageBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pTriangleInfo
+        };
 
-            writes[5] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass2BDescriptorSet,
-                DstBinding = 5,
-                DescriptorType = DescriptorType.StorageBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pTriangleInfo
-            };
+        writes[6] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2BDescriptorSet,
+            DstBinding = 6,
+            DescriptorType = DescriptorType.StorageBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pLightInfo
+        };
 
-            writes[6] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass2BDescriptorSet,
-                DstBinding = 6,
-                DescriptorType = DescriptorType.StorageBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pLightInfo
-            };
+        writes[7] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2BDescriptorSet,
+            DstBinding = 7,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pSettingsInfo
+        };
 
-            writes[7] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass2BDescriptorSet,
-                DstBinding = 7,
-                DescriptorType = DescriptorType.UniformBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pSettingsInfo
-            };
+        writes[8] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2BDescriptorSet,
+            DstBinding = 8,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pCameraInfo
+        };
 
-            writes[8] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass2BDescriptorSet,
-                DstBinding = 8,
-                DescriptorType = DescriptorType.UniformBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pCameraInfo
-            };
+        writes[9] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2BDescriptorSet,
+            DstBinding = 9,
+            DescriptorType = DescriptorType.StorageBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pBvhInfo
+        };
 
-            writes[9] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass2BDescriptorSet,
-                DstBinding = 9,
-                DescriptorType = DescriptorType.StorageBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pBvhInfo
-            };
+        fixed (WriteDescriptorSet* pWrites = writes)
+        {
+            vk.UpdateDescriptorSets(device, (uint)writes.Length, pWrites, 0, null);
         }
+    }
+
+    private void UpdatePass2BUpDescriptorSet(Buffer cameraBuffer, Buffer settingsBuffer)
+    {
+        DescriptorImageInfo[] imageInfos =
+        [
+            new()
+            {
+                ImageView = downsampledIndirectView,
+                ImageLayout = ImageLayout.General
+            },
+            new()
+            {
+                ImageView = indirectColorView,
+                ImageLayout = ImageLayout.General
+            },
+            new()
+            {
+                ImageView = litColorView,
+                ImageLayout = ImageLayout.General
+            }
+        ];
+
+        DescriptorBufferInfo cameraBufferInfo = new()
+        {
+            Buffer = cameraBuffer,
+            Offset = 0,
+            Range = Vk.WholeSize
+        };
+
+        DescriptorBufferInfo settingsBufferInfo = new()
+        {
+            Buffer = settingsBuffer,
+            Offset = 0,
+            Range = Vk.WholeSize
+        };
+
+        DescriptorImageInfo ds0 = imageInfos[0];
+        DescriptorImageInfo ds1 = imageInfos[1];
+        DescriptorImageInfo ds2 = imageInfos[2];
+
+        DescriptorBufferInfo* pCameraInfo = &cameraBufferInfo;
+        DescriptorBufferInfo* pSettingsInfo = &settingsBufferInfo;
+
+        WriteDescriptorSet[] writes = new WriteDescriptorSet[5];
+
+        DescriptorImageInfo* pImg0 = &ds0;
+        DescriptorImageInfo* pImg1 = &ds1;
+        DescriptorImageInfo* pImg2 = &ds2;
+
+        writes[0] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2BUpDescriptorSet,
+            DstBinding = 0,
+            DescriptorType = DescriptorType.StorageImage,
+            DescriptorCount = 1,
+            PImageInfo = pImg0
+        };
+
+        writes[1] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2BUpDescriptorSet,
+            DstBinding = 1,
+            DescriptorType = DescriptorType.StorageImage,
+            DescriptorCount = 1,
+            PImageInfo = pImg1
+        };
+
+        writes[2] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2BUpDescriptorSet,
+            DstBinding = 2,
+            DescriptorType = DescriptorType.StorageImage,
+            DescriptorCount = 1,
+            PImageInfo = pImg2
+        };
+
+        writes[3] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2BUpDescriptorSet,
+            DstBinding = 3,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pCameraInfo
+        };
+
+        writes[4] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass2BUpDescriptorSet,
+            DstBinding = 4,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pSettingsInfo
+        };
 
         fixed (WriteDescriptorSet* pWrites = writes)
         {
@@ -1055,69 +1247,74 @@ public unsafe class VulkanMultiPassTask(
         DescriptorBufferInfo* pCameraInfo = &cameraBufferInfo;
         DescriptorBufferInfo* pBvhInfo = &bvhBufferInfo;
 
-        fixed (DescriptorImageInfo* pImageInfos = imageInfos)
+        DescriptorImageInfo* pImageInfos = stackalloc DescriptorImageInfo[6];
+        pImageInfos[0] = imageInfos[0];
+        pImageInfos[1] = imageInfos[1];
+        pImageInfos[2] = imageInfos[2];
+        pImageInfos[3] = imageInfos[3];
+        pImageInfos[4] = imageInfos[4];
+        pImageInfos[5] = imageInfos[5];
+
+        for (uint i = 0; i < 6; i++)
+            writes[i] = new WriteDescriptorSet
+            {
+                SType = StructureType.WriteDescriptorSet,
+                DstSet = pass3DescriptorSet,
+                DstBinding = i,
+                DescriptorType = DescriptorType.StorageImage,
+                DescriptorCount = 1,
+                PImageInfo = &pImageInfos[i]
+            };
+
+        writes[6] = new WriteDescriptorSet
         {
-            for (uint i = 0; i < 6; i++)
-                writes[i] = new WriteDescriptorSet
-                {
-                    SType = StructureType.WriteDescriptorSet,
-                    DstSet = pass3DescriptorSet,
-                    DstBinding = i,
-                    DescriptorType = DescriptorType.StorageImage,
-                    DescriptorCount = 1,
-                    PImageInfo = &pImageInfos[i]
-                };
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass3DescriptorSet,
+            DstBinding = 6,
+            DescriptorType = DescriptorType.StorageBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pTriangleInfo
+        };
 
-            writes[6] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass3DescriptorSet,
-                DstBinding = 6,
-                DescriptorType = DescriptorType.StorageBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pTriangleInfo
-            };
+        writes[7] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass3DescriptorSet,
+            DstBinding = 7,
+            DescriptorType = DescriptorType.StorageBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pLightInfo
+        };
 
-            writes[7] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass3DescriptorSet,
-                DstBinding = 7,
-                DescriptorType = DescriptorType.StorageBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pLightInfo
-            };
+        writes[8] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass3DescriptorSet,
+            DstBinding = 8,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pSettingsInfo
+        };
 
-            writes[8] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass3DescriptorSet,
-                DstBinding = 8,
-                DescriptorType = DescriptorType.UniformBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pSettingsInfo
-            };
+        writes[9] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass3DescriptorSet,
+            DstBinding = 9,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pCameraInfo
+        };
 
-            writes[9] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass3DescriptorSet,
-                DstBinding = 9,
-                DescriptorType = DescriptorType.UniformBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pCameraInfo
-            };
-
-            writes[10] = new WriteDescriptorSet
-            {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = pass3DescriptorSet,
-                DstBinding = 10,
-                DescriptorType = DescriptorType.StorageBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = pBvhInfo
-            };
-        }
+        writes[10] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass3DescriptorSet,
+            DstBinding = 10,
+            DescriptorType = DescriptorType.StorageBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pBvhInfo
+        };
 
         fixed (WriteDescriptorSet* pWrites = writes)
         {
@@ -1212,6 +1409,7 @@ public unsafe class VulkanMultiPassTask(
         uint groupCountX = (extent.Width + 15) / 16;
         uint groupCountY = (extent.Height + 15) / 16;
 
+        // dispatch pass1
         vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, pass1Pipeline);
         fixed (DescriptorSet* pDescSet1 = &pass1DescriptorSet)
         {
@@ -1222,6 +1420,7 @@ public unsafe class VulkanMultiPassTask(
 
         InsertMemoryBarrier(commandBuffer);
 
+        // pass2 (lighting)
         vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, pass2Pipeline);
         fixed (DescriptorSet* pDescSet2 = &pass2DescriptorSet)
         {
@@ -1232,16 +1431,34 @@ public unsafe class VulkanMultiPassTask(
 
         InsertMemoryBarrier(commandBuffer);
 
+        // pass2B downsample: dispatch at downsampled size
+        // compute downsampled group counts based on downsampledIndirectView size (we stored initial scale during creation)
+        // For simplicity compute group counts using extent and settings in CPU-side where this method is called; here reuse groupCountX/Y but shader uses sampling from downsample coordinates.
+
         vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, pass2BPipeline);
         fixed (DescriptorSet* pDescSet2B = &pass2BDescriptorSet)
         {
             vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, pass2BLayout, 0, 1, pDescSet2B, 0, null);
         }
 
+        // dispatch downsample with groups matching (extent/scale)
+        // For now dispatch full-resolution groups; shader will internally map to downsample coords
         vk.CmdDispatch(commandBuffer, groupCountX, groupCountY, 1);
 
         InsertMemoryBarrier(commandBuffer);
 
+        // pass2B upscale: take downsampled image and upscale to full resolution (write indirectColor)
+        vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, pass2BUpPipeline);
+        fixed (DescriptorSet* pDescSet2BUp = &pass2BUpDescriptorSet)
+        {
+            vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, pass2BUpLayout, 0, 1, pDescSet2BUp, 0, null);
+        }
+
+        vk.CmdDispatch(commandBuffer, groupCountX, groupCountY, 1);
+
+        InsertMemoryBarrier(commandBuffer);
+
+        // pass3
         vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, pass3Pipeline);
         fixed (DescriptorSet* pDescSet3 = &pass3DescriptorSet)
         {
@@ -1252,6 +1469,7 @@ public unsafe class VulkanMultiPassTask(
 
         InsertMemoryBarrier(commandBuffer);
 
+        // pass4
         vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, pass4Pipeline);
         fixed (DescriptorSet* pDescSet4 = &pass4DescriptorSet)
         {
@@ -1285,6 +1503,7 @@ public unsafe class VulkanMultiPassTask(
         imageTask.DestroyImage(gRayDirImage, gRayDirView, gRayDirMemory);
         imageTask.DestroyImage(litColorImage, litColorView, litColorMemory);
         imageTask.DestroyImage(indirectColorImage, indirectColorView, indirectColorMemory);
+        imageTask.DestroyImage(downsampledIndirectImage, downsampledIndirectView, downsampledIndirectMemory);
         imageTask.DestroyImage(reflectedColorImage, reflectedColorView, reflectedColorMemory);
     }
 
@@ -1293,6 +1512,7 @@ public unsafe class VulkanMultiPassTask(
         pipelineTask.DestroyPipeline(pass1Pipeline, pass1Layout, pass1Shader, pass1DescriptorLayout);
         pipelineTask.DestroyPipeline(pass2Pipeline, pass2Layout, pass2Shader, pass2DescriptorLayout);
         pipelineTask.DestroyPipeline(pass2BPipeline, pass2BLayout, pass2BShader, pass2BDescriptorLayout);
+        pipelineTask.DestroyPipeline(pass2BUpPipeline, pass2BUpLayout, pass2BUpShader, pass2BUpDescriptorLayout);
         pipelineTask.DestroyPipeline(pass3Pipeline, pass3Layout, pass3Shader, pass3DescriptorLayout);
         pipelineTask.DestroyPipeline(pass4Pipeline, pass4Layout, pass4Shader, pass4DescriptorLayout);
     }

@@ -70,6 +70,7 @@ layout (binding = 7) uniform RenderSettings {
     int enableGI;
     int giSamples;
     float giStrength;
+    int resolutionScale;
     int enableCaustics;
     int enableHdr;
     float exposure;
@@ -320,8 +321,13 @@ vec3 calculateIndirectLight(vec3 hitPoint, vec3 normal, vec3 albedo, ivec2 pixel
     return (indirectSum / float(numSamples)) * settings.giStrength;
 }
 
+shared vec4 tileIndirect[16 * 16];
+
 void main() {
-    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 globalID = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 localID = ivec2(gl_LocalInvocationID.xy);
+    ivec2 groupOrigin = ivec2(gl_WorkGroupID.xy) * ivec2(16, 16);
+    ivec2 pixelCoords = groupOrigin + localID;
 
     if (pixelCoords.x >= int(camera.resolution.x) || pixelCoords.y >= int(camera.resolution.y)) {
         return;
@@ -333,7 +339,13 @@ void main() {
     vec4 litData = imageLoad(litColor, pixelCoords);
     vec3 color = litData.xyz;
 
-    if (isHit > 0.5 && settings.enableGI != 0) {
+    int scale = max(1, settings.resolutionScale);
+
+    int idx = localID.y * 16 + localID.x;
+
+    bool isSampled = ((localID.x % scale) == 0 && (localID.y % scale) == 0);
+
+    if (isSampled && isHit > 0.5 && settings.enableGI != 0) {
         vec4 normalData = imageLoad(gNormal, pixelCoords);
         vec4 albedoData = imageLoad(gAlbedo, pixelCoords);
 
@@ -342,7 +354,45 @@ void main() {
         vec3 albedo = albedoData.xyz;
 
         vec3 indirect = calculateIndirectLight(hitPoint, normal, albedo, pixelCoords);
+        tileIndirect[idx] = vec4(indirect, 1.0);
         color += indirect;
+    } else {
+        tileIndirect[idx] = vec4(0.0);
+    }
+
+    barrier();
+    memoryBarrierShared();
+
+    if (!isSampled && isHit > 0.5 && settings.enableGI != 0) {
+        int sx = (localID.x / scale) * scale;
+        int sy = (localID.y / scale) * scale;
+        int sx2 = sx + scale;
+        int sy2 = sy + scale;
+        if (sx2 >= 16) sx2 = sx;
+        if (sy2 >= 16) sy2 = sy;
+
+        int idx00 = sy * 16 + sx;
+        int idx10 = sy * 16 + sx2;
+        int idx01 = sy2 * 16 + sx;
+        int idx11 = sy2 * 16 + sx2;
+
+        vec4 v00 = tileIndirect[idx00];
+        vec4 v10 = tileIndirect[idx10];
+        vec4 v01 = tileIndirect[idx01];
+        vec4 v11 = tileIndirect[idx11];
+
+        float tx = 0.0;
+        float ty = 0.0;
+        int denomX = sx2 - sx;
+        int denomY = sy2 - sy;
+        if (denomX != 0) tx = float(localID.x - sx) / float(denomX);
+        if (denomY != 0) ty = float(localID.y - sy) / float(denomY);
+
+        vec4 i0 = mix(v00, v10, tx);
+        vec4 i1 = mix(v01, v11, tx);
+        vec4 interp = mix(i0, i1, ty);
+
+        color += interp.xyz * interp.w;
     }
 
     imageStore(indirectColor, pixelCoords, vec4(color, isHit));

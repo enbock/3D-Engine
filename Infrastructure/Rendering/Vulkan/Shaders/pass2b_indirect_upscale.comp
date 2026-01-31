@@ -1,0 +1,43 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+layout (binding = 0, rgba32f) uniform readonly image2D downsampledIndirect;
+layout (binding = 1, rgba32f) uniform writeonly image2D indirectColor;
+layout (binding = 2, rgba32f) uniform readonly image2D litColor;
+
+layout (binding = 3) uniform CameraUBO { vec3 position; float _pad1; vec3 target; float _pad2; vec2 resolution; float time; float fov; } camera;
+layout (binding = 4) uniform RenderSettings { int maxBounces; int enableShadows; int enableReflections; float reflectionStrength; int shadowSamples; int enableGI; int giSamples; float giStrength; int resolutionScale; int enableCaustics; int enableHdr; float exposure; float gamma; int toneMapping; float hdrMinNits; float hdrMaxNits; float _pad0; float _pad1; } settings;
+
+void main() {
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 res = ivec2(camera.resolution);
+    if (pixel.x >= res.x || pixel.y >= res.y) return;
+
+    int scale = max(1, settings.resolutionScale);
+    ivec2 dsRes = (res + ivec2(scale - 1)) / scale;
+
+    // Compute downsample coordinate and fractional blend
+    vec2 fcoord = vec2(pixel) / float(scale);
+    ivec2 base = ivec2(floor(fcoord));
+    vec2 frac = fract(fcoord);
+
+    base = clamp(base, ivec2(0), dsRes - ivec2(1));
+    ivec2 baseX1 = clamp(base + ivec2(1, 0), ivec2(0), dsRes - ivec2(1));
+    ivec2 baseY1 = clamp(base + ivec2(0, 1), ivec2(0), dsRes - ivec2(1));
+    ivec2 baseXY = clamp(base + ivec2(1, 1), ivec2(0), dsRes - ivec2(1));
+
+    vec4 s00 = imageLoad(downsampledIndirect, base);
+    vec4 s10 = imageLoad(downsampledIndirect, baseX1);
+    vec4 s01 = imageLoad(downsampledIndirect, baseY1);
+    vec4 s11 = imageLoad(downsampledIndirect, baseXY);
+
+    vec4 i0 = mix(s00, s10, frac.x);
+    vec4 i1 = mix(s01, s11, frac.x);
+    vec4 interp = mix(i0, i1, frac.y);
+
+    vec3 baseColor = imageLoad(litColor, pixel).xyz;
+    vec3 finalColor = baseColor + interp.xyz * interp.w;
+
+    imageStore(indirectColor, pixel, vec4(finalColor, 1.0));
+}

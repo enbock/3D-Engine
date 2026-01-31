@@ -71,6 +71,7 @@ layout (binding = 8) uniform RenderSettings {
     int enableGI;
     int giSamples;
     float giStrength;
+    int resolutionScale;
     int enableCaustics;
     int enableHdr;
     float exposure;
