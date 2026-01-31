@@ -17,7 +17,7 @@ public class RenderSettings
         EnableShadows = true,
         EnableReflections = true,
         ReflectionStrength = 1.0f,
-        ShadowSamples = 12,
+        ShadowSamples = 8,
         EnableGi = true,
         GiSamples = 4,
         GiStrength = 0.6f
@@ -29,7 +29,7 @@ public class RenderSettings
         EnableShadows = true,
         EnableReflections = true,
         ReflectionStrength = 1.0f,
-        ShadowSamples = 8,
+        ShadowSamples = 4,
         EnableGi = true,
         GiSamples = 2,
         GiStrength = 0.6f
@@ -53,9 +53,9 @@ public class RenderSettings
         EnableShadows = true,
         EnableReflections = true,
         ReflectionStrength = 1.0f,
-        ShadowSamples = 16,
+        ShadowSamples = 12,
         EnableGi = true,
-        GiSamples = 8,
+        GiSamples = 10,
         GiStrength = 0.6f
     };
 }

@@ -78,7 +78,6 @@ struct Hit {
 };
 
 const float EPSILON = 0.01;
-const float BACKFACE_EPSILON = 1e-6;
 const float MAX_DIST = 100.0;
 
 Hit intersectTriangle(Ray ray, Triangle tri) {
@@ -90,7 +89,7 @@ Hit intersectTriangle(Ray ray, Triangle tri) {
     vec3 pvec = cross(ray.direction, e2);
     float det = dot(e1, pvec);
 
-    if (det < BACKFACE_EPSILON) return h;
+    if (det < 1e-6) return h;
 
     float invDet = 1.0 / det;
     vec3 tvec = ray.origin - tri.v0;
@@ -110,8 +109,7 @@ Hit intersectTriangle(Ray ray, Triangle tri) {
         h.dist = t;
         h.point = ray.origin + ray.direction * t;
         float w = 1.0 - u - v;
-        vec3 interpolatedNormal = normalize(w * tri.n0 + u * tri.n1 + v * tri.n2);
-        h.normal = interpolatedNormal;
+        h.normal = normalize(w * tri.n0 + u * tri.n1 + v * tri.n2);
         h.color = tri.color;
         h.transparency = tri.transparency;
         h.ior = tri.ior;
@@ -141,13 +139,11 @@ Hit traceBVH(Ray ray) {
     closest.dist = MAX_DIST;
 
     int numNodes = bvhNodes.length();
-    if (numNodes == 0) {
-        return closest;
-    }
+    if (numNodes == 0) return closest;
 
     vec3 invDir = 1.0 / ray.direction;
 
-    int stack[64];
+    int stack[32];
     int stackPtr = 0;
     stack[stackPtr++] = 0;
 
@@ -168,10 +164,10 @@ Hit traceBVH(Ray ray) {
                 }
             }
         } else {
-            if (node.rightChild >= 0) {
+            if (node.rightChild >= 0 && stackPtr < 31) {
                 stack[stackPtr++] = node.rightChild;
             }
-            if (node.leftChild >= 0) {
+            if (node.leftChild >= 0 && stackPtr < 31) {
                 stack[stackPtr++] = node.leftChild;
             }
         }
