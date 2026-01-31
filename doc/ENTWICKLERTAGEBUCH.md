@@ -1,4 +1,4 @@
-﻿﻿# Vulkan 3D-Engine - Entwicklertagebuch
+﻿﻿﻿# Vulkan 3D-Engine - Entwicklertagebuch
 
 ## Inhaltsverzeichnis
 
@@ -1075,7 +1075,7 @@ Target += offset;  // Beide bewegen!
 
 #### Langfristig
 
-- [ ] HDR + Tone Mapping
+- [x] HDR + Tone Mapping ✅ (implementiert 2026-01-31)
 - [ ] Environment Mapping
 - [ ] Deferred Shading
 - [ ] Post-Processing Effects
@@ -1169,4 +1169,10 @@ aller Fehler, Debugging-Sessions und gelernten Lektionen.
     - **ENTSCHEIDUNG**: Zu komplex für sofortige Implementierung
     - **ALTERNATIVE**: Funktions-Refactoring im monolithischen Shader
     - Lesson Learned: Shader-Organisation ≠ Multi-Pass Rendering
+
+- **[HDR_TONEMAPPING.md](./HDR_TONEMAPPING.md)** - HDR und Tone Mapping Feature:
+    - 4 Tone-Mapping-Operatoren (None, Reinhard, ACES Filmic, Uncharted 2)
+    - Konfigurierbares Exposure und Gamma
+    - Shader-Implementierung im pass4_composite.comp
+    - Presets für verschiedene Qualitätsstufen
 

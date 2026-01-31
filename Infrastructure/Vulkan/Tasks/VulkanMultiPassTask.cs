@@ -426,6 +426,13 @@ public unsafe class VulkanMultiPassTask(
                 DescriptorType = DescriptorType.UniformBuffer,
                 DescriptorCount = 1,
                 StageFlags = ShaderStageFlags.ComputeBit
+            },
+            new()
+            {
+                Binding = 3,
+                DescriptorType = DescriptorType.UniformBuffer,
+                DescriptorCount = 1,
+                StageFlags = ShaderStageFlags.ComputeBit
             }
         ];
 
@@ -480,7 +487,7 @@ public unsafe class VulkanMultiPassTask(
         UpdatePass2DescriptorSet(cameraBuffer, triangleBuffer, lightBuffer, settingsBuffer, bvhBuffer);
         UpdatePass2BDescriptorSet(cameraBuffer, triangleBuffer, lightBuffer, settingsBuffer, bvhBuffer);
         UpdatePass3DescriptorSet(cameraBuffer, triangleBuffer, lightBuffer, settingsBuffer, bvhBuffer);
-        UpdatePass4DescriptorSet(cameraBuffer, storageImageView);
+        UpdatePass4DescriptorSet(cameraBuffer, settingsBuffer, storageImageView);
     }
 
     private void AllocateDescriptorSet(DescriptorSetLayout layout, out DescriptorSet set)
@@ -912,7 +919,7 @@ public unsafe class VulkanMultiPassTask(
         }
     }
 
-    private void UpdatePass4DescriptorSet(Buffer cameraBuffer, ImageView storageImageView)
+    private void UpdatePass4DescriptorSet(Buffer cameraBuffer, Buffer settingsBuffer, ImageView storageImageView)
     {
         DescriptorImageInfo reflectedImageInfo = new()
         {
@@ -933,11 +940,19 @@ public unsafe class VulkanMultiPassTask(
             Range = Vk.WholeSize
         };
 
+        DescriptorBufferInfo settingsBufferInfo = new()
+        {
+            Buffer = settingsBuffer,
+            Offset = 0,
+            Range = Vk.WholeSize
+        };
+
         DescriptorImageInfo* pReflectedInfo = &reflectedImageInfo;
         DescriptorImageInfo* pOutputInfo = &outputImageInfo;
         DescriptorBufferInfo* pCameraInfo = &cameraBufferInfo;
+        DescriptorBufferInfo* pSettingsInfo = &settingsBufferInfo;
 
-        WriteDescriptorSet[] writes = new WriteDescriptorSet[3];
+        WriteDescriptorSet[] writes = new WriteDescriptorSet[4];
         writes[0] = new WriteDescriptorSet
         {
             SType = StructureType.WriteDescriptorSet,
@@ -966,6 +981,16 @@ public unsafe class VulkanMultiPassTask(
             DescriptorType = DescriptorType.UniformBuffer,
             DescriptorCount = 1,
             PBufferInfo = pCameraInfo
+        };
+
+        writes[3] = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = pass4DescriptorSet,
+            DstBinding = 3,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = pSettingsInfo
         };
 
         fixed (WriteDescriptorSet* pWrites = writes)

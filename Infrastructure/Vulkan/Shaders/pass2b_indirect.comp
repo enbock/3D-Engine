@@ -65,6 +65,14 @@ layout (binding = 7) uniform RenderSettings {
     int enableGI;
     int giSamples;
     float giStrength;
+    int enableHdr;
+    float exposure;
+    float gamma;
+    int toneMapping;
+    float hdrMinNits;
+    float hdrMaxNits;
+    float _pad0;
+    float _pad1;
 } settings;
 
 layout (binding = 8) uniform CameraUBO {

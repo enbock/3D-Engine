@@ -82,6 +82,14 @@ public struct RenderSettingsData
     public int EnableGI;
     public int GISamples;
     public float GIStrength;
+    public int EnableHdr;
+    public float Exposure;
+    public float Gamma;
+    public int ToneMapping;
+    public float HdrMinNits;
+    public float HdrMaxNits;
+    public float Pad0;
+    public float Pad1;
 }
 
 [StructLayout(LayoutKind.Sequential)]

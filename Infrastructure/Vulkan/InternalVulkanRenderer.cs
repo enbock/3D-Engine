@@ -193,17 +193,19 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
 
     private void CreateStorageImage()
     {
+        Format storageFormat = Format.R16G16B16A16Sfloat;
+
         _imageTask.CreateImage(
             _swapchainTask.SwapchainExtent.Width,
             _swapchainTask.SwapchainExtent.Height,
-            Format.R8G8B8A8Unorm,
+            storageFormat,
             ImageTiling.Optimal,
             ImageUsageFlags.StorageBit | ImageUsageFlags.TransferSrcBit,
             MemoryPropertyFlags.DeviceLocalBit,
             out _storageImage,
             out _storageImageMemory);
 
-        _storageImageView = _imageTask.CreateImageView(_storageImage, Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit);
+        _storageImageView = _imageTask.CreateImageView(_storageImage, storageFormat, ImageAspectFlags.ColorBit);
         _imageTask.TransitionImageLayout(_storageImage, ImageLayout.Undefined, ImageLayout.General);
     }
 
@@ -341,7 +343,7 @@ public unsafe class InternalVulkanRenderer(WindowManager windowManager, EngineCo
     {
         Vector2 resolution = new(_swapchainTask.SwapchainExtent.Width, _swapchainTask.SwapchainExtent.Height);
         VulkanBufferHelper.UpdateSceneBuffers(
-            _bufferTask, scene,
+            _bufferTask, scene, config,
             _cameraBufferMemory, _lightBufferMemory, _settingsBufferMemory,
             resolution, _time);
     }

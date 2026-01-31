@@ -31,15 +31,67 @@ public unsafe class VulkanSwapchainTask(
 
         SwapchainFormat = formats[0].Format;
         ColorSpaceKHR colorSpace = formats[0].ColorSpace;
+        bool hdrFound = false;
 
-        for (int i = 0; i < formatCount; i++)
-            if (formats[i].Format == Format.B8G8R8A8Srgb &&
-                formats[i].ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
+        if (config.EnableHdr10)
+        {
+            for (int i = 0; i < formatCount; i++)
             {
-                SwapchainFormat = formats[i].Format;
-                colorSpace = formats[i].ColorSpace;
-                break;
+                if (formats[i].Format == Format.A2B10G10R10UnormPack32 &&
+                    (int)formats[i].ColorSpace == 1000104008)
+                {
+                    SwapchainFormat = formats[i].Format;
+                    colorSpace = formats[i].ColorSpace;
+                    hdrFound = true;
+                    Console.WriteLine("HDR10 ST2084 (10-bit) enabled");
+                    break;
+                }
             }
+
+            if (!hdrFound)
+            {
+                for (int i = 0; i < formatCount; i++)
+                {
+                    if (formats[i].Format == Format.A2B10G10R10UnormPack32 &&
+                        formats[i].ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
+                    {
+                        SwapchainFormat = formats[i].Format;
+                        colorSpace = formats[i].ColorSpace;
+                        hdrFound = true;
+                        Console.WriteLine("10-bit color enabled (sRGB colorspace)");
+                        break;
+                    }
+                }
+            }
+
+            if (!hdrFound)
+            {
+                for (int i = 0; i < formatCount; i++)
+                {
+                    if (formats[i].Format == Format.R16G16B16A16Sfloat)
+                    {
+                        SwapchainFormat = formats[i].Format;
+                        colorSpace = formats[i].ColorSpace;
+                        hdrFound = true;
+                        Console.WriteLine("16-bit float HDR enabled");
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!hdrFound)
+        {
+            for (int i = 0; i < formatCount; i++)
+                if (formats[i].Format == Format.B8G8R8A8Srgb &&
+                    formats[i].ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
+                {
+                    SwapchainFormat = formats[i].Format;
+                    colorSpace = formats[i].ColorSpace;
+                    Console.WriteLine("Standard 8-bit sRGB enabled");
+                    break;
+                }
+        }
 
         SwapchainExtent = new Extent2D
         {
@@ -50,6 +102,8 @@ public unsafe class VulkanSwapchainTask(
         uint imageCount = capabilities.MinImageCount + 1;
         if (capabilities.MaxImageCount > 0 && imageCount > capabilities.MaxImageCount)
             imageCount = capabilities.MaxImageCount;
+
+        PresentModeKHR presentMode = SelectPresentMode(config.VSync);
 
         SwapchainCreateInfoKHR createInfo = new()
         {
@@ -64,7 +118,7 @@ public unsafe class VulkanSwapchainTask(
             ImageSharingMode = SharingMode.Exclusive,
             PreTransform = capabilities.CurrentTransform,
             CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr,
-            PresentMode = config.VSync ? PresentModeKHR.FifoKhr : PresentModeKHR.ImmediateKhr,
+            PresentMode = presentMode,
             Clipped = true
         };
 
@@ -110,6 +164,61 @@ public unsafe class VulkanSwapchainTask(
         foreach (ImageView imageView in SwapchainImageViews) vk.DestroyImageView(device, imageView, null);
 
         khrSwapchain.DestroySwapchain(device, Swapchain, null);
+    }
+
+    private PresentModeKHR SelectPresentMode(bool vsync)
+    {
+        uint presentModeCount;
+        khrSurface.GetPhysicalDeviceSurfacePresentModes(physicalDevice, surface, &presentModeCount, null);
+        PresentModeKHR* presentModes = stackalloc PresentModeKHR[(int)presentModeCount];
+        khrSurface.GetPhysicalDeviceSurfacePresentModes(physicalDevice, surface, &presentModeCount, presentModes);
+
+        bool hasFifo = false;
+        bool hasMailbox = false;
+        bool hasImmediate = false;
+
+        for (int i = 0; i < presentModeCount; i++)
+        {
+            if (presentModes[i] == PresentModeKHR.FifoKhr) hasFifo = true;
+            if (presentModes[i] == PresentModeKHR.MailboxKhr) hasMailbox = true;
+            if (presentModes[i] == PresentModeKHR.ImmediateKhr) hasImmediate = true;
+        }
+
+        PresentModeKHR selectedMode;
+
+        if (vsync)
+        {
+            if (hasMailbox)
+            {
+                selectedMode = PresentModeKHR.MailboxKhr;
+                Console.WriteLine("VSync: Mailbox (Triple Buffering)");
+            }
+            else if (hasFifo)
+            {
+                selectedMode = PresentModeKHR.FifoKhr;
+                Console.WriteLine("VSync: FIFO (Double Buffering)");
+            }
+            else
+            {
+                selectedMode = PresentModeKHR.FifoKhr;
+                Console.WriteLine("VSync: FIFO (Fallback)");
+            }
+        }
+        else
+        {
+            if (hasImmediate)
+            {
+                selectedMode = PresentModeKHR.ImmediateKhr;
+                Console.WriteLine("VSync: Off (Immediate)");
+            }
+            else
+            {
+                selectedMode = PresentModeKHR.FifoKhr;
+                Console.WriteLine("VSync: FIFO (No Immediate available)");
+            }
+        }
+
+        return selectedMode;
     }
 
     public void Dispose()

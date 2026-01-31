@@ -62,8 +62,17 @@ layout (binding = 7) uniform RenderSettings {
     int enableReflections;
     float reflectionStrength;
     int shadowSamples;
-    int _pad1;
-    vec2 _pad2;
+    int enableGI;
+    int giSamples;
+    float giStrength;
+    int enableHdr;
+    float exposure;
+    float gamma;
+    int toneMapping;
+    float hdrMinNits;
+    float hdrMaxNits;
+    float _pad0;
+    float _pad1;
 } settings;
 
 layout (binding = 8) uniform CameraUBO {

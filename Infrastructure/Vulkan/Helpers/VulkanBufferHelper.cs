@@ -125,6 +125,7 @@ public static unsafe class VulkanBufferHelper
     public static void UpdateSceneBuffers(
         VulkanBufferTask bufferTask,
         SceneEntity scene,
+        EngineConfig config,
         DeviceMemory cameraBufferMemory,
         DeviceMemory lightBufferMemory,
         DeviceMemory settingsBufferMemory,
@@ -178,7 +179,13 @@ public static unsafe class VulkanBufferHelper
             ShadowSamples = settings.ShadowSamples,
             EnableGI = settings.EnableGi ? 1 : 0,
             GISamples = settings.GiSamples,
-            GIStrength = settings.GiStrength
+            GIStrength = settings.GiStrength,
+            EnableHdr = config.EnableHdr10 ? 1 : 0,
+            Exposure = config.Exposure,
+            Gamma = config.Gamma,
+            ToneMapping = (int)config.ToneMapping,
+            HdrMinNits = config.HdrMinNits,
+            HdrMaxNits = config.HdrMaxNits
         };
 
         bufferTask.CopyDataToBuffer(settingsBufferMemory, settingsData);

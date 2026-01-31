@@ -1,5 +1,13 @@
 namespace Application;
 
+public enum ToneMappingOperator
+{
+    None = 0,
+    Reinhard = 1,
+    AcesFilmic = 2,
+    Uncharted2 = 3
+}
+
 public class RenderSettings
 {
     public int MaxBounces { get; private init; } = 3;
